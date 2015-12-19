@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+.dot circle {
+  fill: lightsteelblue;
+  stroke: steelblue;
+  stroke-width: 1.5px;
+}
+
+.dot circle.dragging {
+  fill: red;
+  stroke: brown;
+}
+
+.axis line {
+  fill: none;
+  stroke: #ddd;
+  shape-rendering: crispEdges;
+  vector-effect: non-scaling-stroke;
+}
+
+</style>
+<body>
+    <script src="../js/lib/d3.min.js"></script>
+    <script src="../js/lib/jquery-1.11.3.min.js"></script>
+<script>
+
+    var data = [{
+        id: 0,
+        x: 300,
+        y: 100,
+        r: 25,
+        adjacentVertex: [{
+            id: 2,
+            weight: 0.1
+        }, {
+            id: 3,
+            weight: 0.4
+        }, {
+            id: 4,
+            weight: 0.5
+        }]
+    },
+    {
+        id: 1,
+        x: 300,
+        y: 200,
+        r: 25,
+        adjacentVertex: [{
+            id: 2,
+            weight: 0.4
+        }, {
+            id: 3,
+            weight: 0.2
+        }, {
+            id: 4,
+            weight: 0.4
+        }]
+    },
+    {
+        id: 2,
+        x: 500,
+        y: 50,
+        r: 25,
+        adjacentVertex: [{
+            id: 5,
+            weight: 0.3
+        }, {
+            id: 6,
+            weight: 0.7
+        }]
+    },
+    {
+        id: 3,
+        x: 500,
+        y: 150,
+        r: 25,
+        adjacentVertex: [{
+            id: 5,
+            weight: 0.6
+        }, {
+            id: 6,
+            weight: 0.4
+        }]
+    },
+    {
+        id: 4,
+        x: 500,
+        y: 250,
+        r: 25,
+        adjacentVertex: [{
+            id: 5,
+            weight: 0.6
+        }, {
+            id: 6,
+            weight: 0.4
+        }]
+    },
+    {
+        id: 5,
+        x: 700,
+        y: 100,
+        r: 25
+    },
+    {
+        id: 6,
+        x: 700,
+        y: 200,
+        r: 25
+    },
+
+           ];
+    
+var margin = {top: -5, right: -5, bottom: -5, left: -5},
+    width = 960 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+
+var zoom = d3.behavior.zoom()
+    .scaleExtent([1, 10])
+    .on("zoom", zoomed);
+
+var drag = d3.behavior.drag()
+    .origin(function(d) { return d; })
+    .on("dragstart", dragstarted)
+    .on("drag", dragged)
+    .on("dragend", dragended);
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.right + ")")
+    .call(zoom);
+
+var rect = svg.append("rect")
+    .attr("width", width)
+    .attr("height", height)
+    .style("fill", "none")
+    .style("pointer-events", "all");
+
+var container = svg.append("g");
+
+container.append("g")
+    .attr("class", "x axis")
+  .selectAll("line")
+    .data(d3.range(0, width, 10))
+  .enter().append("line")
+    .attr("x1", function(d) { return d; })
+    .attr("y1", 0)
+    .attr("x2", function(d) { return d; })
+    .attr("y2", height);
+
+container.append("g")
+    .attr("class", "y axis")
+  .selectAll("line")
+    .data(d3.range(0, height, 10))
+  .enter().append("line")
+    .attr("x1", 0)
+    .attr("y1", function(d) { return d; })
+    .attr("x2", width)
+    .attr("y2", function(d) { return d; });
+
+d3.tsv("data/dots.tsv", function(error, dots) {
+  dot = container.append("g")
+      .attr("class", "dot")
+    .selectAll("circle")
+      .data(data)
+    .enter().append("circle")
+      .attr("r", 5)
+      .attr("cx", function(d) { return d.x; })
+      .attr("cy", function(d) { return d.y; })
+      .call(drag);
+});
+
+function zoomed() {
+  container.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+}
+
+function dragstarted(d) {
+  d3.event.sourceEvent.stopPropagation();
+  d3.select(this).classed("dragging", true);
+}
+
+function dragged(d) {
+  d3.select(this).attr("cx", d.x = d3.event.x).attr("cy", d.y = d3.event.y);
+}
+
+function dragended(d) {
+  d3.select(this).classed("dragging", false);
+}
+
+    
+    
+    
+</script>
