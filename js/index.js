@@ -1,6 +1,6 @@
 // example_data = [vertex_0, vertex_1, vertex_2......]    // a list of all the vertices in the graph
-// vertex_i = {id: i-th_index, x: x_position, y: y_position, r: vertex_radius, adjacentVertex: {adjVertex_1, adjVertex2.....}} 
-// adjVertex_j = {id: i-th_index, weight: edge_weight} // adjacent vertices are the vertices vertex_i connected to
+// vertex_i = {id: i-th_index_in_example_data, x: x_position, y: y_position, r: vertex_radius, adjacentVertex: {adjVertex_1, adjVertex2.....}} 
+// adjVertex_j = {id: i-th_index_in_example_data, weight: edge_weight} // adjacent vertices are the vertices vertex_i connected to
 var data = [{
         id: 0,
         x: 300,
@@ -101,8 +101,8 @@ var config = config || {
         defaultColor: "lightsteelblue",
         visitedColor: "steelblue"
     },
-    zoom: true,
-    nodeDraggable: true
+    zoom: false,
+    nodeDraggable: false
 };
 
 var myGraph = new graph(config);
