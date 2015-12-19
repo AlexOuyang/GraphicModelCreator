@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+.node circle {
+  fill: #fff;
+  stroke: steelblue;
+  stroke-width: 1.5px;
+}
+
+.node {
+  font: 10px sans-serif;
+}
+
+.link {
+  fill: none;
+  stroke: #ccc;
+  stroke-width: 1.5px;
+}
+
+</style>
+<body>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/d3/3.4.13/d3.min.js"></script>
+<script>
+
+var nodeRadius = 10;
+var graphWidth = window.innerWidth;
+var graphHeight = window.innerHeight;
+
+var cluster = d3.layout.cluster().size([graphHeight, graphWidth-160]);
+
+var diagonal = d3.svg.diagonal()
+  .projection(function(d) {
+    return [d.y, d.x];
+  });
+    
+var svg = d3.select("body").append("svg")
+  .attr("width", graphWidth)
+  .attr("height", graphHeight)
+  .append("g")
+  .attr("transform", "translate(40,0)");
+
+d3.json("data/data.json", function(error, root) {
+
+  var nodes = cluster.nodes(root);
+    console.log(nodes);
+    
+//  var link = svg.selectAll("path")
+//    .data(cluster.links(nodes))
+//    .enter().append("path")
+//    .attr("class", "link")
+//    .attr("d", diagonal);
+    
+    var nodes = [nodes[1], nodes[2]];
+console.log(cluster.links(nodes));
+  var link = svg.selectAll("path")
+    .data(cluster.links(nodes))
+    .enter().append("path")
+    .attr("class", "link")
+    .attr("d", diagonal);
+
+  var node = svg.selectAll(".node")
+    .data(nodes)
+    .enter().append("g")
+    .attr("class", "node")
+    .attr("transform", function(d) {
+//                console.log("translate(" + d.y + "," + d.x + ")");
+
+      return "translate(" + d.y + "," + d.x + ")";
+    })
+
+  node.append("circle")
+    .attr("r", nodeRadius);
+
+  node.append("text")
+    .attr("dx", function(d) {
+      return d.children ? -15 : 15;
+    })
+    .attr("dy", 3)
+    .style("text-anchor", function(d) {
+      return d.children ? "end" : "start";
+    })
+    .text(function(d) {
+      return d.name;
+    });
+});
+
+d3.select(self.frameElement).style("height", graphHeight + "px");
+
+</script>
