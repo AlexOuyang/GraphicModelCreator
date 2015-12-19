@@ -1,23 +1,36 @@
 .vertex circle {
-  fill: lightsteelblue;
-  stroke: steelblue;
-  stroke-width: 1.5px;
+    fill: lightsteelblue;
+    stroke: steelblue;
+    stroke-width: 1.5px;
 }
 
-.vertex circle.dragging {
-  fill: green;
-/*  stroke: black;*/
+.vertex text {
+    fill: white;
+}
+
+.vertex .dragging .node {
+    fill: steelblue;
+    /*  stroke: black;*/
+}
+
+.vertex .visitedVertex {
+    fill: steelblue;
+    /*  stroke: black;*/
 }
 
 .axis line {
-  fill: none;
-  stroke: #ddd;
-  shape-rendering: crispEdges;
-  vector-effect: non-scaling-stroke;
+    fill: none;
+    stroke: #ddd;
+    shape-rendering: crispEdges;
+    vector-effect: non-scaling-stroke;
 }
 
 .path {
     stroke-width: 2;
     stroke: steelblue;
     fill: none;
+}
+
+p {
+    color: steelblue;
 }

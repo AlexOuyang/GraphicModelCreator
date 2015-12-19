@@ -1,14 +1,20 @@
 var graph = function (config) {
     var self = this;
 
+    this.graphData = null; // data binds to the graph
+
+    this.directedPath = []; // directedPath is a list of visited nodes
+
     this.config = config || {
         dim: {
             width: window.innerWidth,
             height: window.innerHeight
         },
         edge: {
-            defaultWidth: 2,
-            defaultColor: "steelblue"
+            baseWidth: 2,
+            weightWidth: 18,
+            defaultColor: "lightsteelblue",
+            visitedColor: "steelblue"
         },
         zoom: true,
         nodeDraggable: true
@@ -42,45 +48,118 @@ var graph = function (config) {
         .attr("transform", "translate(" + margin.left + "," + margin.right + ")")
         .call(zoom);
 
+
     var rect = svg.append("rect")
         .attr("width", width)
         .attr("height", height)
         .style("fill", "none")
-        .style("pointer-events", "all");
+        .style("pointer-events", "all")
+        .on("click", function (d) {
+            clearVisitedPath();
+        });
 
     var container = svg.append("g");
 
+    function dataScreening(graphData) {
+        // Verifies if each vertex's id matches its position in the array and the weights of all adjacent vertices sum to 1;
+        if (graphData.length <= 1) {
+            console.error("input graph data is empty");
+            return;
+        }
+        var weightSum = 0;
+        for (var vertexIdx = 0; vertexIdx < graphData.length; vertexIdx++) {
+            if (graphData[vertexIdx].id != vertexIdx) {
+                console.error("Vertex's id must match its position index in the list of vertices");
+                console.error(vertexIdx + " th element in the list does not match its position index");
+                return;
+            }
+
+            var adjVertices = graphData[vertexIdx].adjacentVertex;
+            if (adjVertices) {
+                for (var i = 0; i < adjVertices.length; i++) {
+                    weightSum += adjVertices[i].weight;
+                }
+                if (weightSum != 1.0) {
+                    console.error("The sum of a vertex's adjacent vertice's weight must be 1");
+                    console.error(vertexIdx + "th element's adjacent vertices's weight does not sum to 1");
+                    return;
+                }
+            }
+            weightSum = 0;
+        }
+    }
 
 
     function createEdgeInGraphData(graphData) {
-        // modifies the graphData by adding a list of edges into the graphData and add as an attributes of the graph   
+        // Takes in the graph data, modifies the graphData by adding a list of edges into the graphData and add to self   
         if (graphData.length <= 1) {
             console.error("input graph data is empty");
             return;
         }
 
+        // Go through each vertex in graphData and add 'edges' attribute to each vertex
         for (var vertexIdx = 0; vertexIdx < graphData.length; vertexIdx++) {
             var currentVertex = graphData[vertexIdx];
             if (!currentVertex.adjacentVertex) {
-                currentVertex.edge = null;
+                currentVertex.edges = null;
             } else {
-                currentVertex.edge = [];
+                currentVertex.edges = [];
                 for (var adjVertexIdx = 0; adjVertexIdx < currentVertex.adjacentVertex.length; adjVertexIdx++) {
-                    var targetVertexId = currentVertex.adjacentVertex[adjVertexIdx].id
-                    var edge = [currentVertex, graphData[targetVertexId]];
-                    currentVertex.edge.push(edge);
+                    var targetVertexId = currentVertex.adjacentVertex[adjVertexIdx].id;
+                    var targetVertexWeight = currentVertex.adjacentVertex[adjVertexIdx].weight;
+                    var edge = {};
+                    edge.edgeWeight = targetVertexWeight;
+                    edge.edgeNodes = [currentVertex, graphData[targetVertexId]];
+                    currentVertex.edges.push(edge);
                 }
             }
         }
 
+        // Add the graphData as a class attribute
         self.graphData = graphData;
-        console.log(graphData);
     };
 
+
+    function traverseGraph(vertexId) {
+        // Takes in the id of a node and traverse trough the graph to connect impacted nodes
+        // Returns the id of the visited node
+
+        function chooseRandomAdjVertex(vertex) {
+            // Takes in a vertex and choose a random adjacent vertex in the next layer based on the edge weights 
+            var weightDistribution = [0]; // weightDistribution is a distribution from 0 to 1, ex: [0, 0.4, 1]
+            var weight = 0;
+            for (var i = 0; i < vertex.adjacentVertex.length; i++) {
+                weight += vertex.adjacentVertex[i].weight
+                weightDistribution.push(weight);
+            }
+
+            var randomPick = Math.random();
+            console.log("weight distribution corresponding to adjacent vertices in the next layer: (" + weightDistribution + ") random pick: " + randomPick);
+            for (var i = 0; i < weightDistribution.length - 1; i++) {
+                if (randomPick >= weightDistribution[i] && randomPick <= weightDistribution[i + 1]) {
+                    return vertex.adjacentVertex[i].id;
+                }
+            }
+        }
+
+        var visitedNodes = [vertexId];
+        var node = self.graphData[vertexId];
+        while (node.adjacentVertex) {
+            console.log("Current Vertex: " + vertexId);
+            var vertexId = chooseRandomAdjVertex(node);
+            console.log("Vextex chosen: " + vertexId);
+            console.log("--------");
+            node = self.graphData[vertexId];
+            visitedNodes.push(vertexId);
+        }
+
+        self.directedPath = visitedNodes;
+    }
 
 
 
     function drawAxis() {
+        // Draws the axis in the background
         container.append("g")
             .attr("class", "x axis")
             .selectAll("line")
@@ -110,30 +189,45 @@ var graph = function (config) {
             });
     }
 
-    function drawVertices() {
-        // clear vertices then redraw
+    this.drawVertices = function () {
+        // clear vertices then redraw all the vertices in the grpah
         d3.selectAll(".vertex").remove();
 
         var vertices = container.append("g")
             .attr("class", "vertex")
             .selectAll("circle")
-            .data(data)
-            .enter()
-            .append("circle")
+            .data(data).enter()
+            .append("g")
+            .attr("id", function (d) {
+                return d.id;
+            })
+            .attr("transform", function (d) {
+                return "translate(" + d.x + "," + d.y + ")";
+            }).call(drag);
+
+        vertices.append("circle")
+            .attr("class", "node")
+            .attr("class", function (d) {
+                // if the node is in the path then draw it in a different color
+                if (self.directedPath.indexOf(d.id) > -1) {
+                    return "visitedVertex";
+                }
+            })
             .attr("r", function (d) {
                 return d.r;
-            })
-            .attr("cx", function (d) {
-                return d.x;
-            })
-            .attr("cy", function (d) {
-                return d.y;
-            })
-            .call(drag);
+            });
+
+        // Add a text element to the previously added g element.
+        vertices.append("text")
+            .attr("text-anchor", "middle")
+            .text(function (d) {
+                return d.id;
+            });
+
     }
 
-    function drawEdges() {
-        // clear edges then redraw
+    this.drawEdges = function () {
+        // clear edges then redraw all the edges in the graph
         d3.selectAll("path").remove();
 
         // Specify the function for generating path data             
@@ -145,26 +239,38 @@ var graph = function (config) {
         // "linear" for piecewise linear segments
         // Creating path using data in pathinfo and path data generator
         // d3line.
-        var drawLine = function (edge) {
-            container.append("svg:path")
-                .attr("d", line(edge))
-                .style("stroke-width", self.config.edge.defaultWidth)
-                .style("stroke", self.config.edge.defaultColor)
-                .style("fill", "none");
+        var drawLine = function (edgeNodes, edgeWeight) {
+            // Takes in two nodes and draw a line between them based on the edge weight
+
+            // If the edge is in the directedPath then draw different color
+            if (self.directedPath.indexOf(edgeNodes[0].id) > -1 && self.directedPath.indexOf(edgeNodes[1].id) > -1) {
+                container.append("svg:path")
+                    .attr("d", line(edgeNodes))
+                    .style("stroke-width", self.config.edge.baseWidth + edgeWeight)
+                    .style("stroke", self.config.edge.visitedColor)
+                    .style("fill", "none");
+            } else {
+                container.append("svg:path")
+                    .attr("d", line(edgeNodes))
+                    .style("stroke-width", self.config.edge.baseWidth + edgeWeight)
+                    .style("stroke", self.config.edge.defaultColor)
+                    .style("fill", "none");
+            }
+
         }
 
-        // Draw each vertex's edges 
+        // Draw each vertex's edges based on weight
         if (self.graphData.length <= 1) {
             console.error("input graph data is empty");
             return;
         }
         for (var vertexIdx = 0; vertexIdx < self.graphData.length; vertexIdx++) {
             var currentVertex = self.graphData[vertexIdx];
-            if (currentVertex.edge) {
-                for (var edgeIdx = 0; edgeIdx < currentVertex.edge.length; edgeIdx++) {
-                    var edge = currentVertex.edge[edgeIdx];
-                    console.log(edge)
-                    drawLine(edge);
+            if (currentVertex.edges) {
+                for (var edgeIdx = 0; edgeIdx < currentVertex.edges.length; edgeIdx++) {
+                    var edgeNodes = currentVertex.edges[edgeIdx].edgeNodes;
+                    var edgeWeight = currentVertex.edges[edgeIdx].edgeWeight * self.config.edge.weightWidth;
+                    drawLine(edgeNodes, edgeWeight);
                 }
             }
         }
@@ -179,14 +285,19 @@ var graph = function (config) {
     function dragstart(d) {
         d3.event.sourceEvent.stopPropagation();
         d3.select(this).classed("dragging", true);
+        var clickedVertexId = parseInt(this.id);
+        traverseGraph(clickedVertexId);
+        self.draw();
+
+        // testing 
+        $('.path strong').text(self.directedPath);
     }
 
     function drag(d) {
         if (self.config.nodeDraggable) {
             d3.select(this).attr("cx", d.x = d3.event.x).attr("cy", d.y = d3.event.y);
-            myGraph.draw();
+            self.draw();
         }
-
     }
 
     function dragend(d) {
@@ -194,14 +305,20 @@ var graph = function (config) {
     }
 
 
+    function clearVisitedPath() {
+        self.directedPath = [];
+        self.draw();
+    }
 
+    // Used to redraw the graph on start and when moving
     this.draw = function () {
-        drawEdges();
-        drawVertices();
+        self.drawEdges();
+        self.drawVertices();
     };
 
-
+    // Used to bind the data to the graph and render the graph
     this.bind = function (graphData) {
+        dataScreening(graphData);
         createEdgeInGraphData(graphData);
         drawAxis();
         self.draw();
