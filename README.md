@@ -1,2 +1,2 @@
 # nodeGraph
-graph creator using D3.js
+A frame work for creating probabilistic graphical models using D3.js
