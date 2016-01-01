@@ -107,6 +107,5 @@ var config = {
 };
 
 // Create a new Graph based on the configuration
-var myGraph = new graph();
-// Bind the data to the graph for rendering
-myGraph.bind(data);
+// and bind the data to the graph for rendering
+var myGraph = new graph().bind(data);
