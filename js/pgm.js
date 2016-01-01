@@ -1,17 +1,19 @@
-/*jslint browser: true*/
-/*global $, jQuery, d3*/
+/*  jshint undef:true
+    global $:false, jQuery:false, d3:false
+*/
 
 /* This is the probabilistic graphic model */
 
 var graph = function (graphConfiguration) {
     "use strict";
 
-    var graphData = null, // data binds to the graph
+    var graphData = [],    // data binds to the graph
+        clusterMat = [],   // data specifies the number of nodes each layer
         directedPath = [], // directedPath is a list of visited nodes
         config = graphConfiguration || {
             dim: {
                 width: window.innerWidth,
-                height: window.innerHeight - 300
+                height: window.innerHeight - 120
             },
             edge: {
                 baseWidth: 2,
@@ -24,7 +26,6 @@ var graph = function (graphConfiguration) {
                 color: "none"
             },
             zoom: true,
-            nodeDraggable: false
         },
         margin = {
             top: -5,
@@ -35,17 +36,31 @@ var graph = function (graphConfiguration) {
         width = config.dim.width - margin.left - margin.right,
         height = config.dim.height - margin.top - margin.bottom,
 
-        zoom = d3.behavior.zoom()
-        .scaleExtent([1, 10])
-        .on("zoom", zoomed),
+        // Zoom behavior
+        zoom = d3.behavior.zoom().scaleExtent([1, 10])
+        .on("zoom", function () {
+            if (config.zoom)
+                container.attr(
+                    "transform",
+                    "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")"
+                );
+        }),
 
+        // Dragging nodes behavior
         drag = d3.behavior.drag()
         .origin(function (d) {
             return d;
         })
-        .on("dragstart", dragstart)
-        .on("drag", dragging)
-        .on("dragend", dragend),
+        .on("dragstart", function (d) {
+            d3.event.sourceEvent.stopPropagation();
+            d3.select(this).classed("dragging", true);
+            var clickedVertexId = parseInt(this.id, 10);
+            traverseGraph(clickedVertexId);
+            drawGraph();
+
+            // testing 
+            $('.path strong').text(directedPath);
+        }),
 
         svg = d3.select("body").append("svg")
         .attr("width", width + margin.left + margin.right)
@@ -74,10 +89,10 @@ var graph = function (graphConfiguration) {
             console.error("input graph data is empty");
             return;
         }
-        
-        var weightSum = 0;
-        
-        for (var vertexIdx = 0; vertexIdx < graphData.length; vertexIdx++) {
+
+        let weightSum = 0;
+
+        for (let vertexIdx = 0; vertexIdx < graphData.length; vertexIdx++) {
             if (graphData[vertexIdx].id !== vertexIdx) {
                 console.error("Vertex's id must match its position index in the list of vertices");
                 console.error(vertexIdx + " th element in the list does not match its position index");
@@ -86,7 +101,7 @@ var graph = function (graphConfiguration) {
 
             var adjVertices = graphData[vertexIdx].adjacentVertex;
             if (adjVertices) {
-                for (var i = 0; i < adjVertices.length; i++) {
+                for (let i = 0; i < adjVertices.length; i++) {
                     weightSum += adjVertices[i].weight;
                 }
                 if (weightSum != 1.0) {
@@ -124,7 +139,7 @@ var graph = function (graphConfiguration) {
                 }
             }
         }
-    };
+    }
 
 
     function traverseGraph(vertexId) {
@@ -133,28 +148,28 @@ var graph = function (graphConfiguration) {
 
         function chooseRandomAdjVertex(vertex) {
             // Takes in a vertex and choose a random adjacent vertex in the next layer based on the edge weights 
-            var weightDistribution = [0]; // weightDistribution is a distribution from 0 to 1, ex: [0, 0.4, 1]
-            var weight = 0;
-            for (var i = 0; i < vertex.adjacentVertex.length; i++) {
-                weight += vertex.adjacentVertex[i].weight
+            let weightDistribution = [0]; // weightDistribution is a distribution from 0 to 1, ex: [0, 0.4, 1]
+            let weight = 0;
+            for (let i = 0; i < vertex.adjacentVertex.length; i++) {
+                weight += vertex.adjacentVertex[i].weight;
                 weightDistribution.push(weight);
             }
 
-            var randomPick = Math.random();
+            let randomPick = Math.random();
             console.log("weight distribution corresponding to adjacent vertices in the next layer: (" + weightDistribution + ") random pick: " + randomPick);
-            for (var i = 0; i < weightDistribution.length - 1; i++) {
+            for (let i = 0; i < weightDistribution.length - 1; i++) {
                 if (randomPick >= weightDistribution[i] && randomPick <= weightDistribution[i + 1]) {
                     return vertex.adjacentVertex[i].id;
                 }
             }
         }
 
-        var visitedNodes = [vertexId];
-        var node = graphData[vertexId];
+        let visitedNodes = [vertexId];
+        let node = graphData[vertexId];
         
         while (node.adjacentVertex) {
             console.log("Current Vertex: " + vertexId);
-            var vertexId = chooseRandomAdjVertex(node);
+            vertexId = chooseRandomAdjVertex(node);
             console.log("Vextex chosen: " + vertexId);
             console.log("--------");
             node = graphData[vertexId];
@@ -201,7 +216,7 @@ var graph = function (graphConfiguration) {
         // clear vertices then redraw all the vertices in the grpah
         d3.selectAll(".vertex").remove();
 
-        var vertices = container.append("g")
+        let vertices = container.append("g")
             .attr("class", "vertex")
             .selectAll("circle")
             .data(data).enter()
@@ -242,15 +257,27 @@ var graph = function (graphConfiguration) {
         // "linear" for piecewise linear segments
         // Creating path using data in pathinfo and path data generator
         // d3line.
-        var line = d3.svg.line().x(function (d) {
+        let line = d3.svg.line().x(function (d) {
             return d.x;
         }).y(function (d) {
             return d.y;
         }).interpolate("linear");
 
+        //
+        //        var diagonal = d3.svg.diagonal()
+        //            .x(function (d) {
+        //                return d.x;
+        //            }).y(function (d) {
+        //                return d.y;
+        //            }).projection(function (d) {
+        //                var r = d.y,
+        //                    a = (d.x - 90) / 180 * Math.PI;
+        //                return [r * Math.cos(a), r * Math.sin(a)];
+        //            });
+
 
         function drawEdge(edgeNodes, edgeWeight) {
-            // Takes in two nodes and draw a line between them based on the edge weight
+            // Takes in a pair of nodes and draw a line between them based on the edge weight
 
             // If the edge is in the directedPath then draw different color
             if (directedPath.indexOf(edgeNodes[0].id) > -1 && directedPath.indexOf(edgeNodes[1].id) > -1) {
@@ -274,12 +301,12 @@ var graph = function (graphConfiguration) {
             console.error("input graph data is empty");
             return;
         }
-        for (var vertexIdx = 0; vertexIdx < graphData.length; vertexIdx++) {
-            var currentVertex = graphData[vertexIdx];
+        for (let vertexIdx = 0; vertexIdx < graphData.length; vertexIdx++) {
+            let currentVertex = graphData[vertexIdx];
             if (currentVertex.edges) {
-                for (var edgeIdx = 0; edgeIdx < currentVertex.edges.length; edgeIdx++) {
-                    var edgeNodes = currentVertex.edges[edgeIdx].edgeNodes;
-                    var edgeWeight = currentVertex.edges[edgeIdx].edgeWeight * config.edge.weightWidth;
+                for (let edgeIdx = 0; edgeIdx < currentVertex.edges.length; edgeIdx++) {
+                    let edgeNodes = currentVertex.edges[edgeIdx].edgeNodes;
+                    let edgeWeight = currentVertex.edges[edgeIdx].edgeWeight * config.edge.weightWidth;
                     drawEdge(edgeNodes, edgeWeight);
                 }
             }
@@ -291,35 +318,6 @@ var graph = function (graphConfiguration) {
 
         drawEdges();
         drawVertices();
-    };
-
-
-    function zoomed() {
-        if (config.zoom) 
-            container.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
-    }
-
-    function dragstart(d) {
-        d3.event.sourceEvent.stopPropagation();
-        d3.select(this).classed("dragging", true);
-        var clickedVertexId = parseInt(this.id);
-        traverseGraph(clickedVertexId);
-        drawGraph();
-
-        // testing 
-        $('.path strong').text(directedPath);
-    }
-
-    function dragging(d) {
-        if (config.nodeDraggable) {
-            d3.select(this).attr("cx", d.x = d3.event.x).attr("cy", d.y = d3.event.y);
-            drawGraph();
-        }
-    }
-
-
-    function dragend(d) {
-        d3.select(this).classed("dragging", false);
     }
 
 
@@ -344,12 +342,17 @@ var graph = function (graphConfiguration) {
         // Used to create a clusters of nodes based on the cluster matrix
         // Ex of cluster mat [2, 3, 4] creates a cluster of 9 nodes where
         // 2 in first layer, 3 in 2nd layer and 4 in 3rd layer
+        clusterMat = clusterMat;
+        let data = [];
+        let layerPosX = [1];
+        
+        function getLayerPoxX (clusterMat) {
+            let firstNodePosX = config.dim.width / (clusterMat.length + 1);
+            
+        }
 
-        var data = [];
 
-
-
-    }
+    };
 };
 
 
@@ -368,4 +371,4 @@ var data = [{
         id: 4,
         weight: 0.5
         }]
-    }]
+    }];
