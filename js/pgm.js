@@ -7,8 +7,8 @@
 var graph = function (graphConfiguration) {
     "use strict";
 
-    var graphData = [],    // data binds to the graph
-        clusterMat = [],   // data specifies the number of nodes each layer
+    var graphData = [], // data binds to the graph
+        clusterMat = [], // data specifies the number of nodes each layer
         directedPath = [], // directedPath is a list of visited nodes
         config = graphConfiguration || {
             dim: {
@@ -39,11 +39,12 @@ var graph = function (graphConfiguration) {
         // Zoom behavior
         zoom = d3.behavior.zoom().scaleExtent([1, 10])
         .on("zoom", function () {
-            if (config.zoom)
+            if (config.zoom) {
                 container.attr(
                     "transform",
                     "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")"
                 );
+            }
         }),
 
         // Dragging nodes behavior
@@ -166,7 +167,7 @@ var graph = function (graphConfiguration) {
 
         let visitedNodes = [vertexId];
         let node = graphData[vertexId];
-        
+
         while (node.adjacentVertex) {
             console.log("Current Vertex: " + vertexId);
             vertexId = chooseRandomAdjVertex(node);
@@ -277,7 +278,8 @@ var graph = function (graphConfiguration) {
 
 
         function drawEdge(edgeNodes, edgeWeight) {
-            // Takes in a pair of nodes and draw a line between them based on the edge weight
+            // A helper function takes in a pair of nodes and draw a line 
+            // between them based on the edge weight
 
             // If the edge is in the directedPath then draw different color
             if (directedPath.indexOf(edgeNodes[0].id) > -1 && directedPath.indexOf(edgeNodes[1].id) > -1) {
@@ -297,10 +299,18 @@ var graph = function (graphConfiguration) {
         }
 
         // Draw each vertex's edges based on weight
-        if (graphData.length <= 1) {
-            console.error("input graph data is empty");
-            return;
+        for (let vertexIdx = 0; vertexIdx < graphData.length; vertexIdx++) {
+            let currentVertex = graphData[vertexIdx];
+            if (currentVertex.edges) {
+                for (let edgeIdx = 0; edgeIdx < currentVertex.edges.length; edgeIdx++) {
+                    let edgeNodes = currentVertex.edges[edgeIdx].edgeNodes;
+                    let edgeWeight = currentVertex.edges[edgeIdx].edgeWeight * config.edge.weightWidth;
+                    drawEdge(edgeNodes, edgeWeight);
+                }
+            }
         }
+
+        // Draw the vertex in visitedNodes slowly one by one
         for (let vertexIdx = 0; vertexIdx < graphData.length; vertexIdx++) {
             let currentVertex = graphData[vertexIdx];
             if (currentVertex.edges) {
@@ -330,6 +340,11 @@ var graph = function (graphConfiguration) {
     this.bind = function (data) {
         // Used to bind the data to the graph and render the graph
 
+        if (data.length <= 1) {
+            console.error("input graph data is empty");
+            return;
+        }
+
         // Add the graphData as a class attribute
         graphData = data;
         dataScreening(graphData);
@@ -345,10 +360,10 @@ var graph = function (graphConfiguration) {
         clusterMat = clusterMat;
         let data = [];
         let layerPosX = [1];
-        
-        function getLayerPoxX (clusterMat) {
+
+        function getLayerPoxX(clusterMat) {
             let firstNodePosX = config.dim.width / (clusterMat.length + 1);
-            
+
         }
 
 
