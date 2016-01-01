@@ -50,6 +50,9 @@ myGraph.setAdjacentVertex(4, adjacentVertex = [{
     weight: 0.4
 }]);
 
-myGraph.bind(dataTemp);
+myGraph.display();
 
 var data = myGraph.getGraphData();
+//myGraph.bind(JSON.parse(data));
+myGraph.bind([data]);
+

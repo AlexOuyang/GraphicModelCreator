@@ -2,6 +2,8 @@
     global $:false, jQuery:false, d3:false
 */
 
+
+/*=============== Utilities ==================*/
 // Implement max and min function for array
 Array.max = function (array) {
     return Math.max.apply(Math, array);
@@ -11,41 +13,70 @@ Array.min = function (array) {
     return Math.min.apply(Math, array);
 };
 
-function cloneSO(obj) {
-    // Handle the 3 simple types, and null or undefined
-    if (null == obj || "object" != typeof obj) return obj;
+function cloneDR(o) {
+    /* Clone an object deeply and recursively */
 
-    // Handle Date
-    if (obj instanceof Date) {
-        var copy = new Date();
-        copy.setTime(obj.getTime());
-        return copy;
+    const gdcc = "__getDeepCircularCopy__";
+    if (o !== Object(o)) {
+        return o; // primitive value
     }
 
-    // Handle Array
-    if (obj instanceof Array) {
-        var copy = [];
-        for (var i = 0, len = obj.length; i < len; i++) {
-            copy[i] = cloneSO(obj[i]);
+    var set = gdcc in o,
+        cache = o[gdcc],
+        result;
+    if (set && typeof cache == "function") {
+        return cache();
+    }
+    // else
+    o[gdcc] = function () {
+        return result;
+    }; // overwrite
+    if (o instanceof Array) {
+        result = [];
+        for (var i = 0; i < o.length; i++) {
+            result[i] = cloneDR(o[i]);
         }
-        return copy;
+    } else {
+        result = {};
+        for (var prop in o)
+            if (prop != gdcc)
+                result[prop] = cloneDR(o[prop]);
+            else if (set)
+            result[prop] = cloneDR(cache);
     }
-
-    // Handle Object
-    if (obj instanceof Object) {
-        var copy = {};
-        for (var attr in obj) {
-            if (obj.hasOwnProperty(attr)) copy[attr] = cloneSO(obj[attr]);
-        }
-        return copy;
+    if (set) {
+        o[gdcc] = cache; // reset
+    } else {
+        delete o[gdcc]; // unset again
     }
+    return result;
+}
 
-    throw new Error("Unable to copy obj! Its type isn't supported.");
+
+function isObjLiteral(_obj) {
+    /* verify if an object is an object literal */
+    var _test = _obj;
+    return (typeof _obj !== 'object' || _obj === null ?
+        false :
+        (
+            (function () {
+                while (!false) {
+                    if (Object.getPrototypeOf(_test = Object.getPrototypeOf(_test)) === null) {
+                        break;
+                    }
+                }
+                return Object.getPrototypeOf(_obj) === _test;
+            })()
+        )
+    );
 }
 
 
 
-/* This is the probabilistic graphic model */
+
+
+
+/*=============== Probability Graphic Model ====================*/
 
 var pgm = function (graphConfiguration) {
     "use strict";
@@ -362,14 +393,14 @@ var pgm = function (graphConfiguration) {
 
 
         // Draw the vertex in visitedNodes slowly one by one
-//        for (let vertexIdx = 0; vertexIdx < directedPath.length - 1; vertexIdx++) {
-//            let currentVertex = directedPath[vertexIdx];
-//            let edgeIdx = directedPath[vertexIdx + 1];
-//
-//            let edgeNodes = currentVertex.edges[edgeIdx].edgeNodes;
-//            let edgeWeight = currentVertex.edges[edgeIdx].edgeWeight * config.edge.weightWidth;
-//            drawEdge(edgeNodes, edgeWeight);
-//        }
+        //        for (let vertexIdx = 0; vertexIdx < directedPath.length - 1; vertexIdx++) {
+        //            let currentVertex = directedPath[vertexIdx];
+        //            let edgeIdx = directedPath[vertexIdx + 1];
+        //
+        //            let edgeNodes = currentVertex.edges[edgeIdx].edgeNodes;
+        //            let edgeWeight = currentVertex.edges[edgeIdx].edgeWeight * config.edge.weightWidth;
+        //            drawEdge(edgeNodes, edgeWeight);
+        //        }
     }
 
     function drawGraph(data) {
@@ -387,21 +418,42 @@ var pgm = function (graphConfiguration) {
 
 
     this.bind = function (gd) {
-        // Used to bind the data to the graph and render the graph
+        /* 
+        Used to bind an existing JSON object or an object literal to 
+        the graph and render the graph.
+        */
+        if (!isObjLiteral(gd)) {
+            // If not an object literal must be a JSON, we parse it
+            gd = JSON.parse(gd);
+        }
+
+        if (!gd || !gd.data) {
+            throw new Error("pgm.bind(gd): Input graph data is invalid input graph data is empty");
+        }
 
         if (gd.data.length <= 1) {
-            console.error("input graph data is empty");
-            return;
+            throw new Error("pgm.bind(gd): Input graph data is empty");
         }
 
         // Add the graphData as a class attribute
         graphData = gd;
-        dataScreening(gd.data);
-        createEdgesInGraphData(gd.data);
+        dataScreening(graphData.data);
+        createEdgesInGraphData(graphData.data);
         if (config.background.grid) {
             drawGrid();
         }
-        drawGraph(gd.data);
+        drawGraph(graphData.data);
+    };
+
+    this.display = function () {
+        // Used to display the graph
+
+        dataScreening(graphData.data);
+        createEdgesInGraphData(graphData.data);
+        if (config.background.grid) {
+            drawGrid();
+        }
+        drawGraph(graphData.data);
     };
 
 
@@ -418,11 +470,13 @@ var pgm = function (graphConfiguration) {
     this.getGraphData = function () {
 
 
-        let jsonGraphData = cloneSO(graphData);
+        let jsonGraphData = cloneDR(graphData);
+
+        console.log(jsonGraphData);
 
         // Delete all the edge circular structures in the object
         for (let i = 0; i < jsonGraphData.data.length; i++) {
-
+            delete(jsonGraphData.data[i].edges);
         }
 
         return JSON.stringify(jsonGraphData);
