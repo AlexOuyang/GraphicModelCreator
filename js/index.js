@@ -1,112 +1,88 @@
-// Example Usage:
-// example_data = [vertex_0, vertex_1, vertex_2......]    // a list of all the vertices in the graph
-// vertex_i = {id: i-th_index_in_example_data, x: x_position, y: y_position, r: vertex_radius, adjacentVertex: {adjVertex_1, adjVertex2.....}} 
-// adjVertex_j = {id: i-th_index_in_example_data, weight: edge_weight} // adjacent vertices are the vertices vertex_i connected to
-var data = [{
-        id: 0,
-        x: 300,
-        y: 100,
-        r: 25,
-        adjacentVertex: [{
-            id: 2,
-            weight: 0.1
-        }, {
-            id: 3,
-            weight: 0.4
-        }, {
-            id: 4,
-            weight: 0.5
-        }]
-    },
-    {
-        id: 1,
-        x: 300,
-        y: 200,
-        r: 25,
-        adjacentVertex: [{
-            id: 2,
-            weight: 0.4
-        }, {
-            id: 3,
-            weight: 0.2
-        }, {
-            id: 4,
-            weight: 0.4
-        }]
-    },
-    {
-        id: 2,
-        x: 500,
-        y: 50,
-        r: 25,
-        adjacentVertex: [{
-            id: 5,
-            weight: 0.3
-        }, {
-            id: 6,
-            weight: 0.7
-        }]
-    },
-    {
-        id: 3,
-        x: 500,
-        y: 150,
-        r: 25,
-        adjacentVertex: [{
-            id: 5,
-            weight: 0.6
-        }, {
-            id: 6,
-            weight: 0.4
-        }]
-    },
-    {
-        id: 4,
-        x: 500,
-        y: 250,
-        r: 25,
-        adjacentVertex: [{
-            id: 5,
-            weight: 0.6
-        }, {
-            id: 6,
-            weight: 0.4
-        }]
-    },
-    {
-        id: 5,
-        x: 700,
-        y: 100,
-        r: 25
-    },
-    {
-        id: 6,
-        x: 700,
-        y: 200,
-        r: 25
-    },
+var editorPane = document.getElementById('editor'),
+    previewPane = document.getElementById('preview'),
+    downloadLink = document.getElementById('download'),
+    fileName = '';
+// Editor Interactions
+onload = editorPane.onkeyup = function () {
+    refreshView();
+    if (fileName == '') {
+        fileName = switchNote()
+    };
+    localStorage[fileName] = editorPane.value;
+};
+editorPane.onfocus = function () {
+    this.style.webkitTransform = 'translate3D(0px, -10000px,0)';
+    webkitRequestAnimationFrame(function () {
+        this.style.webkitTransform = '';
+    }.bind(this));
+};
+editorPane.onkeydown = function (event) {
+        if (event.keyCode === 9) {
+            softTab('  '); // tabs set at 2 spaces
+            event.preventDefault();
+        }
+    }
+    // Editor Functions
+function refreshView() {
+    editorPane.style.height = (window.innerHeight - 110) + 'px';
+    previewPane.style.height = (window.innerHeight - 110) + 'px';
+    (previewPane.contentWindow.document).write(editorPane.value);
+    (previewPane.contentWindow.document).close();
+    editorPane.focus();
+}
 
-           ];
-
-
-
-// Handles the configuration of the grah
-var config = {
-    dim: {
-        width: window.innerWidth,
-        height: window.innerHeight - 150
-    },
-    edge: {
-        baseWidth: 2,
-        weightWidth: 14,
-        defaultColor: "lightsteelblue",
-        visitedColor: "steelblue"
-    },
-    zoom: false,
-    nodeDraggable: true
+function softTab(spaces) {
+    if (document.selection) {
+        editorPane.focus();
+        var tab = document.selection.createRange();
+        tab.text = spaces;
+        return;
+    } else if (editorPane.selectionStart || editorPage.selectionStart == '0') {
+        var startPos = editorPane.selectionStart,
+            endPos = editorPane.selectionEnd,
+            scrollTop = editorPane.scrollTop;
+        editorPane.value = editorPane.value.substring(0, startPos) + spaces + editorPane.value.substring(endPos, editorPane.value.length);
+        editorPane.focus();
+        editorPane.selectionStart = startPos + spaces.length;
+        editorPane.selectionEnd = startPos + spaces.length;
+    } else {
+        editorPane.value += textArea.value;
+        editorPane.focus();
+    }
 };
 
-// Create a new Graph based on the configuration
-var myGraph = new graph();
-// Bind the data to the graph for rendering
-myGraph.bind(data);
+function switchNote() {
+    fileName = prompt('Welcome to Tinkerpad\n\nThinkerpad is a mobile-friendly scratchpad for tinkering around with HTML, CSS, and JS in the browser. It can also be bookmarked for offline use.\n\nTo Use the Default Scratchpad:\nPress \'Enter\' or select \'Cancel\' to load the default scratchpad\n\nTo Create a New Scratchpad:\nEnter the name of the new scratchpad you wish to create and select \'OK\'\n\nTo Open a Saved Scratchpad:\nEnter the name of the saved scratchpad below to wish to continue editing and select \'OK\'\n\nSaved Scratchpads in This Browser:\n' + Object.keys(localStorage).join(", "), '');
+    if (fileName == null || fileName == '') {
+        fileName = 'scratchpad';
+        editorPane.value = localStorage[fileName]
+    }
+    if (localStorage[fileName] != '') {
+        editorPane.value = localStorage[fileName]
+    }
+    if (editorPane.value == 'undefined') {
+        editorPane.value = '';
+    }
+    downloadLink.setAttribute('download', fileName + '.html');
+    document.getElementById('filename').innerHTML = ': ' + fileName;
+    document.title = 'Tinkerpad:' + fileName;
+    refreshView();
+};
+
+function swingPane(reveal, conceal) {
+    var revealPane = document.getElementById(reveal),
+        concealPane = document.getElementById(conceal);
+    if (revealPane.style.width != '100%') {
+        concealPane.setAttribute('style', 'width: 0; margin: 0; padding: 0;');
+        revealPane.setAttribute('style', 'width: 100%; margin-left: 0; opacity: 1;');
+    } else {
+        concealPane.setAttribute('style', 'width: 49.25%;');
+        revealPane.setAttribute('style', 'width: 49.25%;');
+    }
+    refreshView();
+};
+
+function exportNote() {
+    downloadLink.href = 'data:text/html;charset=utf-8,' + encodeURIComponent(editorPane.value);
+    downloadLink.click();
+};

@@ -11,13 +11,44 @@ Array.min = function (array) {
     return Math.min.apply(Math, array);
 };
 
+function cloneSO(obj) {
+    // Handle the 3 simple types, and null or undefined
+    if (null == obj || "object" != typeof obj) return obj;
+
+    // Handle Date
+    if (obj instanceof Date) {
+        var copy = new Date();
+        copy.setTime(obj.getTime());
+        return copy;
+    }
+
+    // Handle Array
+    if (obj instanceof Array) {
+        var copy = [];
+        for (var i = 0, len = obj.length; i < len; i++) {
+            copy[i] = cloneSO(obj[i]);
+        }
+        return copy;
+    }
+
+    // Handle Object
+    if (obj instanceof Object) {
+        var copy = {};
+        for (var attr in obj) {
+            if (obj.hasOwnProperty(attr)) copy[attr] = cloneSO(obj[attr]);
+        }
+        return copy;
+    }
+
+    throw new Error("Unable to copy obj! Its type isn't supported.");
+}
+
+
 
 /* This is the probabilistic graphic model */
 
 var pgm = function (graphConfiguration) {
     "use strict";
-
-    var self = this;
 
     var graphData = {
             clusterMat: [], // data specifies the number of nodes each layer
@@ -30,7 +61,7 @@ var pgm = function (graphConfiguration) {
                 x: 0,
                 y: 0,
                 width: window.innerWidth,
-                height: window.innerHeight - 120
+                height: window.innerHeight - 80
             },
             edge: {
                 baseWidth: 2,
@@ -40,7 +71,7 @@ var pgm = function (graphConfiguration) {
             },
             background: {
                 grid: false,
-                color: "grey"
+                color: "none"
             },
             zoom: true,
         },
@@ -140,18 +171,21 @@ var pgm = function (graphConfiguration) {
         }
 
         // Go through each vertex in data and add 'edges' attribute to each vertex
-        for (var vertexIdx = 0; vertexIdx < data.length; vertexIdx++) {
-            var currentVertex = data[vertexIdx];
+        for (let vertexIdx = 0; vertexIdx < data.length; vertexIdx++) {
+            let currentVertex = data[vertexIdx];
             if (!currentVertex.adjacentVertex) {
                 currentVertex.edges = null;
             } else {
                 currentVertex.edges = [];
-                for (var adjVertexIdx = 0; adjVertexIdx < currentVertex.adjacentVertex.length; adjVertexIdx++) {
-                    var targetVertexId = currentVertex.adjacentVertex[adjVertexIdx].id;
-                    var targetVertexWeight = currentVertex.adjacentVertex[adjVertexIdx].weight;
-                    var edge = {};
-                    edge.edgeWeight = targetVertexWeight;
-                    edge.edgeNodes = [currentVertex, data[targetVertexId]];
+                for (let adjVertexIdx = 0; adjVertexIdx < currentVertex.adjacentVertex.length; adjVertexIdx++) {
+                    let targetVertexId = currentVertex.adjacentVertex[adjVertexIdx].id;
+                    let targetVertexWeight = currentVertex.adjacentVertex[adjVertexIdx].weight;
+
+                    let edge = {
+                        edgeWeight: targetVertexWeight,
+                        edgeNodes: [currentVertex, data[targetVertexId]]
+                    };
+
                     currentVertex.edges.push(edge);
                 }
             }
@@ -184,7 +218,7 @@ var pgm = function (graphConfiguration) {
         let visitedNodes = [vertexId];
         let node = data[vertexId];
 
-        while (node.adjacentVertex != undefined) {
+        while (node.adjacentVertex !== undefined) {
             console.log("Current Vertex: " + vertexId);
             vertexId = chooseRandomAdjVertex(node);
             console.log("Vextex chosen: " + vertexId);
@@ -326,17 +360,16 @@ var pgm = function (graphConfiguration) {
             }
         }
 
+
         // Draw the vertex in visitedNodes slowly one by one
-        for (let vertexIdx = 0; vertexIdx < data.length; vertexIdx++) {
-            let currentVertex = data[vertexIdx];
-            if (currentVertex.edges) {
-                for (let edgeIdx = 0; edgeIdx < currentVertex.edges.length; edgeIdx++) {
-                    let edgeNodes = currentVertex.edges[edgeIdx].edgeNodes;
-                    let edgeWeight = currentVertex.edges[edgeIdx].edgeWeight * config.edge.weightWidth;
-                    drawEdge(edgeNodes, edgeWeight);
-                }
-            }
-        }
+//        for (let vertexIdx = 0; vertexIdx < directedPath.length - 1; vertexIdx++) {
+//            let currentVertex = directedPath[vertexIdx];
+//            let edgeIdx = directedPath[vertexIdx + 1];
+//
+//            let edgeNodes = currentVertex.edges[edgeIdx].edgeNodes;
+//            let edgeWeight = currentVertex.edges[edgeIdx].edgeWeight * config.edge.weightWidth;
+//            drawEdge(edgeNodes, edgeWeight);
+//        }
     }
 
     function drawGraph(data) {
@@ -374,21 +407,33 @@ var pgm = function (graphConfiguration) {
 
     this.setAdjacentVertex = function (id, adjVtx) {
         // Set adjacent vertex for vertex with id 
-        if (!id || !adjVtx) {
+        if (id === undefined || adjVtx === undefined) {
             console.error("setAdjacentVertex(id, adjVtx) params are not satisfied.");
         }
 
         graphData.data[id].adjacentVertex = adjVtx;
-    }
+    };
+
+
+    this.getGraphData = function () {
+
+
+        let jsonGraphData = cloneSO(graphData);
+
+        // Delete all the edge circular structures in the object
+        for (let i = 0; i < jsonGraphData.data.length; i++) {
+
+        }
+
+        return JSON.stringify(jsonGraphData);
+    };
+
 
     this.createCluster = function (cMat) {
         // Used to create a clusters of nodes based on the cluster matrix
         // Ex of cluster mat [2, 3, 4] creates a cluster of 9 nodes where
         // 2 in first layer, 3 in 2nd layer and 4 in 3rd layer
-        let graphData = {
-            clusterMat: cMat,
-            data: []
-        };
+
         let offsetPosX = config.transform.width / (cMat.length + 1); // get the x offset for first node
         let minPosY = config.transform.height / (Array.max(cMat) + 1); // get the y offset for the layer with the most amount of nodes
 
@@ -416,6 +461,12 @@ var pgm = function (graphConfiguration) {
 
         }
 
+        // Update the graphData instanec in pgm
+        graphData = {
+            clusterMat: cMat,
+            data: data
+        };
+
         return {
             clusterMat: cMat,
             data: data
@@ -423,21 +474,3 @@ var pgm = function (graphConfiguration) {
     };
 
 };
-
-
-var data = [{
-    id: 0,
-    x: 300,
-    y: 100,
-    r: 25,
-    adjacentVertex: [{
-        id: 2,
-        weight: 0.1
-        }, {
-        id: 3,
-        weight: 0.4
-        }, {
-        id: 4,
-        weight: 0.5
-        }]
-    }];
