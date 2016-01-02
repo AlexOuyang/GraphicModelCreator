@@ -99,7 +99,8 @@ var pgm = function (graphConfiguration) {
                 baseWidth: 2,
                 weightWidth: 18,
                 defaultColor: "lightsteelblue",
-                visitedColor: "steelblue"
+                visitedColor: "steelblue",
+                timeInterval: 800
             },
             background: {
                 grid: false,
@@ -119,24 +120,33 @@ var pgm = function (graphConfiguration) {
             }
         }),
 
+        canClick = true, // Used to keep user from clicking when the graph is traversing
+
         // Dragging nodes behavior
         onClick = d3.behavior.drag()
         .origin(d => d)
         .on("dragstart", function (d) {
             // Check if the clicked node is in the first layer
             // which are the num of nodes in first layer of clusterMat
-            if (this.id < graphData.clusterMat[0]) {
-                d3.event.sourceEvent.stopPropagation();
-                d3.select(this).classed("dragging", true);
-                let clickedVertexId = parseInt(this.id, 10);
-                traverseGraph(clickedVertexId, graphData.data);
-                drawGraph(graphData.data);
+            if (canClick) {
+                if (this.id < graphData.clusterMat[0]) {
+                    d3.event.sourceEvent.stopPropagation();
+                    d3.select(this).classed("dragging", true);
+                    let clickedVertexId = parseInt(this.id, 10);
+                    traverseGraph(clickedVertexId, graphData.data);
+                    drawGraph(graphData.data);
+                    drawVisitedPath(graphData.data);
 
-                // testing 
-                $('.path strong').text(directedPath);
-            } else {
-                // Else clear the path
-                clearVisitedPath();
+                    // testing 
+                    $('.path strong').text(directedPath);
+                } else {
+                    // Else clear the path
+                    clearVisitedPath();
+                }
+
+                // Do not allow user to click
+                canClick = false;
+                setTimeout(() => canClick = true, config.edge.timeInterval * (directedPath.length - 1));
             }
         }),
 
@@ -152,9 +162,29 @@ var pgm = function (graphConfiguration) {
         .attr("height", config.transform.height)
         .style("fill", config.background.color)
         .style("pointer-events", "all")
-        .on("click", d => clearVisitedPath()),
+        .on("click", d => {
+            if (canClick) {
+                clearVisitedPath()
 
-        container = svg.append("g");
+                // Do not allow user to click until visited path highlighting is finished
+                canClick = false;
+                setTimeout(() => canClick = true, config.edge.timeInterval * (directedPath.length - 1));
+            }
+        }),
+
+        container = svg.append("g"),
+
+        // Specify the function for generating path data   
+        // "linear" for piecewise linear segments
+        // Creating path using data in pathinfo and path data generator
+        // Used in drawEdges() and drawVisitedPath();
+        line = d3.svg.line()
+        .x(d => d.x)
+        .y(d => d.y)
+        .interpolate("linear"),
+
+        vertices; // D3 object, initiated in drawVertices()
+
 
     function dataScreening(data) {
 
@@ -258,7 +288,6 @@ var pgm = function (graphConfiguration) {
         }
 
         directedPath = visitedNodes;
-        console.log("traverseGraph():" + directedPath);
     }
 
 
@@ -292,7 +321,7 @@ var pgm = function (graphConfiguration) {
 
         d3.selectAll(".vertex").remove();
 
-        let vertices = container.append("g")
+        vertices = container.append("g")
             .attr("class", "vertex")
             .selectAll("circle")
             .data(data).enter()
@@ -302,14 +331,15 @@ var pgm = function (graphConfiguration) {
             .call(onClick);
 
         vertices.append("circle")
-            .attr("class", "node")
-            .attr("class", d => {
-                // if the node is in the path then draw it in a different color
-                if (directedPath.indexOf(d.id) > -1) {
-                    return "visitedVertex";
-                }
-            })
-            .attr("r", d => d.r);
+            .attr("r", d => d.r)
+            .attr("class", "node");
+        //        
+        //            .attr("class", d => {
+        //                // if the node is in the path then draw it in a different color
+        //                if (directedPath.indexOf(d.id) > -1) {
+        //                    return "visitedVertex";
+        //                }
+        //            });
 
         // Add a text element to the previously added g element.
         vertices.append("text")
@@ -323,16 +353,6 @@ var pgm = function (graphConfiguration) {
 
         // clear edges then redraw all the edges in the graph 
         d3.selectAll("path").remove();
-
-        // Specify the function for generating path data   
-        // "linear" for piecewise linear segments
-        // Creating path using data in pathinfo and path data generator
-        // d3line.
-        let line = d3.svg.line()
-            .x(d => d.x)
-            .y(d => d.y)
-            .interpolate("linear");
-
 
         // Draw all edges based on weight in default color
         for (let vertexIdx = 0; vertexIdx < data.length; vertexIdx++) {
@@ -352,7 +372,11 @@ var pgm = function (graphConfiguration) {
             }
         }
 
-        // Draw visited edges based on weight in highlighted color
+    }
+
+    function drawVisitedPath(data) {
+        /* Draw visited edges based on weight in highlighted color */
+
         for (let vertexIdx = 0; vertexIdx < directedPath.length; vertexIdx++) {
             // Iterate through the list of ID in directedPath 
             let currentVertex = data[directedPath[vertexIdx]];
@@ -363,9 +387,6 @@ var pgm = function (graphConfiguration) {
                     // If the edge is in the directedPath then draw different color
                     if (directedPath.indexOf(edgeNodes[0].id) > -1 &&
                         directedPath.indexOf(edgeNodes[1].id) > -1) {
-
-                        // Wait for 1 second until the next node is highlighted
-                        let timeInterval = 1000;
 
                         // Create two new points to draw a shorter edge so the new 
                         // edge will not cover the id in the node
@@ -381,17 +402,18 @@ var pgm = function (graphConfiguration) {
                                 dist = Math.sqrt(distX * distX + distY * distY),
                                 ratio0 = r0 / (1.0 * dist),
                                 ratio1 = r1 / (1.0 * dist);
-                                return [{
-                                    x: x0 + distX * ratio0,
-                                    y: y0 - distY * ratio1
+                            return [{
+                                x: x0 + distX * ratio0,
+                                y: y0 - distY * ratio1
                             }, {
-                                    x: x1 - distX * ratio0,
-                                    y: y1 + distY * ratio1
+                                x: x1 - distX * ratio0,
+                                y: y1 + distY * ratio1
                             }];
                         };
 
+                        // Wait for 0.8 second until the next node is highlighted
+                        // Draw the next visited path after time Interval
                         setTimeout(() => {
-
                             container.append("svg:path")
                                 .style("stroke-width", config.edge.baseWidth + edgeWeight)
                                 .style("stroke", config.edge.visitedColor)
@@ -405,15 +427,46 @@ var pgm = function (graphConfiguration) {
                                 .duration(1500)
                                 .attr('stroke-dashoffset', 0);
 
+                        }, config.edge.timeInterval * vertexIdx);
 
+                        // Draw the next visited vertex after time Interval
+                        setTimeout(() => {
+                            /* clear vertices then redraw all the vertices in the grpah */
+                            vertices.append("circle")
+                                .attr("class", "node")
+                                .attr("class", d => {
+                                    // if the node is in the path then draw it in a different color
+                                    if (directedPath.indexOf(d.id) <= (vertexIdx + 1) &&
+                                        directedPath.indexOf(d.id) > -1) {
+                                        return "visitedVertex";
+                                    }
+                                })
+                                .attr("r", d => d.r);
 
-                        }, timeInterval * vertexIdx);
+                            // Add a text element to the previously added g element.
+                            vertices.append("text")
+                                .attr("text-anchor", "middle")
+                                .text(d => d.id);
+                        }, config.edge.timeInterval * (vertexIdx + 1));
 
-                        //                        setTimeout(() => {
-                        //                            drawVertices(data);
-                        //                            
-                        //                        }, timeInterval * (vertexIdx + 1));
+                        // Draw the first vertex when the path start highlighting
+                        vertices.append("circle")
+                            .attr("class", "node")
+                            .attr("class", d => {
+                                // if the node is in the path then draw it in a different color
+                                if (directedPath[0] == d.id) {
+                                    log("visited");
+                                    return "visitedVertex";
+                                }
+                            })
+                            .attr("r", d => d.r);
+
+                        // Add a text element to the previously added g element.
+                        vertices.append("text")
+                            .attr("text-anchor", "middle")
+                            .text(d => d.id);
                     }
+
                 }
             }
         }
