@@ -5,19 +5,17 @@
 
 /*=============== Utilities ==================*/
 
+// Used to replace console.log,  EX: log('hello'); // hello 
+const log = mesg => console.log(mesg);
+
+// Implement max and min function for array
+Array.max = array => Math.max.apply(Math, array);
+Array.min = array => Math.min.apply(Math, array);
+
 var Utils = {};
 
 (function () {
     "use strict";
-
-    // Implement max and min function for array
-    Array.max = function (array) {
-        return Math.max.apply(Math, array);
-    };
-
-    Array.min = function (array) {
-        return Math.min.apply(Math, array);
-    };
 
     Utils.cloneDR = function cloneDR(o) {
         /* Clone an object deeply and recursively */
@@ -34,9 +32,8 @@ var Utils = {};
             return cache();
         }
         // else
-        o[gdcc] = function () {
-            return result;
-        }; // overwrite
+        o[gdcc] = () => result;
+        // overwrite
         if (o instanceof Array) {
             result = [];
             for (var i = 0; i < o.length; i++) {
@@ -63,7 +60,7 @@ var Utils = {};
 
     Utils.isObjLiteral = function isObjLiteral(_obj) {
         /* verify if an object is an object literal */
-        var _test = _obj;
+        let _test = _obj;
         return (typeof _obj !== 'object' || _obj === null ?
             false :
             (
@@ -118,7 +115,7 @@ var pgm = function (graphConfiguration) {
 
         // Zoom behavior
         zoom = d3.behavior.zoom().scaleExtent([1, 10])
-        .on("zoom", function () {
+        .on("zoom", () => {
             if (config.zoom) {
                 container.attr(
                     "transform",
@@ -129,9 +126,7 @@ var pgm = function (graphConfiguration) {
 
         // Dragging nodes behavior
         onClick = d3.behavior.drag()
-        .origin(function (d) {
-            return d;
-        })
+        .origin(d => d)
         .on("dragstart", function (d) {
             // Check if the clicked node is in the first layer
             // which are the num of nodes in first layer of clusterMat
@@ -162,9 +157,7 @@ var pgm = function (graphConfiguration) {
         .attr("height", config.transform.height)
         .style("fill", config.background.color)
         .style("pointer-events", "all")
-        .on("click", function (d) {
-            clearVisitedPath();
-        }),
+        .on("click", d => clearVisitedPath()),
 
         container = svg.append("g");
 
@@ -174,7 +167,7 @@ var pgm = function (graphConfiguration) {
         // and the weights of all adjacent vertices sum to 1;
 
         if (data.length <= 1) {
-            console.error("input graph data is empty");
+            throw new Error("input graph data is empty");
             return;
         }
 
@@ -182,8 +175,8 @@ var pgm = function (graphConfiguration) {
 
         for (let vertexIdx = 0; vertexIdx < data.length; vertexIdx++) {
             if (data[vertexIdx].id !== vertexIdx) {
-                console.error("Vertex's id must match its position index in the list of vertices");
-                console.error(vertexIdx + " th element in the list does not match its position index");
+                throw new Error("Vertex's id must match its position index in the list of vertices");
+                throw new Error(vertexIdx + " th element in the list does not match its position index");
                 return;
             }
 
@@ -193,8 +186,8 @@ var pgm = function (graphConfiguration) {
                     weightSum += adjVertices[i].weight;
                 }
                 if (weightSum !== 1.0) {
-                    console.error("The sum of a vertex's adjacent vertice's weight must be 1");
-                    console.error(vertexIdx + "th element's adjacent vertices's weight does not sum to 1");
+                    throw new Error("The sum of a vertex's adjacent vertice's weight must be 1");
+                    throw new Error(vertexIdx + "th node's adjacent vertices's weights do not sum to 1");
                     return;
                 }
             }
@@ -206,7 +199,7 @@ var pgm = function (graphConfiguration) {
     function createEdgesInGraphData(data) {
         // Takes in the graph data, modifies the data by adding a list of edges into the data and add to self   
         if (data.length <= 1) {
-            console.error("input graph data is empty");
+            throw new Error("input graph data is empty");
             return;
         }
 
@@ -283,13 +276,9 @@ var pgm = function (graphConfiguration) {
             .selectAll("line")
             .data(d3.range(0, config.transform.width, 10))
             .enter().append("line")
-            .attr("x1", function (d) {
-                return d;
-            })
+            .attr("x1", d => d)
             .attr("y1", 0)
-            .attr("x2", function (d) {
-                return d;
-            })
+            .attr("x2", d => d)
             .attr("y2", config.transform.height);
 
         container.append("g")
@@ -298,13 +287,9 @@ var pgm = function (graphConfiguration) {
             .data(d3.range(0, config.transform.height, 10))
             .enter().append("line")
             .attr("x1", 0)
-            .attr("y1", function (d) {
-                return d;
-            })
+            .attr("y1", d => d)
             .attr("x2", config.transform.width)
-            .attr("y2", function (d) {
-                return d;
-            });
+            .attr("y2", d => d);
     }
 
     function drawVertices(data) {
@@ -317,37 +302,30 @@ var pgm = function (graphConfiguration) {
             .selectAll("circle")
             .data(data).enter()
             .append("g")
-            .attr("id", function (d) {
-                return d.id;
-            })
-            .attr("transform", function (d) {
-                return "translate(" + d.x + "," + d.y + ")";
-            }).call(onClick);
+            .attr("id", d => d.id)
+            .attr("transform", d => "translate(" + d.x + "," + d.y + ")")
+            .call(onClick);
 
         vertices.append("circle")
             .attr("class", "node")
-            .attr("class", function (d) {
+            .attr("class", d => {
                 // if the node is in the path then draw it in a different color
                 if (directedPath.indexOf(d.id) > -1) {
                     return "visitedVertex";
                 }
             })
-            .attr("r", function (d) {
-                return d.r;
-            });
+            .attr("r", d => d.r);
 
         // Add a text element to the previously added g element.
         vertices.append("text")
             .attr("text-anchor", "middle")
-            .text(function (d) {
-                return d.id;
-            });
+            .text(d => d.id);
 
     }
 
     function drawEdges(data) {
         /* Draw all edges and high light visited color */
-        
+
         // clear edges then redraw all the edges in the graph 
         d3.selectAll("path").remove();
 
@@ -355,11 +333,10 @@ var pgm = function (graphConfiguration) {
         // "linear" for piecewise linear segments
         // Creating path using data in pathinfo and path data generator
         // d3line.
-        let line = d3.svg.line().x(function (d) {
-            return d.x;
-        }).y(function (d) {
-            return d.y;
-        }).interpolate("linear");
+        let line = d3.svg.line()
+            .x(d => d.x)
+            .y(d => d.y)
+            .interpolate("linear");
 
         //
         //        var diagonal = d3.svg.diagonal()
@@ -426,6 +403,8 @@ var pgm = function (graphConfiguration) {
                         directedPath.indexOf(edgeNodes[1].id) > -1) {
                         container.append("svg:path")
                             .attr("d", line(edgeNodes))
+                            .transition()
+                            .duration(1500)
                             .style("stroke-width", config.edge.baseWidth + edgeWeight)
                             .style("stroke", config.edge.visitedColor)
                             .style("fill", "none");
@@ -494,7 +473,7 @@ var pgm = function (graphConfiguration) {
         /* Set adjacent vertex for vertex with id */
 
         if (id === undefined || adjVtx === undefined) {
-            console.error("setAdjacentVertex(id, adjVtx) params are not satisfied.");
+            throw new Error("setAdjacentVertex(id, adjVtx) params are not satisfied.");
         }
 
         graphData.data[id].adjacentVertex = adjVtx;

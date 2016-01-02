@@ -53,6 +53,5 @@ myGraph.setAdjacentVertex(4, adjacentVertex = [{
 myGraph.display();
 
 var data = myGraph.getGraphData();
-//myGraph.bind(JSON.parse(data));
-myGraph.bind([data]);
+myGraph.bind(data);
 
