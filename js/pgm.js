@@ -1,8 +1,3 @@
-/*  jshint undef:true
-    global $:false, jQuery:false, d3:false
-*/
-
-
 /*=============== Utilities ==================*/
 
 // Used to replace console.log,  EX: log('hello'); // hello 
@@ -25,7 +20,7 @@ var Utils = {};
             return o; // primitive value
         }
 
-        var set = gdcc in o,
+        let set = gdcc in o,
             cache = o[gdcc],
             result;
         if (set && typeof cache == "function") {
@@ -36,12 +31,12 @@ var Utils = {};
         // overwrite
         if (o instanceof Array) {
             result = [];
-            for (var i = 0; i < o.length; i++) {
+            for (let i = 0; i < o.length; i++) {
                 result[i] = cloneDR(o[i]);
             }
         } else {
             result = {};
-            for (var prop in o) {
+            for (let prop in o) {
                 if (prop != gdcc) {
                     result[prop] = cloneDR(o[prop]);
                 } else if (set)
@@ -87,7 +82,7 @@ var Utils = {};
 var pgm = function (graphConfiguration) {
     "use strict";
 
-    var graphData = {
+    let graphData = {
             clusterMat: [], // data specifies the number of nodes each layer
             data: [] // data binds to the graph
         },
@@ -133,7 +128,7 @@ var pgm = function (graphConfiguration) {
             if (this.id < graphData.clusterMat[0]) {
                 d3.event.sourceEvent.stopPropagation();
                 d3.select(this).classed("dragging", true);
-                var clickedVertexId = parseInt(this.id, 10);
+                let clickedVertexId = parseInt(this.id, 10);
                 traverseGraph(clickedVertexId, graphData.data);
                 drawGraph(graphData.data);
 
@@ -180,7 +175,7 @@ var pgm = function (graphConfiguration) {
                 return;
             }
 
-            var adjVertices = data[vertexIdx].adjacentVertex;
+            let adjVertices = data[vertexIdx].adjacentVertex;
             if (adjVertices) {
                 for (let i = 0; i < adjVertices.length; i++) {
                     weightSum += adjVertices[i].weight;
@@ -338,39 +333,6 @@ var pgm = function (graphConfiguration) {
             .y(d => d.y)
             .interpolate("linear");
 
-        //
-        //        var diagonal = d3.svg.diagonal()
-        //            .x(function (d) {
-        //                return d.x;
-        //            }).y(function (d) {
-        //                return d.y;
-        //            }).projection(function (d) {
-        //                var r = d.y,
-        //                    a = (d.x - 90) / 180 * Math.PI;
-        //                return [r * Math.cos(a), r * Math.sin(a)];
-        //            });
-
-
-        function drawEdge(edgeNodes, edgeWeight) {
-            // A helper function takes in a pair of nodes and draw a line 
-            // between them based on the edge weight
-
-            // If the edge is in the directedPath then draw different color
-            if (directedPath.indexOf(edgeNodes[0].id) > -1 && directedPath.indexOf(edgeNodes[1].id) > -1) {
-                container.append("svg:path")
-                    .attr("d", line(edgeNodes))
-                    .style("stroke-width", config.edge.baseWidth + edgeWeight)
-                    .style("stroke", config.edge.visitedColor)
-                    .style("fill", "none");
-            } else {
-                container.append("svg:path")
-                    .attr("d", line(edgeNodes))
-                    .style("stroke-width", config.edge.baseWidth + edgeWeight)
-                    .style("stroke", config.edge.defaultColor)
-                    .style("fill", "none");
-            }
-
-        }
 
         // Draw all edges based on weight in default color
         for (let vertexIdx = 0; vertexIdx < data.length; vertexIdx++) {
@@ -401,13 +363,56 @@ var pgm = function (graphConfiguration) {
                     // If the edge is in the directedPath then draw different color
                     if (directedPath.indexOf(edgeNodes[0].id) > -1 &&
                         directedPath.indexOf(edgeNodes[1].id) > -1) {
-                        container.append("svg:path")
-                            .attr("d", line(edgeNodes))
-                            .transition()
-                            .duration(1500)
-                            .style("stroke-width", config.edge.baseWidth + edgeWeight)
-                            .style("stroke", config.edge.visitedColor)
-                            .style("fill", "none");
+
+                        // Wait for 1 second until the next node is highlighted
+                        let timeInterval = 1000;
+
+                        // Create two new points to draw a shorter edge so the new 
+                        // edge will not cover the id in the node
+                        let getTempEdges = (edgeNodes) => {
+                            let x0 = edgeNodes[0].x,
+                                y0 = edgeNodes[0].y,
+                                r0 = edgeNodes[0].r,
+                                x1 = edgeNodes[1].x,
+                                y1 = edgeNodes[1].y,
+                                r1 = edgeNodes[1].r,
+                                distX = x1 - x0,
+                                distY = y0 - y1,
+                                dist = Math.sqrt(distX * distX + distY * distY),
+                                ratio0 = r0 / (1.0 * dist),
+                                ratio1 = r1 / (1.0 * dist);
+                                return [{
+                                    x: x0 + distX * ratio0,
+                                    y: y0 - distY * ratio1
+                            }, {
+                                    x: x1 - distX * ratio0,
+                                    y: y1 + distY * ratio1
+                            }];
+                        };
+
+                        setTimeout(() => {
+
+                            container.append("svg:path")
+                                .style("stroke-width", config.edge.baseWidth + edgeWeight)
+                                .style("stroke", config.edge.visitedColor)
+                                .style("fill", "none")
+                                .attr({
+                                    'd': line(getTempEdges(edgeNodes)),
+                                    'stroke-dasharray': '1000 1000',
+                                    'stroke-dashoffset': 1000
+                                })
+                                .transition()
+                                .duration(1500)
+                                .attr('stroke-dashoffset', 0);
+
+
+
+                        }, timeInterval * vertexIdx);
+
+                        //                        setTimeout(() => {
+                        //                            drawVertices(data);
+                        //                            
+                        //                        }, timeInterval * (vertexIdx + 1));
                     }
                 }
             }
