@@ -4,73 +4,82 @@
 
 
 /*=============== Utilities ==================*/
-// Implement max and min function for array
-Array.max = function (array) {
-    return Math.max.apply(Math, array);
-};
 
-Array.min = function (array) {
-    return Math.min.apply(Math, array);
-};
+var Utils = {};
 
-function cloneDR(o) {
-    /* Clone an object deeply and recursively */
+(function () {
+    "use strict";
 
-    const gdcc = "__getDeepCircularCopy__";
-    if (o !== Object(o)) {
-        return o; // primitive value
-    }
+    // Implement max and min function for array
+    Array.max = function (array) {
+        return Math.max.apply(Math, array);
+    };
 
-    var set = gdcc in o,
-        cache = o[gdcc],
-        result;
-    if (set && typeof cache == "function") {
-        return cache();
-    }
-    // else
-    o[gdcc] = function () {
-        return result;
-    }; // overwrite
-    if (o instanceof Array) {
-        result = [];
-        for (var i = 0; i < o.length; i++) {
-            result[i] = cloneDR(o[i]);
+    Array.min = function (array) {
+        return Math.min.apply(Math, array);
+    };
+
+    Utils.cloneDR = function cloneDR(o) {
+        /* Clone an object deeply and recursively */
+
+        const gdcc = "__getDeepCircularCopy__";
+        if (o !== Object(o)) {
+            return o; // primitive value
         }
-    } else {
-        result = {};
-        for (var prop in o)
-            if (prop != gdcc)
-                result[prop] = cloneDR(o[prop]);
-            else if (set)
-            result[prop] = cloneDR(cache);
-    }
-    if (set) {
-        o[gdcc] = cache; // reset
-    } else {
-        delete o[gdcc]; // unset again
-    }
-    return result;
-}
+
+        var set = gdcc in o,
+            cache = o[gdcc],
+            result;
+        if (set && typeof cache == "function") {
+            return cache();
+        }
+        // else
+        o[gdcc] = function () {
+            return result;
+        }; // overwrite
+        if (o instanceof Array) {
+            result = [];
+            for (var i = 0; i < o.length; i++) {
+                result[i] = cloneDR(o[i]);
+            }
+        } else {
+            result = {};
+            for (var prop in o) {
+                if (prop != gdcc) {
+                    result[prop] = cloneDR(o[prop]);
+                } else if (set)
+                    result[prop] = cloneDR(cache);
+            }
+        }
+        if (set) {
+            o[gdcc] = cache; // reset
+        } else {
+            delete o[gdcc]; // unset again
+        }
+        return result;
+    };
 
 
-function isObjLiteral(_obj) {
-    /* verify if an object is an object literal */
-    var _test = _obj;
-    return (typeof _obj !== 'object' || _obj === null ?
-        false :
-        (
-            (function () {
-                while (!false) {
-                    if (Object.getPrototypeOf(_test = Object.getPrototypeOf(_test)) === null) {
-                        break;
+
+    Utils.isObjLiteral = function isObjLiteral(_obj) {
+        /* verify if an object is an object literal */
+        var _test = _obj;
+        return (typeof _obj !== 'object' || _obj === null ?
+            false :
+            (
+                (function () {
+                    while (!false) {
+                        if (Object.getPrototypeOf(_test = Object.getPrototypeOf(_test)) === null) {
+                            break;
+                        }
                     }
-                }
-                return Object.getPrototypeOf(_obj) === _test;
-            })()
-        )
-    );
-}
+                    return Object.getPrototypeOf(_obj) === _test;
+                })()
+            )
+        );
+    };
 
+}());
 
 
 
@@ -268,7 +277,7 @@ var pgm = function (graphConfiguration) {
         container.append("g")
             .attr("class", "x axis")
             .selectAll("line")
-            .data(d3.range(0, width, 10))
+            .data(d3.range(0, config.transform.width, 10))
             .enter().append("line")
             .attr("x1", function (d) {
                 return d;
@@ -277,18 +286,18 @@ var pgm = function (graphConfiguration) {
             .attr("x2", function (d) {
                 return d;
             })
-            .attr("y2", height);
+            .attr("y2", config.transform.height);
 
         container.append("g")
             .attr("class", "y axis")
             .selectAll("line")
-            .data(d3.range(0, height, 10))
+            .data(d3.range(0, config.transform.height, 10))
             .enter().append("line")
             .attr("x1", 0)
             .attr("y1", function (d) {
                 return d;
             })
-            .attr("x2", width)
+            .attr("x2", config.transform.width)
             .attr("y2", function (d) {
                 return d;
             });
@@ -404,7 +413,7 @@ var pgm = function (graphConfiguration) {
     }
 
     function drawGraph(data) {
-        // Used to redraw the graph on start and when moving
+        /* Used to redraw the graph on start and when moving */
 
         drawEdges(data);
         drawVertices(data);
@@ -422,7 +431,7 @@ var pgm = function (graphConfiguration) {
         Used to bind an existing JSON object or an object literal to 
         the graph and render the graph.
         */
-        if (!isObjLiteral(gd)) {
+        if (!Utils.isObjLiteral(gd)) {
             // If not an object literal must be a JSON, we parse it
             gd = JSON.parse(gd);
         }
@@ -446,7 +455,7 @@ var pgm = function (graphConfiguration) {
     };
 
     this.display = function () {
-        // Used to display the graph
+        /* Used to display the graph */
 
         dataScreening(graphData.data);
         createEdgesInGraphData(graphData.data);
@@ -458,7 +467,8 @@ var pgm = function (graphConfiguration) {
 
 
     this.setAdjacentVertex = function (id, adjVtx) {
-        // Set adjacent vertex for vertex with id 
+        /* Set adjacent vertex for vertex with id */
+
         if (id === undefined || adjVtx === undefined) {
             console.error("setAdjacentVertex(id, adjVtx) params are not satisfied.");
         }
@@ -468,9 +478,8 @@ var pgm = function (graphConfiguration) {
 
 
     this.getGraphData = function () {
-
-
-        let jsonGraphData = cloneDR(graphData);
+        /* Returns the graphData as  JSON object */
+        let jsonGraphData = Utils.cloneDR(graphData);
 
         console.log(jsonGraphData);
 
@@ -484,9 +493,11 @@ var pgm = function (graphConfiguration) {
 
 
     this.createCluster = function (cMat) {
-        // Used to create a clusters of nodes based on the cluster matrix
-        // Ex of cluster mat [2, 3, 4] creates a cluster of 9 nodes where
-        // 2 in first layer, 3 in 2nd layer and 4 in 3rd layer
+        /* 
+        Used to create a clusters of nodes based on the cluster matrix
+        Ex of cluster mat [2, 3, 4] creates a cluster of 9 nodes where
+        2 in first layer, 3 in 2nd layer and 4 in 3rd layer
+        */
 
         let offsetPosX = config.transform.width / (cMat.length + 1); // get the x offset for first node
         let minPosY = config.transform.height / (Array.max(cMat) + 1); // get the y offset for the layer with the most amount of nodes
