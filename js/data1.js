@@ -3,7 +3,7 @@
 var config;
 
 
-var clusterMat = [2, 3, 2];
+var clusterMat = [2, 3, 2, 2];
 // Create a new Graph based on the configuration
 // and bind the data to the graph for rendering
 var myGraph = new pgm();
@@ -49,9 +49,22 @@ myGraph.setAdjacentVertex(4, adjacentVertex = [{
     id: 6,
     weight: 0.4
 }]);
+myGraph.setAdjacentVertex(5, adjacentVertex = [{
+    id: 7,
+    weight: 0.5
+}, {
+    id: 8,
+    weight: 0.5
+}]);
+myGraph.setAdjacentVertex(6, adjacentVertex = [{
+    id: 7,
+    weight: 0.2
+}, {
+    id: 8,
+    weight: 0.8
+}]);
 
 myGraph.display();
 
 var data = myGraph.getGraphData();
 myGraph.bind(data);
-
