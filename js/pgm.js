@@ -95,7 +95,7 @@ var pgm = function (graphConfiguration) {
             data: [] // data binds to the graph
         },
 
-        directedPath = [], // directedPath is a list of visited nodes
+        directedPath = [], // directedPath is a list of visited nodes' ID
         config = graphConfiguration || {
             transform: {
                 x: 0,
@@ -234,8 +234,10 @@ var pgm = function (graphConfiguration) {
 
 
     function traverseGraph(vertexId, data) {
-        // Takes in the id of a node and traverse trough the graph to connect impacted nodes
-        // Returns the id of the visited node
+        /* 
+        Takes in the id of a node and traverse trough the graph to connect 
+        impacted nodes and returns the id of the visited node
+        */
 
         function chooseRandomAdjVertex(vertex) {
             // Takes in a vertex and choose a random adjacent vertex in the next layer based on the edge weights 
@@ -268,12 +270,14 @@ var pgm = function (graphConfiguration) {
         }
 
         directedPath = visitedNodes;
+        console.log("traverseGraph():" + directedPath);
     }
 
 
 
     function drawGrid() {
-        // Draws the axis in the background
+        /* Draws the axis in the background */
+
         container.append("g")
             .attr("class", "x axis")
             .selectAll("line")
@@ -304,7 +308,8 @@ var pgm = function (graphConfiguration) {
     }
 
     function drawVertices(data) {
-        // clear vertices then redraw all the vertices in the grpah
+        /* clear vertices then redraw all the vertices in the grpah */
+
         d3.selectAll(".vertex").remove();
 
         let vertices = container.append("g")
@@ -341,7 +346,9 @@ var pgm = function (graphConfiguration) {
     }
 
     function drawEdges(data) {
-        // clear edges then redraw all the edges in the graph
+        /* Draw all edges and high light visited color */
+        
+        // clear edges then redraw all the edges in the graph 
         d3.selectAll("path").remove();
 
         // Specify the function for generating path data   
@@ -388,28 +395,45 @@ var pgm = function (graphConfiguration) {
 
         }
 
-        // Draw each vertex's edges based on weight
+        // Draw all edges based on weight in default color
         for (let vertexIdx = 0; vertexIdx < data.length; vertexIdx++) {
+            // Iterate through each nodes in data
             let currentVertex = data[vertexIdx];
             if (currentVertex.edges) {
                 for (let edgeIdx = 0; edgeIdx < currentVertex.edges.length; edgeIdx++) {
+                    // Iterate through each edge in the current node
                     let edgeNodes = currentVertex.edges[edgeIdx].edgeNodes;
                     let edgeWeight = currentVertex.edges[edgeIdx].edgeWeight * config.edge.weightWidth;
-                    drawEdge(edgeNodes, edgeWeight);
+                    container.append("svg:path")
+                        .attr("d", line(edgeNodes))
+                        .style("stroke-width", config.edge.baseWidth + edgeWeight)
+                        .style("stroke", config.edge.defaultColor)
+                        .style("fill", "none");
                 }
             }
         }
 
+        // Draw visited edges based on weight in highlighted color
+        for (let vertexIdx = 0; vertexIdx < directedPath.length; vertexIdx++) {
+            // Iterate through the list of ID in directedPath 
+            let currentVertex = data[directedPath[vertexIdx]];
+            if (currentVertex.edges) {
+                for (let edgeIdx = 0; edgeIdx < currentVertex.edges.length; edgeIdx++) {
+                    let edgeNodes = currentVertex.edges[edgeIdx].edgeNodes;
+                    let edgeWeight = currentVertex.edges[edgeIdx].edgeWeight * config.edge.weightWidth;
+                    // If the edge is in the directedPath then draw different color
+                    if (directedPath.indexOf(edgeNodes[0].id) > -1 &&
+                        directedPath.indexOf(edgeNodes[1].id) > -1) {
+                        container.append("svg:path")
+                            .attr("d", line(edgeNodes))
+                            .style("stroke-width", config.edge.baseWidth + edgeWeight)
+                            .style("stroke", config.edge.visitedColor)
+                            .style("fill", "none");
+                    }
+                }
+            }
+        }
 
-        // Draw the vertex in visitedNodes slowly one by one
-        //        for (let vertexIdx = 0; vertexIdx < directedPath.length - 1; vertexIdx++) {
-        //            let currentVertex = directedPath[vertexIdx];
-        //            let edgeIdx = directedPath[vertexIdx + 1];
-        //
-        //            let edgeNodes = currentVertex.edges[edgeIdx].edgeNodes;
-        //            let edgeWeight = currentVertex.edges[edgeIdx].edgeWeight * config.edge.weightWidth;
-        //            drawEdge(edgeNodes, edgeWeight);
-        //        }
     }
 
     function drawGraph(data) {
