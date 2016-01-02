@@ -100,7 +100,7 @@ var pgm = function (graphConfiguration) {
                 weightWidth: 18,
                 defaultColor: "lightsteelblue",
                 visitedColor: "steelblue",
-                timeInterval: 800
+                timeInterval: 1000
             },
             background: {
                 grid: false,
@@ -390,41 +390,45 @@ var pgm = function (graphConfiguration) {
 
                         // Create two new points to draw a shorter edge so the new 
                         // edge will not cover the id in the node
-                        let getTempEdges = (edgeNodes) => {
-                            let x0 = edgeNodes[0].x,
-                                y0 = edgeNodes[0].y,
-                                r0 = edgeNodes[0].r,
-                                x1 = edgeNodes[1].x,
-                                y1 = edgeNodes[1].y,
-                                r1 = edgeNodes[1].r,
-                                distX = x1 - x0,
-                                distY = y0 - y1,
-                                dist = Math.sqrt(distX * distX + distY * distY),
-                                ratio0 = r0 / (1.0 * dist),
-                                ratio1 = r1 / (1.0 * dist);
-                            return [{
-                                x: x0 + distX * ratio0,
-                                y: y0 - distY * ratio1
+                        let x0 = edgeNodes[0].x,
+                            y0 = edgeNodes[0].y,
+                            r0 = edgeNodes[0].r,
+                            x1 = edgeNodes[1].x,
+                            y1 = edgeNodes[1].y,
+                            r1 = edgeNodes[1].r,
+                            distX = x1 - x0,
+                            distY = y0 - y1,
+                            dist = Math.sqrt(distX * distX + distY * distY),
+                            ratio0 = r0 / (1.0 * dist),
+                            ratio1 = r1 / (1.0 * dist);
+
+                        // tempEdges for highlighting the visited edges
+                        let tempEdges = [{
+                            x: x0 + distX * ratio0,
+                            y: y0 - distY * ratio1
                             }, {
-                                x: x1 - distX * ratio0,
-                                y: y1 + distY * ratio1
+                            x: x1 - distX * ratio0,
+                            y: y1 + distY * ratio1
                             }];
-                        };
+
+                        let lineLength = dist; // The line length
 
                         // Wait for 0.8 second until the next node is highlighted
                         // Draw the next visited path after time Interval
                         setTimeout(() => {
+
+                            // Append a path that completes drawing wthin a time duration
                             container.append("svg:path")
                                 .style("stroke-width", config.edge.baseWidth + edgeWeight)
                                 .style("stroke", config.edge.visitedColor)
                                 .style("fill", "none")
                                 .attr({
-                                    'd': line(getTempEdges(edgeNodes)),
-                                    'stroke-dasharray': '1000 1000',
-                                    'stroke-dashoffset': 1000
+                                    'd': line(tempEdges),
+                                    'stroke-dasharray': lineLength + " " + lineLength,
+                                    'stroke-dashoffset': lineLength
                                 })
                                 .transition()
-                                .duration(1500)
+                                .duration(config.edge.timeInterval)
                                 .attr('stroke-dashoffset', 0);
 
                         }, config.edge.timeInterval * vertexIdx);
