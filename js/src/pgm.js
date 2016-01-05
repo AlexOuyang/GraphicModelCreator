@@ -95,12 +95,21 @@ var pgm = function (graphConfiguration) {
                 width: window.innerWidth,
                 height: window.innerHeight - 80
             },
+            vertex: {
+                defaultColor: "lightsteelblue",
+                visitedColor: "steelblue",
+            },
             edge: {
                 baseWidth: 2,
                 weightWidth: 18,
                 defaultColor: "lightsteelblue",
                 visitedColor: "steelblue",
                 timeInterval: 1000
+            },
+            text: {
+                color: "white",
+                size: 0.6,
+                anchor: "middle"
             },
             background: {
                 grid: false,
@@ -316,6 +325,16 @@ var pgm = function (graphConfiguration) {
             .attr("y2", d => d);
     }
 
+    
+    function drawText() {
+        /* Add a text element to the previously added g element. */
+        vertices.append("text")
+            .attr("font-size", d => d.r * config.text.size)
+            .attr("text-anchor", config.text.anchor)
+            .attr("fill", config.text.color)
+            .text(d => d.id);
+    }
+    
     function drawVertices(data) {
         /* clear vertices then redraw all the vertices in the grpah */
 
@@ -333,19 +352,8 @@ var pgm = function (graphConfiguration) {
         vertices.append("circle")
             .attr("r", d => d.r)
             .attr("class", "node");
-        //        
-        //            .attr("class", d => {
-        //                // if the node is in the path then draw it in a different color
-        //                if (directedPath.indexOf(d.id) > -1) {
-        //                    return "visitedVertex";
-        //                }
-        //            });
 
-        // Add a text element to the previously added g element.
-        vertices.append("text")
-            .attr("text-anchor", "middle")
-            .text(d => d.id);
-
+        drawText();
     }
 
     function drawEdges(data) {
@@ -448,9 +456,8 @@ var pgm = function (graphConfiguration) {
                                 .attr("r", d => d.r);
 
                             // Add a text element to the previously added g element.
-                            vertices.append("text")
-                                .attr("text-anchor", "middle")
-                                .text(d => d.id);
+                            drawText();
+
                         }, config.edge.timeInterval * (vertexIdx + 1));
 
                         // Draw the first vertex when the path start highlighting
@@ -459,16 +466,13 @@ var pgm = function (graphConfiguration) {
                             .attr("class", d => {
                                 // if the node is in the path then draw it in a different color
                                 if (directedPath[0] == d.id) {
-                                    log("visited");
                                     return "visitedVertex";
                                 }
                             })
                             .attr("r", d => d.r);
 
                         // Add a text element to the previously added g element.
-                        vertices.append("text")
-                            .attr("text-anchor", "middle")
-                            .text(d => d.id);
+                        drawText();
                     }
 
                 }

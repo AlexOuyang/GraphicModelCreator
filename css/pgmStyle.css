@@ -1,23 +1,16 @@
+/* Original vertex attributes */
 .vertex circle {
     fill: lightsteelblue;
     stroke: steelblue;
     stroke-width: 1.5px;
 }
 
-.vertex text {
-    fill: white;
-}
-
-.vertex .dragging .node {
-    fill: steelblue;
-    /*  stroke: black;*/
-}
-
+/* Visited vertex attributes */
 .vertex .visitedVertex {
     fill: steelblue;
-    /*  stroke: black;*/
 }
 
+/* Grid line attributes */
 .axis line {
     fill: none;
     stroke: #ddd;
@@ -25,11 +18,6 @@
     vector-effect: non-scaling-stroke;
 }
 
-.path {
-    stroke-width: 2;
-    stroke: steelblue;
-    fill: none;
-}
 
 p {
     color: steelblue;
