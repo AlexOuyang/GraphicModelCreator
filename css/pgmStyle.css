@@ -1,17 +1,36 @@
 /* Original Node Color attributes */
+
 .vertex circle {
+/*
     fill: lightsteelblue;
-    stroke: steelblue;
-    stroke-width: 1.5px;
+    stroke: lightsteelblue;
+*/
+    fill: #52bf90;
+    stroke: #52bf90;
+    stroke-width: 1px;
 }
 
 
 /* Visited vertex Color attributes */
+
 .vertex .visitedVertex {
+/*
     fill: steelblue;
+    stroke: steelblue;
+*/
+    fill: #1d4433;
+    stroke: #1d4433;
+    stroke-width: 1px;
+}
+
+/* Vertex label text color attributes*/
+.vertex text {
+    font-family: "Helvetica";
+    fill: white;
 }
 
 /* Grid line attributes */
+
 .axis line {
     fill: none;
     stroke: #ddd;
@@ -19,17 +38,15 @@
     vector-effect: non-scaling-stroke;
 }
 
-
 p {
-    color: steelblue;
+    color: #0e2219;
 }
 
-
 .cells {
-  fill: #aaa;
+    fill: #aaa;
 }
 
 .label {
-  text-anchor: start;
-  font: 24px sans-serif;
+    text-anchor: start;
+    font: 24px sans-serif;
 }

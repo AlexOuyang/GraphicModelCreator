@@ -4,7 +4,7 @@ var config = {
     transform: {
         x: 0,
         y: 0,
-        width: 500,
+        width: 700,
         height: 400
     },
     vertex: {
@@ -15,28 +15,28 @@ var config = {
     edge: {
         baseWidth: 0.1, // base width offset = baseWidth * circle radius
         width: 0.5, // edge width = width * circle radius
-        defaultColor: "lightsteelblue",
-        visitedColor: "steelblue",
+        defaultColor: "#b6ddcc",
+        visitedColor: "#317256",
         timeInterval: 600 // timeInterval is in millisecond
     },
     text: {
         color: "white",
-        size: 0.6, // text size = size * circle radius
+        size: 0.5, // text size = size * circle radius
         anchor: "middle",
         alignment: "middle"
 
     },
     background: {
         grid: false,
-        color: "none"
+        color: "#ecf6f2"
     },
     zoom: false,
 };
 
 
-var clusterMat = [["square", "circle", "triangle"],
+var clusterMat = [["Square", "Circle", "Triangle"],
                   ["▢", "◯", "△"],
-                  ["square", "circle", "triangle"]];
+                  ["Square", "Circle", "Triangle"]];
 
 
 // Create a new Graph based on the configuration

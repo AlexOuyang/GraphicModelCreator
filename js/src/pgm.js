@@ -103,8 +103,8 @@ var pgm = function (graphConfiguration) {
             edge: {
                 baseWidth: 0.1, // base width offset = baseWidth * circle radius
                 width: 0.5, // edge width = width * circle radius
-                defaultColor: "lightsteelblue",
-                visitedColor: "steelblue",
+                defaultColor: "#b6ddcc",
+                visitedColor: "#317256",
                 timeInterval: 600 // timeInterval is in millisecond
             },
             text: {
@@ -138,7 +138,8 @@ var pgm = function (graphConfiguration) {
             // Check if the clicked node is in the first layer
             // which are the num of nodes in first layer of clusterMat
             if (canClick) {
-                if (this.id < graphData.clusterMat[0]) {
+                let layer_1_dim = graphData.clusterMat[0].length;
+                if (this.id < layer_1_dim) {
                     d3.event.sourceEvent.stopPropagation();
                     d3.select(this).classed("dragging", true);
                     let clickedVertexId = parseInt(this.id, 10);
