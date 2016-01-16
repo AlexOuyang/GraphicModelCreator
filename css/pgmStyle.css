@@ -1,3 +1,5 @@
+/*============= PGM styles ============*/
+
 /* Original Node Color attributes */
 
 .vertex circle {
@@ -42,8 +44,10 @@ p {
     color: #0e2219;
 }
 
-.cells {
-    fill: #aaa;
+
+/*============= Chart styles ============*/
+.cell {
+    fill: #52bf90;
 }
 
 .label {

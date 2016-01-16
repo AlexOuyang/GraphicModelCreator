@@ -36,6 +36,7 @@ var chart = function (inputData) {
         })
         .enter()
         .append('rect')
+        .attr("class", "cell")
         .attr('x', function (d, i) {
             return 100 * i;
         })
