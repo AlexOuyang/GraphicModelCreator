@@ -1,5 +1,4 @@
 /* Original Node Color attributes */
-
 .vertex circle {
     fill: lightsteelblue;
     stroke: steelblue;
@@ -8,24 +7,11 @@
 
 
 /* Visited vertex Color attributes */
-
 .vertex .visitedVertex {
     fill: steelblue;
 }
 
-/* Text Color attributes */
-
-
-/*
-
-.vertex text {
-    fill: white;
-}
-*/
-
-
 /* Grid line attributes */
-
 .axis line {
     fill: none;
     stroke: #ddd;
@@ -34,27 +20,16 @@
 }
 
 
-/* Edge color attributes */
-
-
-/*
-
-path {
-    stroke: lightsteelblue;
-}
-*/
-
-
-/* Visited edge color attributes */
-
-
-/*
-
-.visitedEdge path {
-    stroke: steelblue;
-}
-*/
-
 p {
     color: steelblue;
+}
+
+
+.cells {
+  fill: #aaa;
+}
+
+.label {
+  text-anchor: start;
+  font: 24px sans-serif;
 }

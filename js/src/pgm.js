@@ -96,37 +96,37 @@ var pgm = function (graphConfiguration) {
                 height: window.innerHeight - 80
             },
             vertex: {
+                radius: 0.3,
                 defaultColor: "lightsteelblue",
-                visitedColor: "steelblue",
+                visitedColor: "steelblue"
             },
             edge: {
-                baseWidth: 0.1,
-                width: 0.6, // edge width = width * circle radius
+                baseWidth: 0.1, // base width offset = baseWidth * circle radius
+                width: 0.5, // edge width = width * circle radius
                 defaultColor: "lightsteelblue",
                 visitedColor: "steelblue",
-                timeInterval: 1000
+                timeInterval: 600 // timeInterval is in millisecond
             },
             text: {
                 color: "white",
                 size: 0.6, // text size = size * circle radius
-                anchor: "middle"
+                anchor: "middle",
+                alignment: "middle"
             },
             background: {
                 grid: false,
                 color: "none"
             },
-            zoom: true,
+            zoom: false,
         },
 
         // Zoom behavior
         zoom = d3.behavior.zoom().scaleExtent([1, 10])
         .on("zoom", () => {
-            if (config.zoom) {
-                container.attr(
-                    "transform",
-                    "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")"
-                );
-            }
+            container.attr(
+                "transform",
+                "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")"
+            );
         }),
 
         canClick = true, // Used to keep user from clicking when the graph is traversing
@@ -159,12 +159,11 @@ var pgm = function (graphConfiguration) {
             }
         }),
 
-        svg = d3.select("body").append("svg")
+        svg = d3.select("#pgm").append("svg")
         .attr("width", config.transform.width)
         .attr("height", config.transform.height)
         .append("g")
-        .attr("transform", "translate(" + config.transform.x + "," + config.transform.y + ")")
-        .call(zoom),
+        .attr("transform", "translate(" + config.transform.x + "," + config.transform.y + ")"),
 
         rect = svg.append("rect")
         .attr("width", config.transform.width)
@@ -193,6 +192,10 @@ var pgm = function (graphConfiguration) {
         .interpolate("linear"),
 
         vertices; // D3 object, initiated in drawVertices()
+
+
+    // Zoom behavior
+    if (config.zoom) svg.call(zoom);
 
 
     function dataScreening(data) {
@@ -331,8 +334,12 @@ var pgm = function (graphConfiguration) {
         vertices.append("text")
             .attr("font-size", d => d.r * config.text.size)
             .attr("text-anchor", config.text.anchor)
+            .attr("alignment-baseline", config.text.alignment)
             .attr("fill", config.text.color)
-            .text(d => d.id);
+            .text(d => {
+                if (d.label) return d.label;
+                else return d.id;
+            });
     }
 
     function drawVertices(data) {
@@ -544,6 +551,10 @@ var pgm = function (graphConfiguration) {
         graphData.data[id].adjacentVertex = adjVtx;
     };
 
+    this.setLabel = function (label) {
+        /* Set label for vertex */
+        graphData.data[id].label = label;
+    }
 
     this.getGraphData = function () {
         /* Returns the graphData as  JSON object */
@@ -562,25 +573,30 @@ var pgm = function (graphConfiguration) {
 
     this.createCluster = function (cMat) {
         /* 
-        Used to create a clusters of nodes based on the cluster matrix
-        Ex of cluster mat [2, 3, 4] creates a cluster of 9 nodes where
-        2 in first layer, 3 in 2nd layer and 4 in 3rd layer
+        Used to create a clusters of nodes (Graphdata) based on the cluster matrix
+        Ex of cluster mat [layer1_label_array, layer2_label_array, layer3_label_array] 
         */
 
-        let offsetPosX = config.transform.width / (cMat.length + 1); // get the x offset for first node
-        let minPosY = config.transform.height / (Array.max(cMat) + 1); // get the y offset for the layer with the most amount of nodes
+        // Populate cMatDim, cMatDim is the dimension of the matrix, ex: [3,3,3]
+        let cMatDim = [];
+        for (let i = 0; i < cMat.length; i++)
+            cMatDim[i] = cMat[i].length;
+
+
+        let offsetPosX = config.transform.width / (cMatDim.length + 1); // get the x offset for first node
+        let minPosY = config.transform.height / (Array.max(cMatDim) + 1); // get the y offset for the layer with the most amount of nodes
 
         // Data properties: id, x, y, r 
         let data = [];
         let id = 0;
         let x;
         let y;
-        let r = Array.min([offsetPosX, minPosY]) / 3.0;
+        let r = Array.min([offsetPosX, minPosY]) * config.vertex.radius;
 
-        for (let i = 0; i < cMat.length; i++) {
+        for (let i = 0; i < cMatDim.length; i++) {
             // Reset offset Y coordinate for each layer
-            let offSetPosY = config.transform.height / (cMat[i] + 1);
-            for (let j = 0; j < cMat[i]; j++) {
+            let offSetPosY = config.transform.height / (cMatDim[i] + 1);
+            for (let j = 0; j < cMatDim[i]; j++) {
                 x = offsetPosX * (i + 1);
                 y = offSetPosY * (j + 1);
                 data.push({
@@ -594,11 +610,18 @@ var pgm = function (graphConfiguration) {
 
         }
 
-        // Update the graphData member variable in pgm
+        // Create the graphData member variable in pgm
         graphData = {
             clusterMat: cMat,
             data: data
         };
+
+        // Label each vertex based on cMat labels
+        let id_temp = 0;
+        for (let i = 0; i < cMat.length; i++)
+            for (let j = 0; j < cMat.length; j++)
+                graphData.data[id_temp++].label = cMat[i][j];
+
 
         // Update the config edge width and baseWidth
         config.edge.width = r * config.edge.width;

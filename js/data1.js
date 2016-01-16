@@ -1,11 +1,39 @@
 // Handles the configuration of the grah
 
-var config = 0;
+var config = {
+    transform: {
+        x: 0,
+        y: 0,
+        width: 400,
+        height: 400
+    },
+    vertex: {
+        defaultColor: "lightsteelblue",
+        visitedColor: "steelblue",
+    },
+    edge: {
+        baseWidth: 0.1, // base width offset = baseWidth * circle radius
+        width: 0.6, // edge width = width * circle radius
+        defaultColor: "lightsteelblue",
+        visitedColor: "steelblue",
+        timeInterval: 600 // timeInterval is in millisecond
+    },
+    text: {
+        color: "white",
+        size: 0.6, // text size = size * circle radius
+        anchor: "middle"
+    },
+    background: {
+        grid: false,
+        color: "none"
+    },
+    zoom: false,
+};
 var clusterMat = [2, 3, 2, 2];
 
 // Create a new Graph based on the configuration
 // and bind the data to the graph for rendering
-var myGraph = new pgm();
+var myGraph = new pgm(config);
 
 var dataTemp = myGraph.createCluster(clusterMat);
 
