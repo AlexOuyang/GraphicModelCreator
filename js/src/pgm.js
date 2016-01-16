@@ -100,15 +100,15 @@ var pgm = function (graphConfiguration) {
                 visitedColor: "steelblue",
             },
             edge: {
-                baseWidth: 2,
-                weightWidth: 18,
+                baseWidth: 0.1,
+                width: 0.6, // edge width = width * circle radius
                 defaultColor: "lightsteelblue",
                 visitedColor: "steelblue",
                 timeInterval: 1000
             },
             text: {
                 color: "white",
-                size: 0.6,
+                size: 0.6, // text size = size * circle radius
                 anchor: "middle"
             },
             background: {
@@ -325,7 +325,7 @@ var pgm = function (graphConfiguration) {
             .attr("y2", d => d);
     }
 
-    
+
     function drawText() {
         /* Add a text element to the previously added g element. */
         vertices.append("text")
@@ -334,7 +334,7 @@ var pgm = function (graphConfiguration) {
             .attr("fill", config.text.color)
             .text(d => d.id);
     }
-    
+
     function drawVertices(data) {
         /* clear vertices then redraw all the vertices in the grpah */
 
@@ -370,10 +370,10 @@ var pgm = function (graphConfiguration) {
                 for (let edgeIdx = 0; edgeIdx < currentVertex.edges.length; edgeIdx++) {
                     // Iterate through each edge in the current node
                     let edgeNodes = currentVertex.edges[edgeIdx].edgeNodes;
-                    let edgeWeight = currentVertex.edges[edgeIdx].edgeWeight * config.edge.weightWidth;
+                    let edgeWeight = currentVertex.edges[edgeIdx].edgeWeight * config.edge.width;
                     container.append("svg:path")
                         .attr("d", line(edgeNodes))
-                        .style("stroke-width", config.edge.baseWidth + edgeWeight)
+                        .attr("stroke-width", edgeWeight + config.edge.baseWidth)
                         .style("stroke", config.edge.defaultColor)
                         .style("fill", "none");
                 }
@@ -391,10 +391,9 @@ var pgm = function (graphConfiguration) {
             if (currentVertex.edges) {
                 for (let edgeIdx = 0; edgeIdx < currentVertex.edges.length; edgeIdx++) {
                     let edgeNodes = currentVertex.edges[edgeIdx].edgeNodes;
-                    let edgeWeight = currentVertex.edges[edgeIdx].edgeWeight * config.edge.weightWidth;
+                    let edgeWeight = currentVertex.edges[edgeIdx].edgeWeight * config.edge.width;
                     // If the edge is in the directedPath then draw different color
-                    if (directedPath.indexOf(edgeNodes[0].id) > -1 &&
-                        directedPath.indexOf(edgeNodes[1].id) > -1) {
+                    if (directedPath.indexOf(edgeNodes[0].id) > -1 && directedPath.indexOf(edgeNodes[1].id) > -1) {
 
                         // Create two new points to draw a shorter edge so the new 
                         // edge will not cover the id in the node
@@ -445,7 +444,7 @@ var pgm = function (graphConfiguration) {
                         setTimeout(() => {
                             /* clear vertices then redraw all the vertices in the grpah */
                             vertices.append("circle")
-                                .attr("class", "node")
+                                //                                .attr("class", "node")
                                 .attr("class", d => {
                                     // if the node is in the path then draw it in a different color
                                     if (directedPath.indexOf(d.id) <= (vertexIdx + 1) &&
@@ -595,11 +594,15 @@ var pgm = function (graphConfiguration) {
 
         }
 
-        // Update the graphData instanec in pgm
+        // Update the graphData member variable in pgm
         graphData = {
             clusterMat: cMat,
             data: data
         };
+
+        // Update the config edge width and baseWidth
+        config.edge.width = r * config.edge.width;
+        config.edge.baseWidth = r * config.edge.baseWidth;
 
         return {
             clusterMat: cMat,
