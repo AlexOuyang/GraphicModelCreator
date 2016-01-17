@@ -465,6 +465,8 @@ var pgm = function (graphConfiguration) {
                             // Add a text element to the previously added g element.
                             drawText();
 
+                            // 0.9 is a time offset multiplier to make vertex colored faster since
+                            // there is an unknown lag
                         }, config.edge.timeInterval * (vertexIdx + 1));
 
                         // Draw the first vertex when the path start highlighting
@@ -611,22 +613,24 @@ var pgm = function (graphConfiguration) {
 
         }
 
+        // Label each vertex based on cMat labels
+        let id_temp = 0;
+        for (let i = 0; i < cMat.length; i++)
+            for (let j = 0; j < cMat[i].length; j++)
+                data[id_temp++].label = cMat[i][j];
+
+
+        // Update the config edge width and baseWidth
+        config.edge.width = r * config.edge.width;
+        config.edge.baseWidth = r * config.edge.baseWidth;
+
+
         // Create the graphData member variable in pgm
         graphData = {
             clusterMat: cMat,
             data: data
         };
 
-        // Label each vertex based on cMat labels
-        let id_temp = 0;
-        for (let i = 0; i < cMat.length; i++)
-            for (let j = 0; j < cMat.length; j++)
-                graphData.data[id_temp++].label = cMat[i][j];
-
-
-        // Update the config edge width and baseWidth
-        config.edge.width = r * config.edge.width;
-        config.edge.baseWidth = r * config.edge.baseWidth;
 
         return {
             clusterMat: cMat,

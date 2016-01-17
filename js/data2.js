@@ -4,7 +4,7 @@ var config = {
     transform: {
         x: 0,
         y: 0,
-        width: 700,
+        width: window.innerWidth,
         height: 400
     },
     vertex: {
@@ -27,7 +27,7 @@ var config = {
 
     },
     background: {
-        grid: false,
+        grid: true,
         color: "#ecf6f2"
     },
     zoom: false,
@@ -36,8 +36,10 @@ var config = {
 
 var clusterMat = [["Square", "Circle", "Triangle"],
                   ["▢", "◯", "△"],
+                  ["Square", "Circle", "Triangle"],
                   ["Square", "Circle", "Triangle"]];
 
+//var clusterMatPrototype = [["0"],["1"],["2"],["3"],["4"]];
 
 // Create a new Graph based on the configuration
 // and bind the data to the graph for rendering
@@ -108,6 +110,40 @@ myGraph.setAdjacentVertex(5, adjacentVertex = [{
     id: 8,
     weight: 0.4
 }]);
+
+
+// Layer 3
+myGraph.setAdjacentVertex(6, adjacentVertex = [{
+    id: 9,
+    weight: 0.4
+}, {
+    id: 10,
+    weight: 0.2
+}, {
+    id: 11,
+    weight: 0.4
+}]);
+myGraph.setAdjacentVertex(7, adjacentVertex = [{
+    id: 9,
+    weight: 0.4
+}, {
+    id: 10,
+    weight: 0.2
+}, {
+    id: 11,
+    weight: 0.4
+}]);
+myGraph.setAdjacentVertex(8, adjacentVertex = [{
+    id: 9,
+    weight: 0.4
+}, {
+    id: 10,
+    weight: 0.2
+}, {
+    id: 11,
+    weight: 0.4
+}]);
+
 
 myGraph.display();
 
