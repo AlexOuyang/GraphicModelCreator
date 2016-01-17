@@ -46,11 +46,13 @@ p {
 
 
 /*============= Chart styles ============*/
+/*
 .cell {
     fill: #52bf90;
 }
+*/
 
-.label {
-    text-anchor: start;
-    font: 24px sans-serif;
+.cell text {
+    font-family: "Helvetica";
+    fill: white;
 }

@@ -39,8 +39,9 @@ var Utils = {};
             for (let prop in o) {
                 if (prop != gdcc) {
                     result[prop] = cloneDR(o[prop]);
-                } else if (set)
+                } else if (set) {
                     result[prop] = cloneDR(cache);
+                }
             }
         }
         if (set) {
@@ -82,7 +83,9 @@ var Utils = {};
 var pgm = function (graphConfiguration) {
     "use strict";
 
-    let graphData = {
+    let self = this,
+
+        graphData = {
             clusterMat: [], // data specifies the number of nodes each layer
             data: [] // data binds to the graph
         },
@@ -96,9 +99,9 @@ var pgm = function (graphConfiguration) {
                 height: window.innerHeight - 80
             },
             vertex: {
-                radius: 0.3,
+                radius: 0.35,
                 defaultColor: "lightsteelblue",
-                visitedColor: "steelblue"
+                visitedColor: "steelblue",
             },
             edge: {
                 baseWidth: 0.1, // base width offset = baseWidth * circle radius
@@ -109,25 +112,17 @@ var pgm = function (graphConfiguration) {
             },
             text: {
                 color: "white",
-                size: 0.6, // text size = size * circle radius
+                size: 0.5, // text size = size * circle radius
                 anchor: "middle",
                 alignment: "middle"
+
             },
             background: {
                 grid: false,
-                color: "none"
+                color: "#ecf6f2"
             },
             zoom: false,
         },
-
-        // Zoom behavior
-        zoom = d3.behavior.zoom().scaleExtent([1, 10])
-        .on("zoom", () => {
-            container.attr(
-                "transform",
-                "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")"
-            );
-        }),
 
         canClick = true, // Used to keep user from clicking when the graph is traversing
 
@@ -166,6 +161,7 @@ var pgm = function (graphConfiguration) {
         .append("g")
         .attr("transform", "translate(" + config.transform.x + "," + config.transform.y + ")"),
 
+        // Set up the background rect wrapper
         rect = svg.append("rect")
         .attr("width", config.transform.width)
         .attr("height", config.transform.height)
@@ -173,7 +169,7 @@ var pgm = function (graphConfiguration) {
         .style("pointer-events", "all")
         .on("click", d => {
             if (canClick) {
-                clearVisitedPath()
+                clearVisitedPath();
 
                 // Do not allow user to click until visited path highlighting is finished
                 canClick = false;
@@ -192,11 +188,22 @@ var pgm = function (graphConfiguration) {
         .y(d => d.y)
         .interpolate("linear"),
 
-        vertices; // D3 object, initiated in drawVertices()
+        vertices, // D3 object, initiated in drawVertices()
 
+
+        // Zoom behavior
+        zoom = d3.behavior.zoom().scaleExtent([1, 10])
+        .on("zoom", () => {
+            container.attr(
+                "transform",
+                "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")"
+            );
+        });
 
     // Zoom behavior
-    if (config.zoom) svg.call(zoom);
+    if (config.zoom) {
+        svg.call(zoom);
+    }
 
 
     function dataScreening(data) {
@@ -206,16 +213,13 @@ var pgm = function (graphConfiguration) {
 
         if (data.length <= 1) {
             throw new Error("input graph data is empty");
-            return;
         }
 
         let weightSum = 0;
 
         for (let vertexIdx = 0; vertexIdx < data.length; vertexIdx++) {
             if (data[vertexIdx].id !== vertexIdx) {
-                throw new Error("Vertex's id must match its position index in the list of vertices");
-                throw new Error(vertexIdx + " th element in the list does not match its position index");
-                return;
+                throw new Error("Vertex's id must match its position index in the list of vertices. The " + vertexIdx + " th element in the list does not match its position index");
             }
 
             let adjVertices = data[vertexIdx].adjacentVertex;
@@ -224,9 +228,7 @@ var pgm = function (graphConfiguration) {
                     weightSum += adjVertices[i].weight;
                 }
                 if (weightSum !== 1.0) {
-                    throw new Error("The sum of a vertex's adjacent vertice's weight must be 1");
-                    throw new Error(vertexIdx + "th node's adjacent vertices's weights do not sum to 1");
-                    return;
+                    throw new Error("The sum of a vertex's adjacent vertice's weight must be 1" + "The " + vertexIdx + "th node's adjacent vertices's weights do not sum to 1");
                 }
             }
             weightSum = 0;
@@ -238,7 +240,6 @@ var pgm = function (graphConfiguration) {
         // Takes in the graph data, modifies the data by adding a list of edges into the data and add to self   
         if (data.length <= 1) {
             throw new Error("input graph data is empty");
-            return;
         }
 
         // Go through each vertex in data and add 'edges' attribute to each vertex
@@ -338,8 +339,11 @@ var pgm = function (graphConfiguration) {
             .attr("alignment-baseline", config.text.alignment)
             .attr("fill", config.text.color)
             .text(d => {
-                if (d.label) return d.label;
-                else return d.id;
+                if (d.label) {
+                    return d.label;
+                } else {
+                    return d.id;
+                }
             });
     }
 
@@ -348,6 +352,7 @@ var pgm = function (graphConfiguration) {
 
         d3.selectAll(".vertex").remove();
 
+        // Create vertex groups, each group contains a cicle and a text
         vertices = container.append("g")
             .attr("class", "vertex")
             .selectAll("circle")
@@ -358,8 +363,7 @@ var pgm = function (graphConfiguration) {
             .call(onClick);
 
         vertices.append("circle")
-            .attr("r", d => d.r)
-            .attr("class", "node");
+            .attr("r", d => d.r);
 
         drawText();
     }
@@ -465,16 +469,21 @@ var pgm = function (graphConfiguration) {
                             // Add a text element to the previously added g element.
                             drawText();
 
+                            // Update the adjMatrix at its last iteration
+                            let lastIterationVertexIdx = directedPath.length - 2;
+                            if (self.adjMat && vertexIdx === lastIterationVertexIdx) {
+                                updateAdjMat();
+                            }
+
                             // 0.9 is a time offset multiplier to make vertex colored faster since
                             // there is an unknown lag
                         }, config.edge.timeInterval * (vertexIdx + 1));
 
                         // Draw the first vertex when the path start highlighting
                         vertices.append("circle")
-                            .attr("class", "node")
                             .attr("class", d => {
                                 // if the node is in the path then draw it in a different color
-                                if (directedPath[0] == d.id) {
+                                if (directedPath[0] === d.id) {
                                     return "visitedVertex";
                                 }
                             })
@@ -504,7 +513,7 @@ var pgm = function (graphConfiguration) {
     }
 
 
-    this.bind = function (gd) {
+    this.bindData = function (gd) {
         /* 
         Used to bind an existing JSON object or an object literal to 
         the graph and render the graph.
@@ -515,11 +524,11 @@ var pgm = function (graphConfiguration) {
         }
 
         if (!gd || !gd.data) {
-            throw new Error("pgm.bind(gd): Input graph data is invalid input graph data is empty");
+            throw new Error("pgm.bindData(gd): Input graph data is invalid input graph data is empty");
         }
 
         if (gd.data.length <= 1) {
-            throw new Error("pgm.bind(gd): Input graph data is empty");
+            throw new Error("pgm.bindData(gd): Input graph data is empty");
         }
 
         // Add the graphData as a class attribute
@@ -554,10 +563,10 @@ var pgm = function (graphConfiguration) {
         graphData.data[id].adjacentVertex = adjVtx;
     };
 
-    this.setLabel = function (label) {
+    this.setLabel = function (id, label) {
         /* Set label for vertex */
         graphData.data[id].label = label;
-    }
+    };
 
     this.getGraphData = function () {
         /* Returns the graphData as  JSON object */
@@ -582,9 +591,9 @@ var pgm = function (graphConfiguration) {
 
         // Populate cMatDim, cMatDim is the dimension of the matrix, ex: [3,3,3]
         let cMatDim = [];
-        for (let i = 0; i < cMat.length; i++)
+        for (let i = 0; i < cMat.length; i++) {
             cMatDim[i] = cMat[i].length;
-
+        }
 
         let offsetPosX = config.transform.width / (cMatDim.length + 1); // get the x offset for first node
         let minPosY = config.transform.height / (Array.max(cMatDim) + 1); // get the y offset for the layer with the most amount of nodes
@@ -615,10 +624,11 @@ var pgm = function (graphConfiguration) {
 
         // Label each vertex based on cMat labels
         let id_temp = 0;
-        for (let i = 0; i < cMat.length; i++)
-            for (let j = 0; j < cMat[i].length; j++)
+        for (let i = 0; i < cMat.length; i++) {
+            for (let j = 0; j < cMat[i].length; j++) {
                 data[id_temp++].label = cMat[i][j];
-
+            }
+        }
 
         // Update the config edge width and baseWidth
         config.edge.width = r * config.edge.width;
@@ -636,6 +646,22 @@ var pgm = function (graphConfiguration) {
             clusterMat: cMat,
             data: data
         };
+    };
+
+
+    /*======== Binding Adjacency Matrix to the PGM =======*/
+
+    function updateAdjMat() {
+        /* Used to update the adjacency matrix */
+        let rowLabel = graphData.data[directedPath[0]].label;
+        let colLabel = graphData.data[directedPath[directedPath.length - 1]].label;
+        let element = [rowLabel, colLabel];
+        log(element);
+        self.adjMat.updateMatrix(element);
+    }
+    this.bindAdj = function (adjMat) {
+        /* Used to bind adjacency matrix chart to the pgm */
+        self.adjMat = adjMat;
     };
 
 };
