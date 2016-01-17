@@ -4,8 +4,8 @@ var config = {
     transform: {
         x: 0,
         y: 0,
-        width: window.innerWidth * 2 / 3 - 10,
-        height: window.innerHeight - 100
+        width: window.innerWidth * 2 / 3 - 20,
+        height: window.innerWidth / 3
     },
     vertex: {
         radius: 0.35,
@@ -157,19 +157,19 @@ var matConfig = {
     transform: {
         x: 0,
         y: 0,
-        width: window.innerWidth / 3 - 15,
-        height: window.innerHeight - 100
+        width: window.innerWidth / 3,
+        height: window.innerWidth / 3
     },
     matrix: {
-        x: 0.2,
-        y: 0.2,
+        x: 0.25,
+        y: 0.3,
         dim: 0.6,
         spacing: 1,
         color: "#52bf90"
     },
     label: {
-        color: "white",
-        size: 0.6, // text size = size * circle radius
+        color: "#52bf90",
+        size: 0.3, // text size = size * circle radius
         anchor: "middle",
         alignment: "middle"
     },
@@ -183,9 +183,10 @@ var matConfig = {
         color: "#ecf6f2"
     }
 };
-var inputData = ["Square", "Circle", "Triangle"];
+var rowLabel = ["Square", "Circle", "Triangle"];
+var colLabel = ["Square", "Circle", "Triangle"];
 var adjMat = new chart(matConfig);
-adjMat.createMatrix(inputData);
+adjMat.createMatrix(rowLabel, colLabel);
 //adjMat.updateMatrix(["Square", "Triangle"]);
 
 
