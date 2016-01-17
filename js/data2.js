@@ -160,8 +160,10 @@ var matConfig = {
         width: window.innerWidth / 3 - 15,
         height: window.innerHeight - 100
     },
-    cell: {
-        dim: 0.7,
+    matrix: {
+        x: 0.2,
+        y: 0.2,
+        dim: 0.6,
         spacing: 1,
         color: "#52bf90"
     },
