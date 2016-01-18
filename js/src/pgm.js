@@ -83,6 +83,38 @@ var Utils = {};
 var pgm = function (graphConfiguration) {
     "use strict";
 
+    this.config = graphConfiguration || {
+        transform: {
+            x: 0,
+            y: 0,
+            width: window.innerWidth,
+            height: window.innerHeight - 80
+        },
+        vertex: {
+            radius: 0.35,
+            defaultColor: "lightsteelblue",
+            visitedColor: "steelblue",
+        },
+        edge: {
+            baseWidth: 0.1, // base width offset = baseWidth * circle radius
+            width: 0.5, // edge width = width * circle radius
+            defaultColor: "#b6ddcc",
+            visitedColor: "#317256",
+            timeInterval: 600 // timeInterval is in millisecond
+        },
+        text: {
+            color: "white",
+            size: 0.5, // text size = size * circle radius
+            anchor: "middle",
+            alignment: "middle"
+
+        },
+        background: {
+            grid: false,
+            color: "#ecf6f2"
+        },
+        zoom: false,
+    };
     let self = this,
 
         graphData = {
@@ -91,38 +123,6 @@ var pgm = function (graphConfiguration) {
         },
 
         directedPath = [], // directedPath is a list of visited nodes' ID
-        config = graphConfiguration || {
-            transform: {
-                x: 0,
-                y: 0,
-                width: window.innerWidth,
-                height: window.innerHeight - 80
-            },
-            vertex: {
-                radius: 0.35,
-                defaultColor: "lightsteelblue",
-                visitedColor: "steelblue",
-            },
-            edge: {
-                baseWidth: 0.1, // base width offset = baseWidth * circle radius
-                width: 0.5, // edge width = width * circle radius
-                defaultColor: "#b6ddcc",
-                visitedColor: "#317256",
-                timeInterval: 600 // timeInterval is in millisecond
-            },
-            text: {
-                color: "white",
-                size: 0.5, // text size = size * circle radius
-                anchor: "middle",
-                alignment: "middle"
-
-            },
-            background: {
-                grid: false,
-                color: "#ecf6f2"
-            },
-            zoom: false,
-        },
 
         canClick = true, // Used to keep user from clicking when the graph is traversing
 
@@ -151,21 +151,21 @@ var pgm = function (graphConfiguration) {
 
                 // Do not allow user to click
                 canClick = false;
-                setTimeout(() => canClick = true, config.edge.timeInterval * (directedPath.length - 1));
+                setTimeout(() => canClick = true, self.config.edge.timeInterval * (directedPath.length - 1));
             }
         }),
 
         svg = d3.select("#pgm").append("svg")
-        .attr("width", config.transform.width)
-        .attr("height", config.transform.height)
+        .attr("width", self.config.transform.width)
+        .attr("height", self.config.transform.height)
         .append("g")
-        .attr("transform", "translate(" + config.transform.x + "," + config.transform.y + ")"),
+        .attr("transform", "translate(" + self.config.transform.x + "," + self.config.transform.y + ")"),
 
         // Set up the background rect wrapper
         rect = svg.append("rect")
-        .attr("width", config.transform.width)
-        .attr("height", config.transform.height)
-        .style("fill", config.background.color)
+        .attr("width", self.config.transform.width)
+        .attr("height", self.config.transform.height)
+        .style("fill", self.config.background.color)
         .style("pointer-events", "all")
         .on("click", d => {
             if (canClick) {
@@ -173,7 +173,7 @@ var pgm = function (graphConfiguration) {
 
                 // Do not allow user to click until visited path highlighting is finished
                 canClick = false;
-                setTimeout(() => canClick = true, config.edge.timeInterval * (directedPath.length - 1));
+                setTimeout(() => canClick = true, self.config.edge.timeInterval * (directedPath.length - 1));
             }
         }),
 
@@ -201,7 +201,7 @@ var pgm = function (graphConfiguration) {
         });
 
     // Zoom behavior
-    if (config.zoom) {
+    if (self.config.zoom) {
         svg.call(zoom);
     }
 
@@ -312,21 +312,21 @@ var pgm = function (graphConfiguration) {
         container.append("g")
             .attr("class", "x axis")
             .selectAll("line")
-            .data(d3.range(0, config.transform.width, 10))
+            .data(d3.range(0, self.config.transform.width, 10))
             .enter().append("line")
             .attr("x1", d => d)
             .attr("y1", 0)
             .attr("x2", d => d)
-            .attr("y2", config.transform.height);
+            .attr("y2", self.config.transform.height);
 
         container.append("g")
             .attr("class", "y axis")
             .selectAll("line")
-            .data(d3.range(0, config.transform.height, 10))
+            .data(d3.range(0, self.config.transform.height, 10))
             .enter().append("line")
             .attr("x1", 0)
             .attr("y1", d => d)
-            .attr("x2", config.transform.width)
+            .attr("x2", self.config.transform.width)
             .attr("y2", d => d);
     }
 
@@ -334,10 +334,10 @@ var pgm = function (graphConfiguration) {
     function drawText() {
         /* Add a text element to the previously added g element. */
         vertices.append("text")
-            .attr("font-size", d => d.r * config.text.size)
-            .attr("text-anchor", config.text.anchor)
-            .attr("alignment-baseline", config.text.alignment)
-            .attr("fill", config.text.color)
+            .attr("font-size", d => d.r * self.config.text.size)
+            .attr("text-anchor", self.config.text.anchor)
+            .attr("alignment-baseline", self.config.text.alignment)
+            .attr("fill", self.config.text.color)
             .text(d => {
                 if (d.label) {
                     return d.label;
@@ -382,11 +382,11 @@ var pgm = function (graphConfiguration) {
                 for (let edgeIdx = 0; edgeIdx < currentVertex.edges.length; edgeIdx++) {
                     // Iterate through each edge in the current node
                     let edgeNodes = currentVertex.edges[edgeIdx].edgeNodes;
-                    let edgeWeight = currentVertex.edges[edgeIdx].edgeWeight * config.edge.width;
+                    let edgeWeight = currentVertex.edges[edgeIdx].edgeWeight * self.config.edge.width;
                     container.append("svg:path")
                         .attr("d", line(edgeNodes))
-                        .attr("stroke-width", edgeWeight + config.edge.baseWidth)
-                        .style("stroke", config.edge.defaultColor)
+                        .attr("stroke-width", edgeWeight + self.config.edge.baseWidth)
+                        .style("stroke", self.config.edge.defaultColor)
                         .style("fill", "none");
                 }
             }
@@ -403,7 +403,7 @@ var pgm = function (graphConfiguration) {
             if (currentVertex.edges) {
                 for (let edgeIdx = 0; edgeIdx < currentVertex.edges.length; edgeIdx++) {
                     let edgeNodes = currentVertex.edges[edgeIdx].edgeNodes;
-                    let edgeWeight = currentVertex.edges[edgeIdx].edgeWeight * config.edge.width;
+                    let edgeWeight = currentVertex.edges[edgeIdx].edgeWeight * self.config.edge.width;
                     // If the edge is in the directedPath then draw different color
                     if (directedPath.indexOf(edgeNodes[0].id) > -1 && directedPath.indexOf(edgeNodes[1].id) > -1) {
 
@@ -438,8 +438,8 @@ var pgm = function (graphConfiguration) {
 
                             // Append a path that completes drawing wthin a time duration
                             container.append("svg:path")
-                                .style("stroke-width", config.edge.baseWidth + edgeWeight)
-                                .style("stroke", config.edge.visitedColor)
+                                .style("stroke-width", self.config.edge.baseWidth + edgeWeight)
+                                .style("stroke", self.config.edge.visitedColor)
                                 .style("fill", "none")
                                 .attr({
                                     'd': line(tempEdges),
@@ -447,10 +447,10 @@ var pgm = function (graphConfiguration) {
                                     'stroke-dashoffset': lineLength
                                 })
                                 .transition()
-                                .duration(config.edge.timeInterval)
+                                .duration(self.config.edge.timeInterval)
                                 .attr('stroke-dashoffset', 0);
 
-                        }, config.edge.timeInterval * vertexIdx);
+                        }, self.config.edge.timeInterval * vertexIdx);
 
                         // Draw the next visited vertex after time Interval
                         setTimeout(() => {
@@ -477,7 +477,7 @@ var pgm = function (graphConfiguration) {
 
                             // 0.9 is a time offset multiplier to make vertex colored faster since
                             // there is an unknown lag
-                        }, config.edge.timeInterval * (vertexIdx + 1));
+                        }, self.config.edge.timeInterval * (vertexIdx + 1));
 
                         // Draw the first vertex when the path start highlighting
                         vertices.append("circle")
@@ -535,7 +535,7 @@ var pgm = function (graphConfiguration) {
         graphData = gd;
         dataScreening(graphData.data);
         createEdgesInGraphData(graphData.data);
-        if (config.background.grid) {
+        if (self.config.background.grid) {
             drawGrid();
         }
         drawGraph(graphData.data);
@@ -546,7 +546,7 @@ var pgm = function (graphConfiguration) {
 
         dataScreening(graphData.data);
         createEdgesInGraphData(graphData.data);
-        if (config.background.grid) {
+        if (self.config.background.grid) {
             drawGrid();
         }
         drawGraph(graphData.data);
@@ -595,19 +595,19 @@ var pgm = function (graphConfiguration) {
             cMatDim[i] = cMat[i].length;
         }
 
-        let offsetPosX = config.transform.width / (cMatDim.length + 1); // get the x offset for first node
-        let minPosY = config.transform.height / (Array.max(cMatDim) + 1); // get the y offset for the layer with the most amount of nodes
+        let offsetPosX = self.config.transform.width / (cMatDim.length + 1); // get the x offset for first node
+        let minPosY = self.config.transform.height / (Array.max(cMatDim) + 1); // get the y offset for the layer with the most amount of nodes
 
         // Data properties: id, x, y, r 
         let data = [];
         let id = 0;
         let x;
         let y;
-        let r = Array.min([offsetPosX, minPosY]) * config.vertex.radius;
+        let r = Array.min([offsetPosX, minPosY]) * self.config.vertex.radius;
 
         for (let i = 0; i < cMatDim.length; i++) {
             // Reset offset Y coordinate for each layer
-            let offSetPosY = config.transform.height / (cMatDim[i] + 1);
+            let offSetPosY = self.config.transform.height / (cMatDim[i] + 1);
             for (let j = 0; j < cMatDim[i]; j++) {
                 x = offsetPosX * (i + 1);
                 y = offSetPosY * (j + 1);
@@ -630,9 +630,9 @@ var pgm = function (graphConfiguration) {
             }
         }
 
-        // Update the config edge width and baseWidth
-        config.edge.width = r * config.edge.width;
-        config.edge.baseWidth = r * config.edge.baseWidth;
+        // Update the self.config edge width and baseWidth
+        self.config.edge.width = r * self.config.edge.width;
+        self.config.edge.baseWidth = r * self.config.edge.baseWidth;
 
 
         // Create the graphData member variable in pgm

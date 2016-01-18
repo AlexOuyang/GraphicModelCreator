@@ -1,6 +1,6 @@
 // Handles the configuration of the graph
 
-var config = {
+var pgmConfig = {
     transform: {
         x: 0,
         y: 0,
@@ -27,10 +27,10 @@ var config = {
 
     },
     background: {
-        grid: true,
+        grid: false,
         color: "#ecf6f2"
     },
-    zoom: true,
+    zoom: false,
 };
 
 
@@ -42,7 +42,7 @@ var clusterMat = [["Square", "Circle", "Triangle"],
 
 // Create a new Graph based on the configuration
 // and bind the data to the graph for rendering
-var myGraph = new pgm(config);
+var myGraph = new pgm(pgmConfig);
 
 var dataTemp = myGraph.createCluster(clusterMat);
 
@@ -163,7 +163,7 @@ var matConfig = {
     matrix: {
         x: 0.25,
         y: 0.3,
-        dim: 0.6,
+        dim: 0.5,
         spacing: 1,
         color: "#52bf90"
     },

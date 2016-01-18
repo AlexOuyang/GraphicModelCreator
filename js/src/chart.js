@@ -1,55 +1,56 @@
 var chart = function (matrixConfiguration) {
     "use strict";
+    
+    this.config = matrixConfiguration || {
+        transform: {
+            x: 0,
+            y: 0,
+            width: window.innerWidth,
+            height: window.innerHeight
+        },
+        matrix: {
+            x: 0.2,
+            y: 0.2,
+            dim: 0.6,
+            spacing: 1,
+            color: "#52bf90"
+        },
+        label: {
+            color: "#52bf90",
+            size: 0.3, // text size = size * circle radius
+            anchor: "middle",
+            alignment: "middle"
+        },
+        text: {
+            color: "white",
+            size: 0.8, // text size = size * circle radius
+            anchor: "middle",
+            alignment: "middle"
+        },
+        background: {
+            color: "#ecf6f2"
+        }
+    };
 
     let self = this,
         adjMatData = [], // The attributes of the n by n adjacency matrix
         rowLabel = [], // A vector that contains the labels. e.g["square", "circle"]
         colLabel = [], // A vector that contains the labels. e.g["square", "circle"]
-        labelsData = [], // The attributes of the labels
-        config = matrixConfiguration || {
-            transform: {
-                x: 0,
-                y: 0,
-                width: window.innerWidth,
-                height: window.innerHeight
-            },
-            matrix: {
-                x: 0.2,
-                y: 0.2,
-                dim: 0.6,
-                spacing: 1,
-                color: "#52bf90"
-            },
-            label: {
-                color: "white",
-                size: 0.6, // text size = size * circle radius
-                anchor: "middle",
-                alignment: "middle"
-            },
-            text: {
-                color: "white",
-                size: 0.8, // text size = size * circle radius
-                anchor: "middle",
-                alignment: "middle"
-            },
-            background: {
-                color: "#ecf6f2"
-            }
-        },
+
 
         svg = d3.select('#pgm')
         .append('svg')
         //    .attr("class", "cell")
-        .attr('width', config.transform.width)
-        .attr('height', config.transform.height)
+        .attr('width', self.config.transform.width)
+        .attr('height', self.config.transform.height)
         .append('g')
-        .attr("transform", "translate(" + config.transform.x + "," + config.transform.y + ")"),
+        .attr("transform", "translate(" + self.config.transform.x + "," + self.config.transform.y + ")"),
 
         // Create the background wrapper
         rect = svg.append("rect")
-        .attr("width", config.transform.width)
-        .attr("height", config.transform.height)
-        .style("fill", config.background.color);
+        .attr("width", self.config.transform.width)
+        .attr("height", self.config.transform.height)
+        .style("fill", self.config.background.color);
 
 
 
@@ -67,25 +68,25 @@ var chart = function (matrixConfiguration) {
 
         // Each rect is a matrix cell
         cell.append("rect")
-            .attr("transform", d => "translate(" + -config.matrix.dim / 2 + "," + -config.matrix.dim / 2 + ")")
-            .attr('width', config.matrix.dim)
-            .attr('height', config.matrix.dim)
+            .attr("transform", "translate(" + -self.config.matrix.dim / 2 + "," + -self.config.matrix.dim / 2 + ")")
+            .attr('width', self.config.matrix.dim)
+            .attr('height', self.config.matrix.dim)
             .attr('fill', d => {
                 if (d.type === "cellData") {
-                    return config.matrix.color;
+                    return self.config.matrix.color;
                 }
                 if (d.type === "cellLabel") {
-                    return config.background.color;
+                    return self.config.background.color;
                 }
             });
 
 
         // Add cell weight
         cell.append("text")
-            .attr("font-size", config.matrix.dim * config.text.size)
-            .attr("text-anchor", config.text.anchor)
-            .attr("alignment-baseline", config.text.alignment)
-            .attr("fill", config.text.color)
+            .attr("font-size", self.config.matrix.dim * self.config.text.size)
+            .attr("text-anchor", self.config.text.anchor)
+            .attr("alignment-baseline", self.config.text.alignment)
+            .attr("fill", self.config.text.color)
             .text(d => {
                 if (d.type === "cellData") {
                     return d.weight;
@@ -94,10 +95,10 @@ var chart = function (matrixConfiguration) {
 
         // Add cell label
         cell.append("text")
-            .attr("font-size", config.matrix.dim * config.label.size)
-            .attr("text-anchor", config.label.anchor)
-            .attr("alignment-baseline", config.label.alignment)
-            .attr("fill", config.label.color)
+            .attr("font-size", self.config.matrix.dim * self.config.label.size)
+            .attr("text-anchor", self.config.label.anchor)
+            .attr("alignment-baseline", self.config.label.alignment)
+            .attr("fill", self.config.label.color)
             .text(d => {
                 if (d.type === "cellLabel") {
                     return d.label;
@@ -110,12 +111,12 @@ var chart = function (matrixConfiguration) {
 
         rowLabel = rowLab; // Update the labels
         colLabel = colLab; // Update the labels
-        
-        // Calculate the dimension of each block and other matrix config properties
-        config.matrix.dim = config.matrix.dim * Array.min([config.transform.width, config.transform.height]) / Array.max([rowLabel.length, colLabel.length]);
-        config.matrix.spacing *= config.matrix.dim / 10;
-        config.matrix.x *= config.transform.width;
-        config.matrix.y *= config.transform.height;
+
+        // Calculate the dimension of each block and other matrix self.config properties
+        self.config.matrix.dim = self.config.matrix.dim * Array.min([self.config.transform.width, self.config.transform.height]) / Array.max([rowLabel.length, colLabel.length]);
+        self.config.matrix.spacing *= self.config.matrix.dim / 10;
+        self.config.matrix.x *= self.config.transform.width;
+        self.config.matrix.y *= self.config.transform.height;
 
         // Populate adjacency matrix data
         let id = 0;
@@ -123,8 +124,8 @@ var chart = function (matrixConfiguration) {
         let y;
         for (let i = 0; i < rowLabel.length; i++) {
             for (let j = 0; j < colLabel.length; j++) {
-                x = (config.matrix.dim + config.matrix.spacing) * (j + 1 / 2) + config.matrix.x;
-                y = (config.matrix.dim + config.matrix.spacing) * (i + 1 / 2) + config.matrix.y;
+                x = (self.config.matrix.dim + self.config.matrix.spacing) * (j + 1 / 2) + self.config.matrix.x;
+                y = (self.config.matrix.dim + self.config.matrix.spacing) * (i + 1 / 2) + self.config.matrix.y;
                 adjMatData.push({
                     type: "cellData",
                     id: id,
@@ -139,8 +140,8 @@ var chart = function (matrixConfiguration) {
         // Add labels to the adjMat as well
         for (let i = 0; i < colLabel.length; i++) {
             // Add column labels
-            x = (config.matrix.dim + config.matrix.spacing) * (i + 1 / 2) + config.matrix.x;
-            y = (config.matrix.dim + config.matrix.spacing) * (-1 / 2) + config.matrix.y;
+            x = (self.config.matrix.dim + self.config.matrix.spacing) * (i + 1 / 2) + self.config.matrix.x;
+            y = (self.config.matrix.dim + self.config.matrix.spacing) * (-1 / 2) + self.config.matrix.y;
             adjMatData.push({
                 type: "cellLabel",
                 label: colLabel[i],
@@ -152,8 +153,8 @@ var chart = function (matrixConfiguration) {
         // Add labels to the adjMat as well
         for (let i = 0; i < rowLabel.length; i++) {
             // Add row labels
-            x = (config.matrix.dim + config.matrix.spacing) * (-1 / 2) + config.matrix.x;
-            y = (config.matrix.dim + config.matrix.spacing) * (i + 1 / 2) + config.matrix.y;
+            x = (self.config.matrix.dim + self.config.matrix.spacing) * (-1 / 2) + self.config.matrix.x;
+            y = (self.config.matrix.dim + self.config.matrix.spacing) * (i + 1 / 2) + self.config.matrix.y;
             adjMatData.push({
                 type: "cellLabel",
                 label: rowLabel[i],
