@@ -27,16 +27,16 @@ var pgmConfig = {
 
     },
     background: {
-        grid: false,
+        grid: true,
         color: "#ecf6f2"
     },
-    zoom: false,
+    zoom: true,
 };
 
 
-var clusterMat = [["Square", "Circle", "Triangle"],
-                  ["▢", "◯", "△"],
-                  ["Square", "Circle", "Triangle"]];
+var clusterMat = [["▢", "◯", "△"],
+                  ["Square", "Circle", "Triangle"],
+                  ["▢", "◯", "△"]];
 
 //var clusterMatPrototype = [["0"],["1"],["2"],["3"],["4"]];
 
@@ -169,7 +169,7 @@ var matConfig = {
     },
     label: {
         color: "#52bf90",
-        size: 0.3, // text size = size * circle radius
+        size: 0.5, // text size = size * circle radius
         anchor: "middle",
         alignment: "middle"
     },
@@ -183,8 +183,8 @@ var matConfig = {
         color: "#ecf6f2"
     }
 };
-var rowLabel = ["Square", "Circle", "Triangle"];
-var colLabel = ["Square", "Circle", "Triangle"];
+var rowLabel = ["▢", "◯", "△"];
+var colLabel = rowLabel;
 var adjMat = new chart(matConfig);
 adjMat.createMatrix(rowLabel, colLabel);
 //adjMat.updateMatrix(["Square", "Triangle"]);
