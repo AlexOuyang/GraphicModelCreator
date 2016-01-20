@@ -165,7 +165,7 @@ var matConfig = {
         y: 0.3,
         dim: 0.5,
         spacing: 1,
-        color: "#52bf90"
+        color: "#63c59b"
     },
     label: {
         color: "#52bf90",
@@ -175,7 +175,7 @@ var matConfig = {
     },
     text: {
         color: "white",
-        size: 0.8, // text size = size * circle radius
+        size: 0.6, // text size = size * circle radius
         anchor: "middle",
         alignment: "middle"
     },

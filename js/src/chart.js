@@ -1,6 +1,6 @@
 var chart = function (matrixConfiguration) {
     "use strict";
-    
+
     this.config = matrixConfiguration || {
         transform: {
             x: 0,
@@ -13,7 +13,7 @@ var chart = function (matrixConfiguration) {
             y: 0.2,
             dim: 0.6,
             spacing: 1,
-            color: "#52bf90"
+            color: "#63c59b"
         },
         label: {
             color: "#52bf90",
@@ -23,7 +23,7 @@ var chart = function (matrixConfiguration) {
         },
         text: {
             color: "white",
-            size: 0.8, // text size = size * circle radius
+            size: 0.6, // text size = size * circle radius
             anchor: "middle",
             alignment: "middle"
         },
@@ -46,7 +46,7 @@ var chart = function (matrixConfiguration) {
         .append('g')
         .attr("transform", "translate(" + self.config.transform.x + "," + self.config.transform.y + ")"),
 
-        // Create the background wrapper
+        // Create the background wrapper for color theme
         rect = svg.append("rect")
         .attr("width", self.config.transform.width)
         .attr("height", self.config.transform.height)
@@ -56,6 +56,7 @@ var chart = function (matrixConfiguration) {
 
     function drawMatrix() {
         /* Draw the adjancy matrix */
+
         d3.selectAll(".cell").remove();
         d3.selectAll(".label").remove();
 
@@ -73,7 +74,8 @@ var chart = function (matrixConfiguration) {
             .attr('height', self.config.matrix.dim)
             .attr('fill', d => {
                 if (d.type === "cellData") {
-                    return self.config.matrix.color;
+                    // return self.config.matrix.color;
+                    return Utils.shadeColor(self.config.matrix.color, -d.weight * 5);
                 }
                 if (d.type === "cellLabel") {
                     return self.config.background.color;
@@ -165,6 +167,7 @@ var chart = function (matrixConfiguration) {
 
         drawMatrix();
     };
+
 
     this.updateMatrix = function (element) {
         /* Update the adj matrix based on the element pair
