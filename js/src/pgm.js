@@ -186,7 +186,6 @@ function GraphicalModel(graphConfiguration) {
         .on("click", d => {
             if (canClick) {
                 clearVisitedPath();
-
                 // Do not allow user to click until visited path highlighting is finished
                 canClick = false;
                 setTimeout(() => canClick = true, self.config.edge.timeInterval * (directedPath.length - 1));
@@ -755,5 +754,5 @@ function GraphicalModel(graphConfiguration) {
         var colLabel = graphData.clusterMat[graphData.clusterMat.length - 1];
         self.chart = new Chart(chartConfig);
         self.chart.createMatrix(rowLabel, colLabel);
-    }
-};
+    };
+}
