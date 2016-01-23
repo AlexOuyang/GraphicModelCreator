@@ -154,7 +154,8 @@ function Chart(matrixConfiguration) {
                 }
             });
     }
-
+    
+    
     /** 
      * Creates an adjacency matrix based on the row and column labels
      * @function chart.createMatrix 

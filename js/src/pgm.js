@@ -77,7 +77,7 @@ var Utils = {};
      * Darkens or lightens hex color value
      * percentage ranges form -100(dark) to +100(light)
      */
-    Utils.shadeColor = function shadeColor(colorHex, percent) {
+    Utils.shadeColor = function Utils(colorHex, percent) {
 
         var R = parseInt(colorHex.substring(1, 3), 16);
         var G = parseInt(colorHex.substring(3, 5), 16);
@@ -518,11 +518,9 @@ function GraphicalModel(graphConfiguration) {
                         // Add a text element to the previously added g element.
                         drawText();
                     }
-
                 }
             }
         }
-
     }
 
     function drawGraph(data) {
@@ -667,7 +665,6 @@ function GraphicalModel(graphConfiguration) {
             data: data
         };
 
-
         return {
             clusterMat: cMat,
             data: data
@@ -675,7 +672,7 @@ function GraphicalModel(graphConfiguration) {
     };
 
 
-    /*======== Binding Adjacency Matrix to the PGM =======*/
+    /*======== Binding Adjacency Matrix To The Graphical Model =======*/
 
     function updateAdjMat() {
         /* Used to update the adjacency matrix */
