@@ -1,6 +1,21 @@
-var chart = function (matrixConfiguration) {
+/**
+ * Creates a color coded adjacency matrix contained in a chart object
+ * @class
+ * @constructor
+ * @param {Object} matrixConfiguration - The configurations of the adjacency matrix
+ */
+function Chart(matrixConfiguration) {
     "use strict";
 
+    /**
+     * @memberof chart
+     * @type {Object}
+     * @property {Object} transform - The transform property can be used to position and scale the chart object
+     * @property {Object} matrix - The matix property can be used to position, scale and color the matrix
+     * @property {Object} label - The label property can be used to color and scale the matrix labels
+     * @property {Object} text - The text property can be used to color and scale the matrix cell weight
+     * @property {Object} background - The background property can be used to change the color of the background
+     */
     this.config = matrixConfiguration || {
         transform: {
             x: 0,
@@ -11,7 +26,7 @@ var chart = function (matrixConfiguration) {
         matrix: {
             x: 0.2,
             y: 0.2,
-            dim: 0.6,
+            dim: 0.6, // dimenion relative to the chart that contains the matrix
             spacing: 1,
             color: "#63c59b"
         },
@@ -54,6 +69,38 @@ var chart = function (matrixConfiguration) {
 
 
 
+    /**
+     * Darkens or lightens hex color value
+     * @function shadeColor 
+     * @param {String} colorHex - a hex color string. ie. "#63c59b"
+     * @param {Number} percentage - shading ranges form -100(dark) to +100(light)
+     */
+    function shadeColor(colorHex, percent) {
+
+        var R = parseInt(colorHex.substring(1, 3), 16);
+        var G = parseInt(colorHex.substring(3, 5), 16);
+        var B = parseInt(colorHex.substring(5, 7), 16);
+
+        R = parseInt(R * (100 + percent) / 100);
+        G = parseInt(G * (100 + percent) / 100);
+        B = parseInt(B * (100 + percent) / 100);
+
+        R = (R < 255) ? R : 255;
+        G = (G < 255) ? G : 255;
+        B = (B < 255) ? B : 255;
+
+        var RR = ((R.toString(16).length === 1) ? "0" + R.toString(16) : R.toString(16));
+        var GG = ((G.toString(16).length === 1) ? "0" + G.toString(16) : G.toString(16));
+        var BB = ((B.toString(16).length === 1) ? "0" + B.toString(16) : B.toString(16));
+
+        return "#" + RR + GG + BB;
+    }
+    
+    
+    /** 
+     * Draws the adjancy matrix based on the property of each cell
+     * @function drawMatrix 
+     */
     function drawMatrix() {
         /* Draw the adjancy matrix */
 
@@ -75,7 +122,7 @@ var chart = function (matrixConfiguration) {
             .attr('fill', d => {
                 if (d.type === "cellData") {
                     // return self.config.matrix.color;
-                    return Utils.shadeColor(self.config.matrix.color, -d.weight * 5);
+                    return shadeColor(self.config.matrix.color, -d.weight * 5);
                 }
                 if (d.type === "cellLabel") {
                     return self.config.background.color;
@@ -108,8 +155,13 @@ var chart = function (matrixConfiguration) {
             });
     }
 
+    /** 
+     * Creates an adjacency matrix based on the row and column labels
+     * @function chart.createMatrix 
+     * @param {Array} rowLab - labels that represent the row of the matrix
+     * @param {Array} colLab - labels that represent the column of the matrix
+     */
     this.createMatrix = function (rowLab, colLab) {
-        /* Used to create a square adj matrix based on the input Data */
 
         rowLabel = rowLab; // Update the labels
         colLabel = colLab; // Update the labels
@@ -169,17 +221,19 @@ var chart = function (matrixConfiguration) {
     };
 
 
-    this.updateMatrix = function (element) {
-        /* Update the adj matrix based on the element pair
-        element = (row, col), it is used to locate an element in the adj matrix
-        */
+    /** 
+     * Updates the matix cell color based on the weight
+     * @function chart.createMatrix 
+     * @param {Array} cell - the cell to update is represented by a coordinate pair, ie. cell = (row, col)
+     */
+    this.updateMatrix = function (cell) {
 
-        let row = rowLabel.indexOf(element[0]);
-        let col = colLabel.indexOf(element[1]);
+        let row = rowLabel.indexOf(cell[0]);
+        let col = colLabel.indexOf(cell[1]);
 
         // Test for validity of the input
         if (row < 0 || col < 0) {
-            throw new Error("updateMatrix(element): the element updated does not exist in the adjacency matrix.");
+            throw new Error("updateMatrix(cell): the element updated does not exist in the adjacency matrix.");
         }
 
         // Update weight of the element
@@ -189,4 +243,4 @@ var chart = function (matrixConfiguration) {
         drawMatrix();
     };
 
-};
+}

@@ -56,7 +56,7 @@ var Utils = {};
 
     Utils.isObjLiteral = function isObjLiteral(_obj) {
         /* verify if an object is an object literal */
-        
+
         let _test = _obj;
         return (typeof _obj !== 'object' || _obj === null ?
             false :
@@ -73,10 +73,11 @@ var Utils = {};
         );
     };
 
-    Utils.shadeColor = function Utils(colorHex, percent) {
-        /* Darkens or lightens hex color value
-         * percentage ranges form -100(dark) to +100(light)
-         */
+    /**
+     * Darkens or lightens hex color value
+     * percentage ranges form -100(dark) to +100(light)
+     */
+    Utils.shadeColor = function shadeColor(colorHex, percent) {
 
         var R = parseInt(colorHex.substring(1, 3), 16);
         var G = parseInt(colorHex.substring(3, 5), 16);
@@ -105,7 +106,7 @@ var Utils = {};
 
 /*=============== Probability Graphic Model ====================*/
 
-var pgm = function (graphConfiguration) {
+function GraphicalModel(graphConfiguration) {
     "use strict";
 
     this.config = graphConfiguration || {

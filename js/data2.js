@@ -42,7 +42,7 @@ var clusterMat = [["▢", "◯", "△"],
 
 // Create a new Graph based on the configuration
 // and bind the data to the graph for rendering
-var myGraph = new pgm(pgmConfig);
+var myGraph = new GraphicalModel(pgmConfig);
 
 var dataTemp = myGraph.createCluster(clusterMat);
 
@@ -185,7 +185,7 @@ var matConfig = {
 };
 var rowLabel = ["▢", "◯", "△"];
 var colLabel = rowLabel;
-var adjMat = new chart(matConfig);
+var adjMat = new Chart(matConfig);
 adjMat.createMatrix(rowLabel, colLabel);
 //adjMat.updateMatrix(["Square", "Triangle"]);
 
