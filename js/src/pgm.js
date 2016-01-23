@@ -136,11 +136,17 @@ function GraphicalModel(graphConfiguration) {
 
         },
         background: {
-            grid: false,
+            grid: true,
             color: "#ecf6f2"
         },
-        zoom: false,
+        autoPlay: {
+            timeInterval: 500
+        },
+        playable: false,
+        zoom: true,
     };
+
+
     let self = this,
 
         graphData = {
@@ -152,32 +158,16 @@ function GraphicalModel(graphConfiguration) {
 
         canClick = true, // Used to keep user from clicking when the graph is traversing
 
-        // Dragging nodes behavior
+        // Click on the node in the speaker layer to draw visited path
         onClick = d3.behavior.drag()
         .origin(d => d)
         .on("dragstart", function (d) {
             // Check if the clicked node is in the first layer
             // which are the num of nodes in first layer of clusterMat
             if (canClick) {
-                let layer_1_dim = graphData.clusterMat[0].length;
-                if (this.id < layer_1_dim) {
-                    d3.event.sourceEvent.stopPropagation();
-                    d3.select(this).classed("dragging", true);
-                    let clickedVertexId = parseInt(this.id, 10);
-                    traverseGraph(clickedVertexId, graphData.data);
-                    drawGraph(graphData.data);
-                    drawVisitedPath(graphData.data);
-
-                    // testing 
-                    $('.path strong').text(directedPath);
-                } else {
-                    // Else clear the path
-                    clearVisitedPath();
-                }
-
-                // Do not allow user to click
-                canClick = false;
-                setTimeout(() => canClick = true, self.config.edge.timeInterval * (directedPath.length - 1));
+                d3.event.sourceEvent.stopPropagation();
+                d3.select(this).classed("dragging", true);
+                self.triggerSpeakerNode(this.id);
             }
         }),
 
@@ -233,9 +223,8 @@ function GraphicalModel(graphConfiguration) {
 
 
     function dataScreening(data) {
-
-        // Verifies if each vertex's id matches its position in the array 
-        // and the weights of all adjacent vertices sum to 1;
+        /* Verifies if each vertex's id matches its position in the array 
+        and the weights of all adjacent vertices sum to 1; */
 
         if (data.length <= 1) {
             throw new Error("input graph data is empty");
@@ -495,10 +484,18 @@ function GraphicalModel(graphConfiguration) {
                             // Add a text element to the previously added g element.
                             drawText();
 
-                            // Update the adjMatrix at its last iteration
-                            let lastIterationVertexIdx = directedPath.length - 2;
-                            if (self.adjMat && vertexIdx === lastIterationVertexIdx) {
-                                updateAdjMat();
+                            // Update the chart adjacency matrix after the visited path finish highlighting
+                            // If autoplay is on, then auto click on another node from speak layer
+                            let endingVertexIdx = directedPath.length - 2;
+                            if (self.chart && vertexIdx === endingVertexIdx) {
+                                updateChart();
+                                if (self.config.playable) {
+                                    console.log("Auto play is on!");
+                                    setTimeout(() => {
+                                        let random_id = Math.floor(Math.random() * graphData.clusterMat[0].length);
+                                        self.triggerSpeakerNode(random_id);
+                                    }, self.config.autoPlay.timeInterval);
+                                }
                             }
 
                             // 0.9 is a time offset multiplier to make vertex colored faster since
@@ -535,6 +532,31 @@ function GraphicalModel(graphConfiguration) {
         directedPath = [];
         drawGraph(graphData.data);
     }
+
+
+    this.triggerSpeakerNode = function (id) {
+        /* triggers a speaker node by id, traverse down and draw the visited path. */
+
+        let speakerLayerLength = graphData.clusterMat[0].length;
+
+        // Only allow the node to be clicked if it is in the speaker layer
+        if (id < speakerLayerLength) {
+            let clickedVertexId = parseInt(id, 10);
+            traverseGraph(clickedVertexId, graphData.data);
+            drawGraph(graphData.data);
+            drawVisitedPath(graphData.data);
+
+            // testing 
+            $('.path strong').text(directedPath);
+        } else {
+            // Else clear the path
+            clearVisitedPath();
+        }
+
+        // Do not allow user to click
+        canClick = false;
+        setTimeout(() => canClick = true, self.config.edge.timeInterval * (directedPath.length - 1));
+    };
 
 
     this.bindData = function (gd) {
@@ -673,27 +695,57 @@ function GraphicalModel(graphConfiguration) {
         };
     };
 
+    /*======== Graphical Model Autoplay =======*/
+
+    function resetChart() {
+        /* reset the chart */
+        self.chart.resetMatrixWeight();
+    }
+
+    this.startAutoPlay = function () {
+        /* called by the play button to start autoplay */
+        resetChart();
+        self.config.playable = true;
+        let random_id = Math.floor(Math.random() * graphData.clusterMat[0].length);
+        self.triggerSpeakerNode(random_id);
+    };
+
+    this.stopAutoPlay = function () {
+        /* called by the stop button to stop autoplay */
+        self.config.playable = false;
+        // After stop, clear the path
+//        clearVisitedPath();
+//        setTimeout(() => {
+//            clearVisitedPath();
+//        }, self.config.autoPlay.timeInterval);
+//        setTimeout(() => {
+//            clearVisitedPath();
+//        }, self.config.autoPlay.timeInterval + 10);
+    };
+
 
     /*======== Binding Adjacency Matrix To The Graphical Model =======*/
 
-    function updateAdjMat() {
+    function updateChart() {
         /* Used to update the adjacency matrix */
 
         let rowLabel = graphData.data[directedPath[0]].label;
         let colLabel = graphData.data[directedPath[directedPath.length - 1]].label;
         let element = [rowLabel, colLabel];
         log(element);
-        self.adjMat.increaseCellWeight(element);
+        self.chart.increaseCellWeight(element);
     }
 
-    this.bindChart = function (adjMat) {
+    this.bindChart = function (chart) {
 
         /* Used to bind to an existing adjacency matrix chart to the graphical model */
-        self.adjMat = adjMat;
+        self.chart = chart;
     };
 
     this.createChart = function (chartConfig) {
         /* Create a chart and bind to the graphic model */
+
+        self.chartConfig = chartConfig;
 
         if (graphData.clusterMat.length < 2) {
             throw new Error("Can not create adjacency matrix for graphical model with layer number less than 2");
@@ -701,7 +753,7 @@ function GraphicalModel(graphConfiguration) {
         }
         var rowLabel = graphData.clusterMat[0];
         var colLabel = graphData.clusterMat[graphData.clusterMat.length - 1];
-        self.adjMat = new Chart(chartConfig);
-        self.adjMat.createMatrix(rowLabel, colLabel);
+        self.chart = new Chart(chartConfig);
+        self.chart.createMatrix(rowLabel, colLabel);
     }
 };

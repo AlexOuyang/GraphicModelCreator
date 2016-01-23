@@ -243,5 +243,16 @@ function Chart(matrixConfiguration) {
 
         drawMatrix();
     };
-
+    
+    this.resetMatrixWeight = function () {
+        /* Reset each matrix cell weight to 0 */
+        
+        for(let i = 0; i < adjMatData.length; i++) {
+            if(adjMatData[i].type === "cellData") {
+                adjMatData[i].weight = 0;
+            }
+        }
+        
+        drawMatrix();
+    }
 }
