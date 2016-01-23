@@ -21,7 +21,7 @@ var pgmConfig = {
     },
     text: {
         color: "white",
-        size: 0.8, // text size = size * circle radius
+        size: 0.5, // text size = size * circle radius
         anchor: "middle",
         alignment: "middle"
 
@@ -30,11 +30,16 @@ var pgmConfig = {
         grid: true,
         color: "#ecf6f2"
     },
+    autoPlay: {
+        on: true,
+        timeInterval: 500
+    },
     zoom: true,
 };
 
 
-var clusterMatPrototype = [["0"],["1"],["2"],["3"],["4"]];
+
+var clusterMatPrototype = [["0"], ["1"], ["2"], ["3"], ["4"]];
 
 // Create a new Graph based on the configuration
 // and bind the data to the graph for rendering
@@ -78,9 +83,9 @@ var matConfig = {
         height: window.innerWidth / 3
     },
     matrix: {
-        x: 0.25,
-        y: 0.3,
-        dim: 0.5,
+        x: 0.5,
+        y: 0.5,
+        dim: 0.4,
         spacing: 1,
         color: "#63c59b"
     },

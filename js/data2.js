@@ -31,9 +31,9 @@ var pgmConfig = {
         color: "#ecf6f2"
     },
     autoPlay: {
-        timeInterval: 500
+        on: true,
+        timeInterval: 1000
     },
-    playable: false,
     zoom: true,
 };
 
@@ -51,7 +51,7 @@ var myGraph = new GraphicalModel(pgmConfig);
 var dataTemp = myGraph.createCluster(clusterMat);
 
 // Auto play
-myGraph.config.playable = true;
+//myGraph.config.playable = true;
 
 // Layer 1
 myGraph.setAdjacentVertex(0, adjacentVertex = [{

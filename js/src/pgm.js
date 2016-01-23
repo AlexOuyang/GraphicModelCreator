@@ -91,9 +91,9 @@ var Utils = {};
         G = (G < 255) ? G : 255;
         B = (B < 255) ? B : 255;
 
-        var RR = ((R.toString(16).length == 1) ? "0" + R.toString(16) : R.toString(16));
-        var GG = ((G.toString(16).length == 1) ? "0" + G.toString(16) : G.toString(16));
-        var BB = ((B.toString(16).length == 1) ? "0" + B.toString(16) : B.toString(16));
+        var RR = ((R.toString(16).length === 1) ? "0" + R.toString(16) : R.toString(16));
+        var GG = ((G.toString(16).length === 1) ? "0" + G.toString(16) : G.toString(16));
+        var BB = ((B.toString(16).length === 1) ? "0" + B.toString(16) : B.toString(16));
 
         return "#" + RR + GG + BB;
     };
@@ -140,11 +140,13 @@ function GraphicalModel(graphConfiguration) {
             color: "#ecf6f2"
         },
         autoPlay: {
+            on: true,
             timeInterval: 500
         },
-        playable: false,
         zoom: true,
     };
+
+    this.chart = null; // holds the adjacency matrix chart 
 
 
     let self = this,
@@ -164,6 +166,7 @@ function GraphicalModel(graphConfiguration) {
         .on("dragstart", function (d) {
             // Check if the clicked node is in the first layer
             // which are the num of nodes in first layer of clusterMat
+            // Only allow user to click the node if autoplay is off
             if (canClick) {
                 d3.event.sourceEvent.stopPropagation();
                 d3.select(this).classed("dragging", true);
@@ -482,13 +485,19 @@ function GraphicalModel(graphConfiguration) {
 
                             // Add a text element to the previously added g element.
                             drawText();
-
-                            // Update the chart adjacency matrix after the visited path finish highlighting
-                            // If autoplay is on, then auto click on another node from speak layer
+                            
+                            // Draw visited path ending condition
                             let endingVertexIdx = directedPath.length - 2;
-                            if (self.chart && vertexIdx === endingVertexIdx) {
-                                updateChart();
-                                if (self.config.playable) {
+                            if (vertexIdx === endingVertexIdx) {
+
+                                // If chart exist, update the chart adjacency matrix after the visited path finish highlighting
+                                if (self.chart) {
+                                    setTimeout(() => {
+                                        updateChart();
+                                    }, 500);
+                                }
+                                // If autoplay is on, then auto click on another node from speak layer
+                                if (self.config.autoPlay.on) {
                                     console.log("Auto play is on!");
                                     setTimeout(() => {
                                         let random_id = Math.floor(Math.random() * graphData.clusterMat[0].length);
@@ -499,7 +508,7 @@ function GraphicalModel(graphConfiguration) {
 
                             // 0.9 is a time offset multiplier to make vertex colored faster since
                             // there is an unknown lag
-                        }, self.config.edge.timeInterval * (vertexIdx + 1));
+                        }, 0.9 * self.config.edge.timeInterval * (vertexIdx + 1));
 
                         // Draw the first vertex when the path start highlighting
                         vertices.append("circle")
@@ -555,6 +564,7 @@ function GraphicalModel(graphConfiguration) {
         // Do not allow user to click
         canClick = false;
         setTimeout(() => canClick = true, self.config.edge.timeInterval * (directedPath.length - 1));
+
     };
 
 
@@ -703,41 +713,43 @@ function GraphicalModel(graphConfiguration) {
 
     this.startAutoPlay = function () {
         /* called by the play button to start autoplay */
-        resetChart();
-        self.config.playable = true;
+        canClick = false;
+        if (self.chart) resetChart();
+        self.config.autoPlay.on = true;
         let random_id = Math.floor(Math.random() * graphData.clusterMat[0].length);
         self.triggerSpeakerNode(random_id);
     };
 
     this.stopAutoPlay = function () {
         /* called by the stop button to stop autoplay */
-        self.config.playable = false;
+        canClick = true;
+        self.config.autoPlay.on = false;
         // After stop, clear the path
-//        clearVisitedPath();
-//        setTimeout(() => {
-//            clearVisitedPath();
-//        }, self.config.autoPlay.timeInterval);
-//        setTimeout(() => {
-//            clearVisitedPath();
-//        }, self.config.autoPlay.timeInterval + 10);
+        //        clearVisitedPath();
+        //        setTimeout(() => {
+        //            clearVisitedPath();
+        //        }, self.config.autoPlay.timeInterval);
+        //        setTimeout(() => {
+        //            clearVisitedPath();
+        //        }, self.config.autoPlay.timeInterval + 10);
     };
 
 
     /*======== Binding Adjacency Matrix To The Graphical Model =======*/
 
     function updateChart() {
-        /* Used to update the adjacency matrix */
+        /* Used in drawVisitedPath() to update the adjacency matrix chart */
 
         let rowLabel = graphData.data[directedPath[0]].label;
         let colLabel = graphData.data[directedPath[directedPath.length - 1]].label;
-        let element = [rowLabel, colLabel];
-        log(element);
-        self.chart.increaseCellWeight(element);
+        let cellToUpdate = [rowLabel, colLabel];
+        log("Update Cell: [" + cellToUpdate + "]");
+        self.chart.increaseCellWeight(cellToUpdate);
     }
 
     this.bindChart = function (chart) {
-
         /* Used to bind to an existing adjacency matrix chart to the graphical model */
+
         self.chart = chart;
     };
 
