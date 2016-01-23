@@ -16,7 +16,7 @@ var pgmConfig = {
         baseWidth: 0.1, // base width offset = baseWidth * circle radius
         width: 0.5, // edge width = width * circle radius
         defaultColor: "#b6ddcc",
-        visitedColor: "#317256",
+        visitedColor: "#1d4433",
         timeInterval: 600 // timeInterval is in millisecond
     },
     text: {
@@ -183,13 +183,17 @@ var matConfig = {
         color: "#ecf6f2"
     }
 };
-var rowLabel = ["▢", "◯", "△"];
-var colLabel = rowLabel;
-var adjMat = new Chart(matConfig);
-adjMat.createMatrix(rowLabel, colLabel);
-//adjMat.updateMatrix(["Square", "Triangle"]);
 
+// Way 1 to create a chart
 
+myGraph.createChart(matConfig);
 
-// Bind the chart to graph
-myGraph.bindAdj(adjMat);
+// Way 2 to create a chart
+
+//var rowLabel = ["▢", "◯", "△"];
+//var colLabel = rowLabel;
+//var adjMat = new Chart(matConfig);
+//adjMat.createMatrix(rowLabel, colLabel);
+//
+//// Bind the chart to graph
+//myGraph.bindChart(adjMat);

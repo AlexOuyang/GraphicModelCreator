@@ -223,11 +223,11 @@ function Chart(matrixConfiguration) {
 
 
     /** 
-     * Updates the matix cell color based on the weight
-     * @function chart.createMatrix 
-     * @param {Array} cell - the cell to update is represented by a coordinate pair, ie. cell = (row, col)
+     * Increases the matix cell weight and updates color based on the weight
+     * @function chart.increaseCellWeight 
+     * @param {Array} cell - the cell to increase weight is represented by a coordinate pair, ie. cell = (row, col)
      */
-    this.updateMatrix = function (cell) {
+    this.increaseCellWeight = function (cell) {
 
         let row = rowLabel.indexOf(cell[0]);
         let col = colLabel.indexOf(cell[1]);

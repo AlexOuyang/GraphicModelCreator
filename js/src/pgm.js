@@ -125,7 +125,7 @@ function GraphicalModel(graphConfiguration) {
             baseWidth: 0.1, // base width offset = baseWidth * circle radius
             width: 0.5, // edge width = width * circle radius
             defaultColor: "#b6ddcc",
-            visitedColor: "#317256",
+            visitedColor: "#1d4433",
             timeInterval: 600 // timeInterval is in millisecond
         },
         text: {
@@ -629,6 +629,8 @@ function GraphicalModel(graphConfiguration) {
         let y;
         let r = Array.min([offsetPosX, minPosY]) * self.config.vertex.radius;
 
+        self.config.vertex.radius = r;
+
         for (let i = 0; i < cMatDim.length; i++) {
             // Reset offset Y coordinate for each layer
             let offSetPosY = self.config.transform.height / (cMatDim[i] + 1);
@@ -676,15 +678,30 @@ function GraphicalModel(graphConfiguration) {
 
     function updateAdjMat() {
         /* Used to update the adjacency matrix */
+
         let rowLabel = graphData.data[directedPath[0]].label;
         let colLabel = graphData.data[directedPath[directedPath.length - 1]].label;
         let element = [rowLabel, colLabel];
         log(element);
-        self.adjMat.updateMatrix(element);
+        self.adjMat.increaseCellWeight(element);
     }
-    this.bindAdj = function (adjMat) {
-        /* Used to bind adjacency matrix chart to the pgm */
+
+    this.bindChart = function (adjMat) {
+
+        /* Used to bind to an existing adjacency matrix chart to the graphical model */
         self.adjMat = adjMat;
     };
 
+    this.createChart = function (chartConfig) {
+        /* Create a chart and bind to the graphic model */
+
+        if (graphData.clusterMat.length < 2) {
+            throw new Error("Can not create adjacency matrix for graphical model with layer number less than 2");
+            return;
+        }
+        var rowLabel = graphData.clusterMat[0];
+        var colLabel = graphData.clusterMat[graphData.clusterMat.length - 1];
+        self.adjMat = new Chart(chartConfig);
+        self.adjMat.createMatrix(rowLabel, colLabel);
+    }
 };
