@@ -31,9 +31,10 @@ var pgmConfig = {
         color: "#ecf6f2"
     },
     autoPlay: {
-        on: true,
-        timeInterval: 1000
+        on: false,
+        timeInterval: 800
     },
+    autoPlayable: true,
     zoom: true,
 };
 

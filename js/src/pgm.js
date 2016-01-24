@@ -146,9 +146,10 @@ function GraphicalModel(graphConfiguration) {
                 color: "#ecf6f2"
             },
             autoPlay: {
-                on: true,
-                timeInterval: 500
+                on: false,
+                timeInterval: 1000
             },
+            autoPlayable: true,  // If autoPlayable, creates the autoplay button
             zoom: true,
         },
 
@@ -538,9 +539,35 @@ function GraphicalModel(graphConfiguration) {
 
 
     function clearVisitedPath() {
+        /* empty the directedPath array and redraw the graph */
+
         directedPath = [];
         drawGraph(graphData.data);
     }
+
+
+
+
+
+
+
+
+
+    function createPlayButton() {
+        /* Used to create a play button */
+
+        $(".play-button").click(function () {
+            $(this).toggleClass("paused");
+            if (self.config.autoPlay.on) {
+                self.stopAutoPlay();
+            } else {
+                self.startAutoPlay();
+            }
+        });
+    }
+
+
+
 
 
     this.triggerSpeakerNode = function (id) {
@@ -606,6 +633,10 @@ function GraphicalModel(graphConfiguration) {
             drawGrid();
         }
         drawGraph(graphData.data);
+
+        if (self.config.autoPlayable) {
+            createPlayButton();
+        }
     };
 
 
