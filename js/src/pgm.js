@@ -545,7 +545,14 @@ function GraphicalModel(graphConfiguration) {
 
     function clearVisitedPath() {
         /* empty the directedPath array and redraw the graph */
-
+        
+        // Kill all setTimeOut used to draw the visited path
+        for (var i = 1; i < 99999; i++) {
+            window.clearInterval(i);
+            window.clearTimeout(i);
+            if (window.mozCancelAnimationFrame) window.mozCancelAnimationFrame(i); // Firefox
+        }
+        // Then clear the path storage
         directedPath = [];
         drawGraph(graphData.data);
     }
@@ -570,9 +577,9 @@ function GraphicalModel(graphConfiguration) {
         var $triangle2 = $("<div>", {
             class: "triangle-2"
         });
-        
+
         $("#pgm").prepend($Button);
-        
+
         $Button.append($left);
         $Button.append($right);
         $Button.append($triangle1);
@@ -663,7 +670,7 @@ function GraphicalModel(graphConfiguration) {
 
     this.display = function () {
         /* Used to display the graph */
-        
+
         if (self.config.autoPlayable) {
             createPlayButton();
         }
@@ -792,6 +799,8 @@ function GraphicalModel(graphConfiguration) {
         /* called by the stop button to stop autoplay */
         canClick = true;
         self.config.autoPlay.on = false;
+        
+        clearVisitedPath();
     };
 
 
