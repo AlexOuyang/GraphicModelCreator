@@ -124,8 +124,8 @@ function GraphicalModel(graphConfiguration) {
             },
             vertex: {
                 radius: 0.35,
-                defaultColor: "lightsteelblue",
-                visitedColor: "steelblue",
+                defaultColor: "#52bf90",
+                visitedColor: "#1d4433",
             },
             edge: {
                 baseWidth: 0.1, // base width offset = baseWidth * circle radius
@@ -147,9 +147,14 @@ function GraphicalModel(graphConfiguration) {
             },
             autoPlay: {
                 on: false,
-                timeInterval: 1000
+                button: {
+                    dim: 1,
+                    color: "#74cba6"
+                },
+                timeIntervalToUpdateChart: 400,
+                timeInterval: 800
             },
-            autoPlayable: true,  // If autoPlayable, creates the autoplay button
+            autoPlayable: true, // If autoPlayable, creates the autoplay button
             zoom: true,
         },
 
@@ -169,7 +174,7 @@ function GraphicalModel(graphConfiguration) {
             // Check if the clicked node is in the first layer
             // which are the num of nodes in first layer of clusterMat
             // Only allow user to click the node if autoplay is off
-            if (canClick) {
+            if (canClick && !self.config.autoPlayable) {
                 d3.event.sourceEvent.stopPropagation();
                 d3.select(this).classed("dragging", true);
                 self.triggerSpeakerNode(this.id);
@@ -496,7 +501,7 @@ function GraphicalModel(graphConfiguration) {
                                 if (self.chart) {
                                     setTimeout(() => {
                                         updateChart();
-                                    }, 500);
+                                    }, self.config.autoPlay.timeIntervalToUpdateChart);
                                 }
                                 // If autoplay is on, then auto click on another node from speak layer
                                 if (self.config.autoPlay.on) {
@@ -547,14 +552,49 @@ function GraphicalModel(graphConfiguration) {
 
 
 
-
-
-
-
-
-
     function createPlayButton() {
-        /* Used to create a play button */
+        /* Used to create a play button, it modifies the default button property */
+
+        var $Button = $("<div>", {
+            class: "play-button paused"
+        });
+        var $left = $("<div>", {
+            class: "left"
+        });
+        var $right = $("<div>", {
+            class: "right"
+        });
+        var $triangle1 = $("<div>", {
+            class: "triangle-1"
+        });
+        var $triangle2 = $("<div>", {
+            class: "triangle-2"
+        });
+        
+        $("#pgm").prepend($Button);
+        
+        $Button.append($left);
+        $Button.append($right);
+        $Button.append($triangle1);
+        $Button.append($triangle2);
+
+        // Update button dimension first
+        self.config.autoPlay.button.dim = Array.min([self.config.transform.height, self.config.transform.width]) / 10.0 * self.config.autoPlay.button.dim;
+
+        $(".play-button").css("height", self.config.autoPlay.button.dim + "px")
+            .css("width", self.config.autoPlay.button.dim + "px");
+
+        $(".triangle-1").css("border-right-width", self.config.autoPlay.button.dim + "px")
+            .css("border-top-width", self.config.autoPlay.button.dim / 2.0 + "px")
+            .css("border-bottom-width", self.config.autoPlay.button.dim / 2.0 + "px");
+
+        $(".triangle-2").css("border-right-width", self.config.autoPlay.button.dim + "px")
+            .css("border-top-width", self.config.autoPlay.button.dim / 1.9 + "px")
+            .css("border-bottom-width", self.config.autoPlay.button.dim / 2.0 + "px");
+
+        $(".left").css("background-color", self.config.autoPlay.button.color);
+        $(".right").css("background-color", self.config.autoPlay.button.color);
+
 
         $(".play-button").click(function () {
             $(this).toggleClass("paused");
@@ -565,9 +605,6 @@ function GraphicalModel(graphConfiguration) {
             }
         });
     }
-
-
-
 
 
     this.triggerSpeakerNode = function (id) {
@@ -626,17 +663,16 @@ function GraphicalModel(graphConfiguration) {
 
     this.display = function () {
         /* Used to display the graph */
-
+        
+        if (self.config.autoPlayable) {
+            createPlayButton();
+        }
         dataScreening(graphData.data);
         createEdgesInGraphData(graphData.data);
         if (self.config.background.grid) {
             drawGrid();
         }
         drawGraph(graphData.data);
-
-        if (self.config.autoPlayable) {
-            createPlayButton();
-        }
     };
 
 
@@ -736,7 +772,7 @@ function GraphicalModel(graphConfiguration) {
         };
     };
 
-    /*======== Graphical Model Autoplay =======*/
+    /*=========== Graphical Model Autoplay ===========*/
 
     function resetChart() {
         /* reset the chart */

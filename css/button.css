@@ -1,4 +1,6 @@
 @import url("http://fonts.googleapis.com/css?family=Roboto:300");
+
+/*
 body {
   background-color: white;
 }
@@ -9,66 +11,95 @@ h1 {
   text-align: center;
   color: #fff;
 }
+*/
+
 .play-button {
-  height: 300px;
-  width: 300px;
-  display: block;
-  margin: 60px auto;
-  overflow: hidden;
-  position: relative;
+    height: 40px;
+    width: 40px;
+    display: block;
+    margin-top: 1%;
+    margin-left: 1%;
+    overflow: hidden;
+    position: absolute;
 }
+
 .left {
-  height: 100%;
-  float: left;
-  background-color: #52bf90;
-  width: 36%;
-  -webkit-transition: all 0.25s ease;
-  transition: all 0.25s ease;
-  overflow: hidden;
+    height: 100%;
+    float: left;
+    background-color: #52bf90;
+    width: 36%;
+    -webkit-transition: all 0.25s ease;
+    -moz-transition: all 0.25s ease;
+    transition: all 0.25s ease;
+    overflow: hidden;
 }
+
+.right {
+    height: 100%;
+    float: right;
+    width: 36%;
+    background-color: #52bf90;
+    -webkit-transition: all 0.25s ease;
+    -moz-transition: all 0.25s ease;
+    transition: all 0.25s ease;
+}
+
 .triangle-1 {
-  -webkit-transform: translate(0, -100%);
-          transform: translate(0, -100%);
+    -webkit-transform: translate(0, -100%);
+    -moz-transform: translate(0, -100%);
+    transform: translate(0, -100%);
 }
+
 .triangle-2 {
-  -webkit-transform: translate(0, 100%);
-          transform: translate(0, 100%);
+    -webkit-transform: translate(0, 100%);
+    -moz-transform: translate(0, 100%);
+    transform: translate(0, 100%);
 }
+
 .triangle-1,
 .triangle-2 {
-  position: absolute;
-  top: 0;
-  right: 0;
-  background-color: transparent;
-  width: 0;
-  height: 0;
-  border-right: 300px solid white;
-  border-top: 150px solid transparent;
-  border-bottom: 150px solid transparent;
-  -webkit-transition: -webkit-transform 0.25s ease;
-  transition: -webkit-transform 0.25s ease;
-  transition: transform 0.25s ease;
-  transition: transform 0.25s ease, -webkit-transform 0.25s ease;
+    position: absolute;
+    top: 0;
+    right: 0;
+    background-color: transparent;
+    width: 0;
+    height: 0;
+    /*
+    border-right-width: 40px;
+    border-right-style: solid;
+    border-right-color: #ecf6f2;
+*/
+    border-top-width: 20px;
+    border-top-style: solid;
+    border-top-color: transparent;
+    border-bottom-width: 20px;
+    border-bottom-style: solid;
+    border-bottom-color: transparent;
+    -webkit-transition: -webkit-transform 0.25s ease;
+    -moz-transition: -webkit-transform 0.25s ease;
+    transition: -webkit-transform 0.25s ease;
+    transition: -moz-transform 0.25s ease;
+    transition: transform 0.25s ease;
+    -webkit-transform 0.25s ease;
+    -moz-transform 0.25s ease;
 }
-.right {
-  height: 100%;
-  float: right;
-  width: 36%;
-  background-color: #52bf90;
-  -webkit-transition: all 0.25s ease;
-  transition: all 0.25s ease;
-}
+
 .paused .left {
-  width: 50%;
+    width: 50%;
 }
+
 .paused .right {
-  width: 50%;
+    width: 50%;
 }
+
 .paused .triangle-1 {
-  -webkit-transform: translate(0, -50%);
-          transform: translate(0, -50%);
+    -webkit-transform: translate(0, -50%);
+    -moz-transform: translate(0, -50%);
+    transform: translate(0, -50%);
 }
+
 .paused .triangle-2 {
-  -webkit-transform: translate(0, 50%);
-          transform: translate(0, 50%);
+    -webkit-transform: translate(0, 50%);
+    -moz-transform: translate(0, 50%);
+    transform: translate(0, 50%);
 }

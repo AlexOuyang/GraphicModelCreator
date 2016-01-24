@@ -9,8 +9,8 @@ var pgmConfig = {
     },
     vertex: {
         radius: 0.35,
-        defaultColor: "lightsteelblue",
-        visitedColor: "steelblue",
+        defaultColor: "#52bf90",
+        visitedColor: "#1d4433",
     },
     edge: {
         baseWidth: 0.1, // base width offset = baseWidth * circle radius
@@ -32,10 +32,15 @@ var pgmConfig = {
     },
     autoPlay: {
         on: false,
+        button:{
+            dim: 1,
+            color: "#74cba6"
+        },
+        timeIntervalToUpdateChart: 400,
         timeInterval: 800
     },
-    autoPlayable: true,
-    zoom: true,
+    autoPlayable: true,  // If autoPlayable, creates the autoplay button
+    zoom: false,
 };
 
 
