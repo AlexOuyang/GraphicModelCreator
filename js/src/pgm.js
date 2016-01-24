@@ -109,47 +109,48 @@ var Utils = {};
 function GraphicalModel(graphConfiguration) {
     "use strict";
 
-    this.config = graphConfiguration || {
-        transform: {
-            x: 0,
-            y: 0,
-            width: window.innerWidth,
-            height: window.innerHeight - 80
-        },
-        vertex: {
-            radius: 0.35,
-            defaultColor: "lightsteelblue",
-            visitedColor: "steelblue",
-        },
-        edge: {
-            baseWidth: 0.1, // base width offset = baseWidth * circle radius
-            width: 0.5, // edge width = width * circle radius
-            defaultColor: "#b6ddcc",
-            visitedColor: "#1d4433",
-            timeInterval: 600 // timeInterval is in millisecond
-        },
-        text: {
-            color: "white",
-            size: 0.5, // text size = size * circle radius
-            anchor: "middle",
-            alignment: "middle"
-
-        },
-        background: {
-            grid: true,
-            color: "#ecf6f2"
-        },
-        autoPlay: {
-            on: true,
-            timeInterval: 500
-        },
-        zoom: true,
-    };
+    this.config = graphConfiguration || defaultConfig;
 
     this.chart = null; // holds the adjacency matrix chart 
 
-
     let self = this,
+
+        defaultConfig = {
+            transform: {
+                x: 0,
+                y: 0,
+                width: window.innerWidth,
+                height: window.innerHeight - 80
+            },
+            vertex: {
+                radius: 0.35,
+                defaultColor: "lightsteelblue",
+                visitedColor: "steelblue",
+            },
+            edge: {
+                baseWidth: 0.1, // base width offset = baseWidth * circle radius
+                width: 0.5, // edge width = width * circle radius
+                defaultColor: "#b6ddcc",
+                visitedColor: "#1d4433",
+                timeInterval: 600 // timeInterval is in millisecond
+            },
+            text: {
+                color: "white",
+                size: 0.5, // text size = size * circle radius
+                anchor: "middle",
+                alignment: "middle"
+
+            },
+            background: {
+                grid: true,
+                color: "#ecf6f2"
+            },
+            autoPlay: {
+                on: true,
+                timeInterval: 500
+            },
+            zoom: true,
+        },
 
         graphData = {
             clusterMat: [], // data specifies the number of nodes each layer
@@ -485,7 +486,7 @@ function GraphicalModel(graphConfiguration) {
 
                             // Add a text element to the previously added g element.
                             drawText();
-                            
+
                             // Draw visited path ending condition
                             let endingVertexIdx = directedPath.length - 2;
                             if (vertexIdx === endingVertexIdx) {
@@ -724,14 +725,6 @@ function GraphicalModel(graphConfiguration) {
         /* called by the stop button to stop autoplay */
         canClick = true;
         self.config.autoPlay.on = false;
-        // After stop, clear the path
-        //        clearVisitedPath();
-        //        setTimeout(() => {
-        //            clearVisitedPath();
-        //        }, self.config.autoPlay.timeInterval);
-        //        setTimeout(() => {
-        //            clearVisitedPath();
-        //        }, self.config.autoPlay.timeInterval + 10);
     };
 
 
