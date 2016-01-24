@@ -563,7 +563,6 @@ function GraphicalModel(graphConfiguration) {
     }
 
 
-
     function createPlayButton() {
         /* Used to create a play button, it modifies the default button property */
 

@@ -16,40 +16,45 @@ function Chart(matrixConfiguration) {
      * @property {Object} text - The text property can be used to color and scale the matrix cell weight
      * @property {Object} background - The background property can be used to change the color of the background
      */
-    this.config = matrixConfiguration || {
-        transform: {
-            x: 0,
-            y: 0,
-            width: window.innerWidth,
-            height: window.innerHeight
-        },
-        matrix: {
-            x: 0.2,
-            y: 0.2,
-            dim: 0.6, // dimenion relative to the chart that contains the matrix
-            spacing: 1,
-            color: "#63c59b"
-        },
-        label: {
-            color: "#52bf90",
-            size: 0.3, // text size = size * circle radius
-            anchor: "middle",
-            alignment: "middle"
-        },
-        text: {
-            color: "white",
-            size: 0.6, // text size = size * circle radius
-            anchor: "middle",
-            alignment: "middle"
-        },
-        background: {
-            color: "#ecf6f2"
-        }
-    };
+    this.config = matrixConfiguration || defaultConfig;
 
     let self = this,
+        
+        defaultConfig = {
+            transform: {
+                x: 0,
+                y: 0,
+                width: window.innerWidth,
+                height: window.innerHeight
+            },
+            matrix: {
+                x: 0.2,
+                y: 0.2,
+                dim: 0.6, // dimenion relative to the chart that contains the matrix
+                spacing: 1,
+                color: "#63c59b"
+            },
+            label: {
+                color: "#52bf90",
+                size: 0.3, // text size = size * circle radius
+                anchor: "middle",
+                alignment: "middle"
+            },
+            text: {
+                color: "white",
+                size: 0.6, // text size = size * circle radius
+                anchor: "middle",
+                alignment: "middle"
+            },
+            background: {
+                color: "#ecf6f2"
+            }
+        },
+        
         adjMatData = [], // The attributes of the n by n adjacency matrix
+        
         rowLabel = [], // A vector that contains the labels. e.g["square", "circle"]
+        
         colLabel = [], // A vector that contains the labels. e.g["square", "circle"]
 
 
@@ -95,8 +100,8 @@ function Chart(matrixConfiguration) {
 
         return "#" + RR + GG + BB;
     }
-    
-    
+
+
     /** 
      * Draws the adjancy matrix based on the property of each cell
      * @function drawMatrix 
@@ -154,8 +159,8 @@ function Chart(matrixConfiguration) {
                 }
             });
     }
-    
-    
+
+
     /** 
      * Creates an adjacency matrix based on the row and column labels
      * @function chart.createMatrix 
@@ -243,16 +248,16 @@ function Chart(matrixConfiguration) {
 
         drawMatrix();
     };
-    
+
     this.resetMatrixWeight = function () {
         /* Reset each matrix cell weight to 0 */
-        
-        for(let i = 0; i < adjMatData.length; i++) {
-            if(adjMatData[i].type === "cellData") {
+
+        for (let i = 0; i < adjMatData.length; i++) {
+            if (adjMatData[i].type === "cellData") {
                 adjMatData[i].weight = 0;
             }
         }
-        
+
         drawMatrix();
     }
 }
