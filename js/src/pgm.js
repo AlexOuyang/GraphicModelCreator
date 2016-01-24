@@ -543,15 +543,20 @@ function GraphicalModel(graphConfiguration) {
     }
 
 
-    function clearVisitedPath() {
-        /* empty the directedPath array and redraw the graph */
-        
+    function killAllSetTimeOut() {
         // Kill all setTimeOut used to draw the visited path
         for (var i = 1; i < 99999; i++) {
             window.clearInterval(i);
             window.clearTimeout(i);
             if (window.mozCancelAnimationFrame) window.mozCancelAnimationFrame(i); // Firefox
         }
+    }
+
+    function clearVisitedPath() {
+        /* empty the directedPath array and redraw the graph */
+
+        killAllSetTimeOut();
+
         // Then clear the path storage
         directedPath = [];
         drawGraph(graphData.data);
@@ -799,7 +804,7 @@ function GraphicalModel(graphConfiguration) {
         /* called by the stop button to stop autoplay */
         canClick = true;
         self.config.autoPlay.on = false;
-        
+
         clearVisitedPath();
     };
 
