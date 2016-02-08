@@ -39,7 +39,7 @@ var pgmConfig = {
         timeIntervalToUpdateChart: 400,
         timeInterval: 800
     },
-    autoPlayable: false,  // If autoPlayable, creates the autoplay button
+    autoPlayable: true,  // If autoPlayable, creates the autoplay button
     zoom: false,
 };
 
