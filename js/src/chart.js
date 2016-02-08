@@ -132,7 +132,7 @@ class Chart {
             });
 
 
-        // Add cell weight
+        // Add cell weight text
         cell.append("text")
             .attr("font-size", this.config.matrix.dim * this.config.text.size)
             .attr("text-anchor", this.config.text.anchor)
@@ -144,7 +144,7 @@ class Chart {
                 }
             });
 
-        // Add cell label
+        // Add cell label text
         cell.append("text")
             .attr("font-size", this.config.matrix.dim * this.config.label.size)
             .attr("text-anchor", this.config.label.anchor)
@@ -241,7 +241,7 @@ class Chart {
         // Update weight of the element
         let elementIndex = row * this._colLabel.length + col;
         this._adjMatData[elementIndex].weight += 1;
-
+        
         this._drawMatrix();
     }
 
@@ -260,3 +260,5 @@ class Chart {
         this._drawMatrix();
     }
 }
+
+

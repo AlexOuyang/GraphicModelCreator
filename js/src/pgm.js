@@ -109,117 +109,117 @@ var Utils = {};
 function GraphicalModel(graphConfiguration) {
     "use strict";
 
-    this.config = graphConfiguration || defaultConfig;
-
     this.chart = null; // holds the adjacency matrix chart 
 
-    let self = this,
+    let self = this;
 
-        defaultConfig = {
-            transform: {
-                x: 0,
-                y: 0,
-                width: window.innerWidth,
-                height: window.innerHeight - 80
-            },
-            vertex: {
-                radius: 0.35,
-                defaultColor: "#52bf90",
-                visitedColor: "#1d4433",
-            },
-            edge: {
-                baseWidth: 0.1, // base width offset = baseWidth * circle radius
-                width: 0.5, // edge width = width * circle radius
-                defaultColor: "#b6ddcc",
-                visitedColor: "#1d4433",
-                timeInterval: 600 // timeInterval is in millisecond
-            },
-            text: {
-                color: "white",
-                size: 0.5, // text size = size * circle radius
-                anchor: "middle",
-                alignment: "middle"
-
-            },
-            background: {
-                grid: true,
-                color: "#ecf6f2"
-            },
-            autoPlay: {
-                on: false,
-                button: {
-                    dim: 1,
-                    color: "#74cba6"
-                },
-                timeIntervalToUpdateChart: 400,
-                timeInterval: 800
-            },
-            autoPlayable: true, // If autoPlayable, creates the autoplay button
-            zoom: true,
+    let defaultConfig = {
+        transform: {
+            x: 0,
+            y: 0,
+            width: window.innerWidth,
+            height: window.innerHeight - 80
         },
-
-        graphData = {
-            clusterMat: [], // data specifies the number of nodes each layer
-            data: [] // data binds to the graph
+        vertex: {
+            radius: 0.35,
+            defaultColor: "#52bf90",
+            visitedColor: "#1d4433",
         },
+        edge: {
+            baseWidth: 0.1, // base width offset = baseWidth * circle radius
+            width: 0.5, // edge width = width * circle radius
+            defaultColor: "#b6ddcc",
+            visitedColor: "#1d4433",
+            timeInterval: 600 // timeInterval is in millisecond
+        },
+        text: {
+            color: "white",
+            size: 0.5, // text size = size * circle radius
+            anchor: "middle",
+            alignment: "middle"
 
-        directedPath = [], // directedPath is a list of visited nodes' ID
+        },
+        background: {
+            grid: true,
+            color: "#ecf6f2"
+        },
+        autoPlay: {
+            on: false,
+            button: {
+                dim: 1,
+                color: "#74cba6"
+            },
+            timeIntervalToUpdateChart: 400,
+            timeInterval: 800
+        },
+        autoPlayable: true, // If autoPlayable, creates the autoplay button
+        zoom: true,
+    };
 
-        canClick = true, // Used to keep user from clicking when the graph is traversing
+    this.config = graphConfiguration || defaultConfig;
 
-        // Click on the node in the speaker layer to draw visited path
-        onClick = d3.behavior.drag()
+    this.graphData = {
+        clusterMat: [], // data specifies the number of nodes each layer
+        data: [] // data binds to the graph
+    };
+
+    this.directedPath = []; // directedPath is a list of visited nodes' ID
+
+    this.canClick = true; // Used to keep user from clicking when the graph is traversing
+
+    // Click on the node in the speaker layer to draw visited path
+    this.onClick = d3.behavior.drag()
         .origin(d => d)
         .on("dragstart", function (d) {
             // Check if the clicked node is in the first layer
             // which are the num of nodes in first layer of clusterMat
             // Only allow user to click the node if autoplay is off
-            if (canClick && !self.config.autoPlayable) {
+            if (self.canClick && !self.config.autoPlayable) {
                 d3.event.sourceEvent.stopPropagation();
                 d3.select(this).classed("dragging", true);
                 self.triggerSpeakerNode(this.id);
             }
-        }),
+        });
 
-        svg = d3.select("#pgm").append("svg")
+    this.svg = d3.select("#pgm").append("svg")
         .attr("width", self.config.transform.width)
         .attr("height", self.config.transform.height)
         .append("g")
-        .attr("transform", "translate(" + self.config.transform.x + "," + self.config.transform.y + ")"),
+        .attr("transform", "translate(" + self.config.transform.x + "," + self.config.transform.y + ")");
 
-        // Set up the background rect wrapper
-        rect = svg.append("rect")
+    // Set up the background rect wrapper
+    this.rect = this.svg.append("rect")
         .attr("width", self.config.transform.width)
         .attr("height", self.config.transform.height)
         .style("fill", self.config.background.color)
         .style("pointer-events", "all")
         .on("click", d => {
-            if (canClick) {
+            if (self.canClick) {
                 clearVisitedPath();
                 // Do not allow user to click until visited path highlighting is finished
-                canClick = false;
-                setTimeout(() => canClick = true, self.config.edge.timeInterval * (directedPath.length - 1));
+                self.canClick = false;
+                setTimeout(() => self.canClick = true, self.config.edge.timeInterval * (self.directedPath.length - 1));
             }
-        }),
+        });
 
-        container = svg.append("g"),
+    this.container = this.svg.append("g");
 
-        // Specify the function for generating path data   
-        // "linear" for piecewise linear segments
-        // Creating path using data in pathinfo and path data generator
-        // Used in drawEdges() and drawVisitedPath();
-        line = d3.svg.line()
+    // Specify the function for generating path data   
+    // "linear" for piecewise linear segments
+    // Creating path using data in pathinfo and path data generator
+    // Used in drawEdges() and drawVisitedPath();
+    this.line = d3.svg.line()
         .x(d => d.x)
         .y(d => d.y)
-        .interpolate("linear"),
+        .interpolate("linear");
 
-        vertices, // D3 object, initiated in drawVertices()
+    this.vertices = null; // D3 object, initiated in drawVertices()
 
 
-        // Zoom behavior
-        zoom = d3.behavior.zoom().scaleExtent([1, 10])
+    // Zoom behavior
+    this.zoom = d3.behavior.zoom().scaleExtent([1, 10])
         .on("zoom", () => {
-            container.attr(
+            self.container.attr(
                 "transform",
                 "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")"
             );
@@ -325,7 +325,7 @@ function GraphicalModel(graphConfiguration) {
             visitedNodes.push(vertexId);
         }
 
-        directedPath = visitedNodes;
+        self.directedPath = visitedNodes;
     }
 
 
@@ -333,7 +333,7 @@ function GraphicalModel(graphConfiguration) {
     function drawGrid() {
         /* Draws the axis in the background */
 
-        container.append("g")
+        self.container.append("g")
             .attr("class", "x axis")
             .selectAll("line")
             .data(d3.range(0, self.config.transform.width, 10))
@@ -343,7 +343,7 @@ function GraphicalModel(graphConfiguration) {
             .attr("x2", d => d)
             .attr("y2", self.config.transform.height);
 
-        container.append("g")
+        self.container.append("g")
             .attr("class", "y axis")
             .selectAll("line")
             .data(d3.range(0, self.config.transform.height, 10))
@@ -357,7 +357,7 @@ function GraphicalModel(graphConfiguration) {
 
     function drawText() {
         /* Add a text element to the previously added g element. */
-        vertices.append("text")
+        self.vertices.append("text")
             .attr("font-size", d => d.r * self.config.text.size)
             .attr("text-anchor", self.config.text.anchor)
             .attr("alignment-baseline", self.config.text.alignment)
@@ -377,16 +377,16 @@ function GraphicalModel(graphConfiguration) {
         d3.selectAll(".vertex").remove();
 
         // Create vertex groups, each group contains a cicle and a text
-        vertices = container.append("g")
+        self.vertices = self.container.append("g")
             .attr("class", "vertex")
             .selectAll("circle")
             .data(data).enter()
             .append("g")
             .attr("id", d => d.id)
             .attr("transform", d => "translate(" + d.x + "," + d.y + ")")
-            .call(onClick);
+            .call(self.onClick);
 
-        vertices.append("circle")
+        self.vertices.append("circle")
             .attr("r", d => d.r);
 
         drawText();
@@ -407,8 +407,8 @@ function GraphicalModel(graphConfiguration) {
                     // Iterate through each edge in the current node
                     let edgeNodes = currentVertex.edges[edgeIdx].edgeNodes;
                     let edgeWeight = currentVertex.edges[edgeIdx].edgeWeight * self.config.edge.width;
-                    container.append("svg:path")
-                        .attr("d", line(edgeNodes))
+                    self.container.append("svg:path")
+                        .attr("d", self.line(edgeNodes))
                         .attr("stroke-width", edgeWeight + self.config.edge.baseWidth)
                         .style("stroke", self.config.edge.defaultColor)
                         .style("fill", "none");
@@ -421,15 +421,15 @@ function GraphicalModel(graphConfiguration) {
     function drawVisitedPath(data) {
         /* Draw visited edges based on weight in highlighted color */
 
-        for (let vertexIdx = 0; vertexIdx < directedPath.length; vertexIdx++) {
+        for (let vertexIdx = 0; vertexIdx < self.directedPath.length; vertexIdx++) {
             // Iterate through the list of ID in directedPath 
-            let currentVertex = data[directedPath[vertexIdx]];
+            let currentVertex = data[self.directedPath[vertexIdx]];
             if (currentVertex.edges) {
                 for (let edgeIdx = 0; edgeIdx < currentVertex.edges.length; edgeIdx++) {
                     let edgeNodes = currentVertex.edges[edgeIdx].edgeNodes;
                     let edgeWeight = currentVertex.edges[edgeIdx].edgeWeight * self.config.edge.width;
                     // If the edge is in the directedPath then draw different color
-                    if (directedPath.indexOf(edgeNodes[0].id) > -1 && directedPath.indexOf(edgeNodes[1].id) > -1) {
+                    if (self.directedPath.indexOf(edgeNodes[0].id) > -1 && self.directedPath.indexOf(edgeNodes[1].id) > -1) {
 
                         // Create two new points to draw a shorter edge so the new 
                         // edge will not cover the id in the node
@@ -461,12 +461,12 @@ function GraphicalModel(graphConfiguration) {
                         setTimeout(() => {
 
                             // Append a path that completes drawing wthin a time duration
-                            container.append("svg:path")
+                            self.container.append("svg:path")
                                 .style("stroke-width", self.config.edge.baseWidth + edgeWeight)
                                 .style("stroke", self.config.edge.visitedColor)
                                 .style("fill", "none")
                                 .attr({
-                                    'd': line(tempEdges),
+                                    'd': self.line(tempEdges),
                                     'stroke-dasharray': lineLength + " " + lineLength,
                                     'stroke-dashoffset': lineLength
                                 })
@@ -479,12 +479,12 @@ function GraphicalModel(graphConfiguration) {
                         // Draw the next visited vertex after time Interval
                         setTimeout(() => {
                             /* clear vertices then redraw all the vertices in the grpah */
-                            vertices.append("circle")
+                            self.vertices.append("circle")
                                 //                                .attr("class", "node")
                                 .attr("class", d => {
                                     // if the node is in the path then draw it in a different color
-                                    if (directedPath.indexOf(d.id) <= (vertexIdx + 1) &&
-                                        directedPath.indexOf(d.id) > -1) {
+                                    if (self.directedPath.indexOf(d.id) <= (vertexIdx + 1) &&
+                                        self.directedPath.indexOf(d.id) > -1) {
                                         return "visitedVertex";
                                     }
                                 })
@@ -494,7 +494,7 @@ function GraphicalModel(graphConfiguration) {
                             drawText();
 
                             // Draw visited path ending condition
-                            let endingVertexIdx = directedPath.length - 2;
+                            let endingVertexIdx = self.directedPath.length - 2;
                             if (vertexIdx === endingVertexIdx) {
 
                                 // If chart exist, update the chart adjacency matrix after the visited path finish highlighting
@@ -507,7 +507,7 @@ function GraphicalModel(graphConfiguration) {
                                 if (self.config.autoPlay.on) {
                                     console.log("Auto play is on!");
                                     setTimeout(() => {
-                                        let random_id = Math.floor(Math.random() * graphData.clusterMat[0].length);
+                                        let random_id = Math.floor(Math.random() * self.graphData.clusterMat[0].length);
                                         self.triggerSpeakerNode(random_id);
                                     }, self.config.autoPlay.timeInterval);
                                 }
@@ -518,10 +518,10 @@ function GraphicalModel(graphConfiguration) {
                         }, 0.9 * self.config.edge.timeInterval * (vertexIdx + 1));
 
                         // Draw the first vertex when the path start highlighting
-                        vertices.append("circle")
+                        self.vertices.append("circle")
                             .attr("class", d => {
                                 // if the node is in the path then draw it in a different color
-                                if (directedPath[0] === d.id) {
+                                if (self.directedPath[0] === d.id) {
                                     return "visitedVertex";
                                 }
                             })
@@ -558,8 +558,8 @@ function GraphicalModel(graphConfiguration) {
         killAllSetTimeOut();
 
         // Then clear the path storage
-        directedPath = [];
-        drawGraph(graphData.data);
+        self.directedPath = [];
+        drawGraph(self.graphData.data);
     }
 
 
@@ -621,25 +621,25 @@ function GraphicalModel(graphConfiguration) {
     this.triggerSpeakerNode = function (id) {
         /* triggers a speaker node by id, traverse down and draw the visited path. */
 
-        let speakerLayerLength = graphData.clusterMat[0].length;
+        let speakerLayerLength = self.graphData.clusterMat[0].length;
 
         // Only allow the node to be clicked if it is in the speaker layer
         if (id < speakerLayerLength) {
             let clickedVertexId = parseInt(id, 10);
-            traverseGraph(clickedVertexId, graphData.data);
-            drawGraph(graphData.data);
-            drawVisitedPath(graphData.data);
+            traverseGraph(clickedVertexId, self.graphData.data);
+            drawGraph(self.graphData.data);
+            drawVisitedPath(self.graphData.data);
 
             // testing 
-            $('.path strong').text(directedPath);
+            $('.path strong').text(self.directedPath);
         } else {
             // Else clear the path
             clearVisitedPath();
         }
 
         // Do not allow user to click
-        canClick = false;
-        setTimeout(() => canClick = true, self.config.edge.timeInterval * (directedPath.length - 1));
+        self.canClick = false;
+        setTimeout(() => self.canClick = true, self.config.edge.timeInterval * (self.directedPath.length - 1));
 
     };
 
@@ -662,14 +662,14 @@ function GraphicalModel(graphConfiguration) {
             throw new Error("pgm.bindData(gd): Input graph data is empty");
         }
 
-        // Add the graphData as a class attribute
-        graphData = gd;
-        dataScreening(graphData.data);
-        createEdgesInGraphData(graphData.data);
+        // Add the self.graphData as a class attribute
+        self.graphData = gd;
+        dataScreening(self.graphData.data);
+        createEdgesInGraphData(self.graphData.data);
         if (self.config.background.grid) {
             drawGrid();
         }
-        drawGraph(graphData.data);
+        drawGraph(self.graphData.data);
     };
 
     this.display = function () {
@@ -678,12 +678,12 @@ function GraphicalModel(graphConfiguration) {
         if (self.config.autoPlayable) {
             createPlayButton();
         }
-        dataScreening(graphData.data);
-        createEdgesInGraphData(graphData.data);
+        dataScreening(self.graphData.data);
+        createEdgesInGraphData(self.graphData.data);
         if (self.config.background.grid) {
             drawGrid();
         }
-        drawGraph(graphData.data);
+        drawGraph(self.graphData.data);
     };
 
 
@@ -694,17 +694,17 @@ function GraphicalModel(graphConfiguration) {
             throw new Error("setAdjacentVertex(id, adjVtx) params are not satisfied.");
         }
 
-        graphData.data[id].adjacentVertex = adjVtx;
+        self.graphData.data[id].adjacentVertex = adjVtx;
     };
 
     this.setLabel = function (id, label) {
         /* Set label for vertex */
-        graphData.data[id].label = label;
+        self.graphData.data[id].label = label;
     };
 
     this.getGraphData = function () {
         /* Returns the graphData as  JSON object */
-        let jsonGraphData = Utils.cloneDR(graphData);
+        let jsonGraphData = Utils.cloneDR(self.graphData);
 
         console.log(jsonGraphData);
 
@@ -772,7 +772,7 @@ function GraphicalModel(graphConfiguration) {
 
 
         // Create the graphData member variable in pgm
-        graphData = {
+        self.graphData = {
             clusterMat: cMat,
             data: data
         };
@@ -792,16 +792,16 @@ function GraphicalModel(graphConfiguration) {
 
     this.startAutoPlay = function () {
         /* called by the play button to start autoplay */
-        canClick = false;
+        self.canClick = false;
         if (self.chart) resetChart();
         self.config.autoPlay.on = true;
-        let random_id = Math.floor(Math.random() * graphData.clusterMat[0].length);
+        let random_id = Math.floor(Math.random() * self.graphData.clusterMat[0].length);
         self.triggerSpeakerNode(random_id);
     };
 
     this.stopAutoPlay = function () {
         /* called by the stop button to stop autoplay */
-        canClick = true;
+        self.canClick = true;
         self.config.autoPlay.on = false;
 
         clearVisitedPath();
@@ -813,8 +813,8 @@ function GraphicalModel(graphConfiguration) {
     function updateChart() {
         /* Used in drawVisitedPath() to update the adjacency matrix chart */
 
-        let _rowLabel = graphData.data[directedPath[0]].label;
-        let _colLabel = graphData.data[directedPath[directedPath.length - 1]].label;
+        let _rowLabel = self.graphData.data[self.directedPath[0]].label;
+        let _colLabel = self.graphData.data[self.directedPath[self.directedPath.length - 1]].label;
         let cellToUpdate = [_rowLabel, _colLabel];
         log("Update Cell: [" + cellToUpdate + "]");
         self.chart.increaseCellWeight(cellToUpdate);
@@ -831,12 +831,12 @@ function GraphicalModel(graphConfiguration) {
 
         self.chartConfig = chartConfig;
 
-        if (graphData.clusterMat.length < 2) {
+        if (self.graphData.clusterMat.length < 2) {
             throw new Error("Can not create adjacency matrix for graphical model with layer number less than 2");
             return;
         }
-        var _rowLabel = graphData.clusterMat[0];
-        var _colLabel = graphData.clusterMat[graphData.clusterMat.length - 1];
+        var _rowLabel = self.graphData.clusterMat[0];
+        var _colLabel = self.graphData.clusterMat[self.graphData.clusterMat.length - 1];
         self.chart = new Chart(chartConfig);
         self.chart.createMatrix(_rowLabel, _colLabel);
     };
