@@ -17,7 +17,7 @@ var pgmConfig = {
         width: 0.5, // edge width = width * circle radius
         defaultColor: "#b6ddcc",
         visitedColor: "#1d4433",
-        timeInterval: 600 // timeInterval is in millisecond
+        timeInterval: 800 // timeInterval is in millisecond
     },
     text: {
         color: "white",
@@ -53,7 +53,7 @@ var clusterMat = [["▢", "◯", "△"],
 // Create a new Graph based on the configuration
 // and bind the data to the graph for rendering
 var myGraph = new GraphicalModel(pgmConfig);
-
+myGraph.appendToDOM("#pgm1");
 var dataTemp = myGraph.createCluster(clusterMat);
 
 // Auto play
@@ -205,8 +205,8 @@ myGraph.createChart(matConfig);
 
 //var _rowLabel = ["▢", "◯", "△"];
 //var _colLabel = _rowLabel;
-//var adjMat = new Chart(matConfig);
+//var adjMat = new Chart("pgm1", matConfig);
 //adjMat.createMatrix(_rowLabel, _colLabel);
 //
-//// Bind the chart to graph
+////// Bind the chart to graph
 //myGraph.bindChart(adjMat);

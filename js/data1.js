@@ -1,6 +1,6 @@
 // Handles the configuration of the graph
 
-var pgmConfig = {
+var pgmConfig2 = {
     transform: {
         x: 0,
         y: 0,
@@ -31,42 +31,49 @@ var pgmConfig = {
         color: "#ecf6f2"
     },
     autoPlay: {
-        on: true,
-        timeInterval: 500
+        on: false,
+        button:{
+            dim: 1,
+            color: "#74cba6"
+        },
+        timeIntervalToUpdateChart: 400,
+        timeInterval: 800
     },
-    zoom: true,
+    autoPlayable: true,  // If autoPlayable, creates the autoplay button
+    zoom: false,
 };
 
 
 
-var clusterMatPrototype = [["0"], ["1"], ["2"], ["3"], ["4"]];
+var clusterMatPrototype2 = [["0"], ["1"], ["2"], ["3"], ["4"]];
 
 // Create a new Graph based on the configuration
 // and bind the data to the graph for rendering
-var myGraph = new GraphicalModel(pgmConfig);
+var myGraph2 = new GraphicalModel(pgmConfig2);
+myGraph2.appendToDOM("#pgm2");
 
-var dataTemp = myGraph.createCluster(clusterMatPrototype);
+var dataTemp2 = myGraph2.createCluster(clusterMatPrototype2);
 
 // Layer 1
-myGraph.setAdjacentVertex(0, adjacentVertex = [{
+myGraph2.setAdjacentVertex(0, adjacentVertex = [{
     id: 1,
     weight: 1
 }]);
-myGraph.setAdjacentVertex(1, adjacentVertex = [{
+myGraph2.setAdjacentVertex(1, adjacentVertex = [{
     id: 2,
     weight: 1
 }]);
-myGraph.setAdjacentVertex(2, adjacentVertex = [{
+myGraph2.setAdjacentVertex(2, adjacentVertex = [{
     id: 3,
     weight: 1
 }]);
-myGraph.setAdjacentVertex(3, adjacentVertex = [{
+myGraph2.setAdjacentVertex(3, adjacentVertex = [{
     id: 4,
     weight: 1
 }]);
 
 
-myGraph.display();
+myGraph2.display();
 
 //var data = myGraph.getGraphData();
 //myGraph.bindData(data);
@@ -75,7 +82,7 @@ myGraph.display();
 
 
 // Adjacency matrix configuration
-var matConfig = {
+var matConfig2 = {
     transform: {
         x: 0,
         y: 0,
@@ -108,7 +115,7 @@ var matConfig = {
 
 // Way 1 to create a chart
 
-myGraph.createChart(matConfig);
+myGraph2.createChart(matConfig2);
 
 // Way 2 to create a chart
 

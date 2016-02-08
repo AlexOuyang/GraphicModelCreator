@@ -8,7 +8,7 @@ class Chart {
      * @constructor
      * @param {Object} matrixConfiguration - The configurations of the adjacency matrix
      */
-    constructor(matrixConfiguration) {
+    constructor(divID, matrixConfiguration) {
         /**
          * @memberof chart
          * @type {Object}
@@ -57,7 +57,7 @@ class Chart {
 
         this._colLabel = []; // A vector that contains the labels. e.g["square", "circle"]
 
-        this._svg = d3.select('#pgm')
+        this._svg = d3.select(divID)
             .append('svg')
             .attr('width', this.config.transform.width)
             .attr('height', this.config.transform.height)
@@ -157,6 +157,9 @@ class Chart {
             });
     }
 
+    appendToDOM(divID) {
+        
+    }
 
     /** 
      * Creates an adjacency matrix based on the row and column labels

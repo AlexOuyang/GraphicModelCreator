@@ -130,7 +130,7 @@ function GraphicalModel(graphConfiguration) {
             width: 0.5, // edge width = width * circle radius
             defaultColor: "#b6ddcc",
             visitedColor: "#1d4433",
-            timeInterval: 600 // timeInterval is in millisecond
+            timeInterval: 600 // timeInterval to complete highlighting on edge is in millisecond
         },
         text: {
             color: "white",
@@ -167,69 +167,74 @@ function GraphicalModel(graphConfiguration) {
 
     this.canClick = true; // Used to keep user from clicking when the graph is traversing
 
-    // Click on the node in the speaker layer to draw visited path
-    this.onClick = d3.behavior.drag()
-        .origin(d => d)
-        .on("dragstart", function (d) {
-            // Check if the clicked node is in the first layer
-            // which are the num of nodes in first layer of clusterMat
-            // Only allow user to click the node if autoplay is off
-            if (self.canClick && !self.config.autoPlayable) {
-                d3.event.sourceEvent.stopPropagation();
-                d3.select(this).classed("dragging", true);
-                self.triggerSpeakerNode(this.id);
-            }
-        });
 
-    this.svg = d3.select("#pgm").append("svg")
-        .attr("width", self.config.transform.width)
-        .attr("height", self.config.transform.height)
-        .append("g")
-        .attr("transform", "translate(" + self.config.transform.x + "," + self.config.transform.y + ")");
+    this.appendToDOM = function (divID) {
+        self.divID = divID;
 
-    // Set up the background rect wrapper
-    this.rect = this.svg.append("rect")
-        .attr("width", self.config.transform.width)
-        .attr("height", self.config.transform.height)
-        .style("fill", self.config.background.color)
-        .style("pointer-events", "all")
-        .on("click", d => {
-            if (self.canClick) {
-                clearVisitedPath();
-                // Do not allow user to click until visited path highlighting is finished
-                self.canClick = false;
-                setTimeout(() => self.canClick = true, self.config.edge.timeInterval * (self.directedPath.length - 1));
-            }
-        });
+        // Click on the node in the speaker layer to draw visited path
+        self.onClick = d3.behavior.drag()
+            .origin(d => d)
+            .on("dragstart", function (d) {
+                // Check if the clicked node is in the first layer
+                // which are the num of nodes in first layer of clusterMat
+                // Only allow user to click the node if autoplay is off
+                if (self.canClick && !self.config.autoPlayable) {
+                    d3.event.sourceEvent.stopPropagation();
+                    d3.select(this).classed("dragging", true);
+                    self.triggerSpeakerNode(this.id);
+                }
+            });
 
-    this.container = this.svg.append("g");
+        self.svg = d3.select(divID).append("svg")
+            .attr("width", self.config.transform.width)
+            .attr("height", self.config.transform.height)
+            .append("g")
+            .attr("transform", "translate(" + self.config.transform.x + "," + self.config.transform.y + ")");
 
-    // Specify the function for generating path data   
-    // "linear" for piecewise linear segments
-    // Creating path using data in pathinfo and path data generator
-    // Used in drawEdges() and drawVisitedPath();
-    this.line = d3.svg.line()
-        .x(d => d.x)
-        .y(d => d.y)
-        .interpolate("linear");
+        // Set up the background rect wrapper
+        self.rect = self.svg.append("rect")
+            .attr("width", self.config.transform.width)
+            .attr("height", self.config.transform.height)
+            .style("fill", self.config.background.color)
+            .style("pointer-events", "all")
+            .on("click", d => {
+                if (self.canClick) {
+                    clearVisitedPath();
+                    // Do not allow user to click until visited path highlighting is finished
+                    self.canClick = false;
+                    setTimeout(() => self.canClick = true, self.config.edge.timeInterval * (self.directedPath.length - 1));
+                }
+            });
 
-    this.vertices = null; // D3 object, initiated in drawVertices()
+        self.container = self.svg.append("g");
+
+        // Specify the function for generating path data   
+        // "linear" for piecewise linear segments
+        // Creating path using data in pathinfo and path data generator
+        // Used in drawEdges() and drawVisitedPath();
+        self.line = d3.svg.line()
+            .x(d => d.x)
+            .y(d => d.y)
+            .interpolate("linear");
+
+        self.vertices = null; // D3 object, initiated in drawVertices()
 
 
-    // Zoom behavior
-    this.zoom = d3.behavior.zoom().scaleExtent([1, 10])
-        .on("zoom", () => {
-            self.container.attr(
-                "transform",
-                "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")"
-            );
-        });
+        // Zoom behavior
+        self.zoom = d3.behavior.zoom().scaleExtent([1, 10])
+            .on("zoom", () => {
+                self.container.attr(
+                    "transform",
+                    "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")"
+                );
+            });
 
-    // Zoom behavior
-    if (self.config.zoom) {
-        svg.call(zoom);
+        // Zoom behavior
+        if (self.config.zoom) {
+            self.svg.call(self.zoom);
+        }
+
     }
-
 
     function dataScreening(data) {
         /* Verifies if each vertex's id matches its position in the array 
@@ -257,7 +262,7 @@ function GraphicalModel(graphConfiguration) {
             }
             weightSum = 0;
         }
-    }
+    };
 
 
     function createEdgesInGraphData(data) {
@@ -513,9 +518,9 @@ function GraphicalModel(graphConfiguration) {
                                 }
                             }
 
-                            // 0.9 is a time offset multiplier to make vertex colored faster since
+                            // 0.95 is a time offset multiplier to make vertex colored faster since
                             // there is an unknown lag
-                        }, 0.9 * self.config.edge.timeInterval * (vertexIdx + 1));
+                        }, 0.95 * self.config.edge.timeInterval * (vertexIdx + 1));
 
                         // Draw the first vertex when the path start highlighting
                         self.vertices.append("circle")
@@ -565,55 +570,57 @@ function GraphicalModel(graphConfiguration) {
 
     function createPlayButton() {
         /* Used to create a play button, it modifies the default button property */
+        $(function () {
 
-        var $Button = $("<div>", {
-            class: "play-button paused"
-        });
-        var $left = $("<div>", {
-            class: "left"
-        });
-        var $right = $("<div>", {
-            class: "right"
-        });
-        var $triangle1 = $("<div>", {
-            class: "triangle-1"
-        });
-        var $triangle2 = $("<div>", {
-            class: "triangle-2"
-        });
+            var $Button = $("<div>", {
+                class: "play-button paused"
+            });
+            var $left = $("<div>", {
+                class: "left"
+            });
+            var $right = $("<div>", {
+                class: "right"
+            });
+            var $triangle1 = $("<div>", {
+                class: "triangle-1"
+            });
+            var $triangle2 = $("<div>", {
+                class: "triangle-2"
+            });
 
-        $("#pgm").prepend($Button);
+            $(self.divID).prepend($Button);
 
-        $Button.append($left);
-        $Button.append($right);
-        $Button.append($triangle1);
-        $Button.append($triangle2);
+            $Button.append($left);
+            $Button.append($right);
+            $Button.append($triangle1);
+            $Button.append($triangle2);
 
-        // Update button dimension first
-        self.config.autoPlay.button.dim = Array.min([self.config.transform.height, self.config.transform.width]) / 10.0 * self.config.autoPlay.button.dim;
+            // Update button dimension first
+            self.config.autoPlay.button.dim = Array.min([self.config.transform.height, self.config.transform.width]) / 10.0 * self.config.autoPlay.button.dim;
 
-        $(".play-button").css("height", self.config.autoPlay.button.dim + "px")
-            .css("width", self.config.autoPlay.button.dim + "px");
+            $(".play-button").css("height", self.config.autoPlay.button.dim + "px")
+                .css("width", self.config.autoPlay.button.dim + "px");
 
-        $(".triangle-1").css("border-right-width", self.config.autoPlay.button.dim + "px")
-            .css("border-top-width", self.config.autoPlay.button.dim / 2.0 + "px")
-            .css("border-bottom-width", self.config.autoPlay.button.dim / 2.0 + "px");
+            $(".triangle-1").css("border-right-width", self.config.autoPlay.button.dim + "px")
+                .css("border-top-width", self.config.autoPlay.button.dim / 2.0 + "px")
+                .css("border-bottom-width", self.config.autoPlay.button.dim / 2.0 + "px");
 
-        $(".triangle-2").css("border-right-width", self.config.autoPlay.button.dim + "px")
-            .css("border-top-width", self.config.autoPlay.button.dim / 1.9 + "px")
-            .css("border-bottom-width", self.config.autoPlay.button.dim / 2.0 + "px");
+            $(".triangle-2").css("border-right-width", self.config.autoPlay.button.dim + "px")
+                .css("border-top-width", self.config.autoPlay.button.dim / 1.9 + "px")
+                .css("border-bottom-width", self.config.autoPlay.button.dim / 2.0 + "px");
 
-        $(".left").css("background-color", self.config.autoPlay.button.color);
-        $(".right").css("background-color", self.config.autoPlay.button.color);
+            $(".left").css("background-color", self.config.autoPlay.button.color);
+            $(".right").css("background-color", self.config.autoPlay.button.color);
 
 
-        $(".play-button").click(function () {
-            $(this).toggleClass("paused");
-            if (self.config.autoPlay.on) {
-                self.stopAutoPlay();
-            } else {
-                self.startAutoPlay();
-            }
+            $(".play-button").click(function () {
+                $(this).toggleClass("paused");
+                if (self.config.autoPlay.on) {
+                    self.stopAutoPlay();
+                } else {
+                    self.startAutoPlay();
+                }
+            });
         });
     }
 
@@ -837,7 +844,25 @@ function GraphicalModel(graphConfiguration) {
         }
         var _rowLabel = self.graphData.clusterMat[0];
         var _colLabel = self.graphData.clusterMat[self.graphData.clusterMat.length - 1];
-        self.chart = new Chart(chartConfig);
+        self.chart = new Chart(self.divID, chartConfig);
         self.chart.createMatrix(_rowLabel, _colLabel);
     };
 }
+
+
+
+/*========== Slider Button ============*/
+
+$(function () {
+    $("#slider-range").slider({
+        range: false,
+        min: 100,
+        max: 2000,
+        value: 800,
+        slide: function (event, ui) {
+            console.log(ui.value);
+            sphereRad = ui.value;
+            myGraph.config.edge.timeInterval = ui.value;
+        }
+    });
+});

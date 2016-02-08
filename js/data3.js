@@ -53,6 +53,7 @@ var clusterMat = [["▢", "◯", "△"],
 // Create a new Graph based on the configuration
 // and bind the data to the graph for rendering
 var myGraph = new GraphicalModel(pgmConfig);
+myGraph.appendToDOM("#pgm2");
 
 var dataTemp = myGraph.createCluster(clusterMat);
 
@@ -199,14 +200,15 @@ var matConfig = {
 
 // Way 1 to create a chart
 
-myGraph.createChart(matConfig);
+//myGraph.createChart(matConfig);
 
 // Way 2 to create a chart
 
-//var _rowLabel = ["▢", "◯", "△"];
-//var _colLabel = _rowLabel;
-//var adjMat = new Chart(matConfig);
-//adjMat.createMatrix(_rowLabel, _colLabel);
+var _rowLabel = ["▢", "◯", "△"];
+var _colLabel = _rowLabel;
+var adjMat = new Chart("#pgm1", matConfig);
+adjMat.createMatrix(_rowLabel, _colLabel);
+
 //
 //// Bind the chart to graph
-//myGraph.bindChart(adjMat);
+myGraph.bindChart(adjMat);

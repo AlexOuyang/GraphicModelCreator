@@ -55,3 +55,9 @@ p {
 .cell text {
     font-family: "Helvetica";
 }
+
+/*============ Slider Button =============*/
+.slider{
+  width:500px;
+  background: rgba(0,90,50,0.7);
+}
