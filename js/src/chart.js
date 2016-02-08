@@ -1,26 +1,24 @@
-/**
- * Creates a color coded adjacency matrix contained in a chart object
- * @class
- * @constructor
- * @param {Object} matrixConfiguration - The configurations of the adjacency matrix
- */
-function Chart(matrixConfiguration) {
-    "use strict";
+"use strict";
+
+class Chart {
 
     /**
-     * @memberof chart
-     * @type {Object}
-     * @property {Object} transform - The transform property can be used to position and scale the chart object
-     * @property {Object} matrix - The matix property can be used to position, scale and color the matrix
-     * @property {Object} label - The label property can be used to color and scale the matrix labels
-     * @property {Object} text - The text property can be used to color and scale the matrix cell weight
-     * @property {Object} background - The background property can be used to change the color of the background
+     * Creates a color coded adjacency matrix contained in a chart object
+     * @class
+     * @constructor
+     * @param {Object} matrixConfiguration - The configurations of the adjacency matrix
      */
-    this.config = matrixConfiguration || defaultConfig;
-
-    let self = this,
-        
-        defaultConfig = {
+    constructor(matrixConfiguration) {
+        /**
+         * @memberof chart
+         * @type {Object}
+         * @property {Object} transform - The transform property can be used to position and scale the chart object
+         * @property {Object} matrix - The matix property can be used to position, scale and color the matrix
+         * @property {Object} label - The label property can be used to color and scale the matrix labels
+         * @property {Object} text - The text property can be used to color and scale the matrix cell weight
+         * @property {Object} background - The background property can be used to change the color of the background
+         */
+        let defaultConfig = {
             transform: {
                 x: 0,
                 y: 0,
@@ -49,42 +47,42 @@ function Chart(matrixConfiguration) {
             background: {
                 color: "#ecf6f2"
             }
-        },
-        
-        adjMatData = [], // The attributes of the n by n adjacency matrix
-        
-        rowLabel = [], // A vector that contains the labels. e.g["square", "circle"]
-        
-        colLabel = [], // A vector that contains the labels. e.g["square", "circle"]
+        };
 
+        this.config = matrixConfiguration || defaultConfig;
 
-        svg = d3.select('#pgm')
-        .append('svg')
-        //    .attr("class", "cell")
-        .attr('width', self.config.transform.width)
-        .attr('height', self.config.transform.height)
-        .append('g')
-        .attr("transform", "translate(" + self.config.transform.x + "," + self.config.transform.y + ")"),
+        this._adjMatData = []; // The attributes of the n by n adjacency matrix
+
+        this._rowLabel = []; // A vector that contains the labels. e.g["square", "circle"]
+
+        this._colLabel = []; // A vector that contains the labels. e.g["square", "circle"]
+
+        this._svg = d3.select('#pgm')
+            .append('svg')
+            .attr('width', this.config.transform.width)
+            .attr('height', this.config.transform.height)
+            .append('g')
+            .attr("transform", "translate(" + this.config.transform.x + "," + this.config.transform.y + ")");
 
         // Create the background wrapper for color theme
-        rect = svg.append("rect")
-        .attr("width", self.config.transform.width)
-        .attr("height", self.config.transform.height)
-        .style("fill", self.config.background.color);
-
+        this._svg.append("rect")
+            .attr("width", this.config.transform.width)
+            .attr("height", this.config.transform.height)
+            .style("fill", this.config.background.color);
+    }
 
 
     /**
      * Darkens or lightens hex color value
-     * @function shadeColor 
+     * @function _shadeColor 
      * @param {String} colorHex - a hex color string. ie. "#63c59b"
      * @param {Number} percentage - shading ranges form -100(dark) to +100(light)
      */
-    function shadeColor(colorHex, percent) {
+    _shadeColor(colorHex, percent) {
 
-        var R = parseInt(colorHex.substring(1, 3), 16);
-        var G = parseInt(colorHex.substring(3, 5), 16);
-        var B = parseInt(colorHex.substring(5, 7), 16);
+        let R = parseInt(colorHex.substring(1, 3), 16);
+        let G = parseInt(colorHex.substring(3, 5), 16);
+        let B = parseInt(colorHex.substring(5, 7), 16);
 
         R = parseInt(R * (100 + percent) / 100);
         G = parseInt(G * (100 + percent) / 100);
@@ -94,9 +92,9 @@ function Chart(matrixConfiguration) {
         G = (G < 255) ? G : 255;
         B = (B < 255) ? B : 255;
 
-        var RR = ((R.toString(16).length === 1) ? "0" + R.toString(16) : R.toString(16));
-        var GG = ((G.toString(16).length === 1) ? "0" + G.toString(16) : G.toString(16));
-        var BB = ((B.toString(16).length === 1) ? "0" + B.toString(16) : B.toString(16));
+        let RR = ((R.toString(16).length === 1) ? "0" + R.toString(16) : R.toString(16));
+        let GG = ((G.toString(16).length === 1) ? "0" + G.toString(16) : G.toString(16));
+        let BB = ((B.toString(16).length === 1) ? "0" + B.toString(16) : B.toString(16));
 
         return "#" + RR + GG + BB;
     }
@@ -104,43 +102,42 @@ function Chart(matrixConfiguration) {
 
     /** 
      * Draws the adjancy matrix based on the property of each cell
-     * @function drawMatrix 
+     * @function _drawMatrix 
      */
-    function drawMatrix() {
+    _drawMatrix() {
         /* Draw the adjancy matrix */
 
         d3.selectAll(".cell").remove();
         d3.selectAll(".label").remove();
 
         // Each cell group holds 
-        let cell = svg.selectAll('g')
-            .data(adjMatData).enter()
+        let cell = this._svg.selectAll('g')
+            .data(this._adjMatData).enter()
             .append("g")
             .attr("class", "cell")
             .attr("transform", d => "translate(" + d.x + "," + d.y + ")");
 
         // Each rect is a matrix cell
         cell.append("rect")
-            .attr("transform", "translate(" + -self.config.matrix.dim / 2 + "," + -self.config.matrix.dim / 2 + ")")
-            .attr('width', self.config.matrix.dim)
-            .attr('height', self.config.matrix.dim)
+            .attr("transform", "translate(" + -this.config.matrix.dim / 2 + "," + -this.config.matrix.dim / 2 + ")")
+            .attr('width', this.config.matrix.dim)
+            .attr('height', this.config.matrix.dim)
             .attr('fill', d => {
                 if (d.type === "cellData") {
-                    // return self.config.matrix.color;
-                    return shadeColor(self.config.matrix.color, -d.weight * 5);
+                    return this._shadeColor(this.config.matrix.color, -d.weight * 5);
                 }
                 if (d.type === "cellLabel") {
-                    return self.config.background.color;
+                    return this.config.background.color;
                 }
             });
 
 
         // Add cell weight
         cell.append("text")
-            .attr("font-size", self.config.matrix.dim * self.config.text.size)
-            .attr("text-anchor", self.config.text.anchor)
-            .attr("alignment-baseline", self.config.text.alignment)
-            .attr("fill", self.config.text.color)
+            .attr("font-size", this.config.matrix.dim * this.config.text.size)
+            .attr("text-anchor", this.config.text.anchor)
+            .attr("alignment-baseline", this.config.text.alignment)
+            .attr("fill", this.config.text.color)
             .text(d => {
                 if (d.type === "cellData") {
                     return d.weight;
@@ -149,10 +146,10 @@ function Chart(matrixConfiguration) {
 
         // Add cell label
         cell.append("text")
-            .attr("font-size", self.config.matrix.dim * self.config.label.size)
-            .attr("text-anchor", self.config.label.anchor)
-            .attr("alignment-baseline", self.config.label.alignment)
-            .attr("fill", self.config.label.color)
+            .attr("font-size", this.config.matrix.dim * this.config.label.size)
+            .attr("text-anchor", this.config.label.anchor)
+            .attr("alignment-baseline", this.config.label.alignment)
+            .attr("fill", this.config.label.color)
             .text(d => {
                 if (d.type === "cellLabel") {
                     return d.label;
@@ -167,26 +164,26 @@ function Chart(matrixConfiguration) {
      * @param {Array} rowLab - labels that represent the row of the matrix
      * @param {Array} colLab - labels that represent the column of the matrix
      */
-    this.createMatrix = function (rowLab, colLab) {
+    createMatrix(rowLab, colLab) {
 
-        rowLabel = rowLab; // Update the labels
-        colLabel = colLab; // Update the labels
+        this._rowLabel = rowLab; // Update the labels
+        this._colLabel = colLab; // Update the labels
 
-        // Calculate the dimension of each block and other matrix self.config properties
-        self.config.matrix.dim = self.config.matrix.dim * Array.min([self.config.transform.width, self.config.transform.height]) / Array.max([rowLabel.length, colLabel.length]);
-        self.config.matrix.spacing *= self.config.matrix.dim / 10;
-        self.config.matrix.x *= self.config.transform.width;
-        self.config.matrix.y *= self.config.transform.height;
+        // Calculate the dimension of each block and other matrix config properties
+        this.config.matrix.dim = this.config.matrix.dim * Array.min([this.config.transform.width, this.config.transform.height]) / Array.max([this._rowLabel.length, this._colLabel.length]);
+        this.config.matrix.spacing *= this.config.matrix.dim / 10;
+        this.config.matrix.x *= this.config.transform.width;
+        this.config.matrix.y *= this.config.transform.height;
 
         // Populate adjacency matrix data
         let id = 0;
         let x;
         let y;
-        for (let i = 0; i < rowLabel.length; i++) {
-            for (let j = 0; j < colLabel.length; j++) {
-                x = (self.config.matrix.dim + self.config.matrix.spacing) * (j + 1 / 2) + self.config.matrix.x;
-                y = (self.config.matrix.dim + self.config.matrix.spacing) * (i + 1 / 2) + self.config.matrix.y;
-                adjMatData.push({
+        for (let i = 0; i < this._rowLabel.length; i++) {
+            for (let j = 0; j < this._colLabel.length; j++) {
+                x = (this.config.matrix.dim + this.config.matrix.spacing) * (j + 1 / 2) + this.config.matrix.x;
+                y = (this.config.matrix.dim + this.config.matrix.spacing) * (i + 1 / 2) + this.config.matrix.y;
+                this._adjMatData.push({
                     type: "cellData",
                     id: id,
                     x: x,
@@ -198,33 +195,33 @@ function Chart(matrixConfiguration) {
         }
 
         // Add labels to the adjMat as well
-        for (let i = 0; i < colLabel.length; i++) {
+        for (let i = 0; i < this._colLabel.length; i++) {
             // Add column labels
-            x = (self.config.matrix.dim + self.config.matrix.spacing) * (i + 1 / 2) + self.config.matrix.x;
-            y = (self.config.matrix.dim + self.config.matrix.spacing) * (-1 / 2) + self.config.matrix.y;
-            adjMatData.push({
+            x = (this.config.matrix.dim + this.config.matrix.spacing) * (i + 1 / 2) + this.config.matrix.x;
+            y = (this.config.matrix.dim + this.config.matrix.spacing) * (-1 / 2) + this.config.matrix.y;
+            this._adjMatData.push({
                 type: "cellLabel",
-                label: colLabel[i],
+                label: this._colLabel[i],
                 x: x,
                 y: y,
             });
         }
 
         // Add labels to the adjMat as well
-        for (let i = 0; i < rowLabel.length; i++) {
+        for (let i = 0; i < this._rowLabel.length; i++) {
             // Add row labels
-            x = (self.config.matrix.dim + self.config.matrix.spacing) * (-1 / 2) + self.config.matrix.x;
-            y = (self.config.matrix.dim + self.config.matrix.spacing) * (i + 1 / 2) + self.config.matrix.y;
-            adjMatData.push({
+            x = (this.config.matrix.dim + this.config.matrix.spacing) * (-1 / 2) + this.config.matrix.x;
+            y = (this.config.matrix.dim + this.config.matrix.spacing) * (i + 1 / 2) + this.config.matrix.y;
+            this._adjMatData.push({
                 type: "cellLabel",
-                label: rowLabel[i],
+                label: this._rowLabel[i],
                 x: x,
                 y: y,
             });
         }
 
-        drawMatrix();
-    };
+        this._drawMatrix();
+    }
 
 
     /** 
@@ -232,10 +229,9 @@ function Chart(matrixConfiguration) {
      * @function chart.increaseCellWeight 
      * @param {Array} cell - the cell to increase weight is represented by a coordinate pair, ie. cell = (row, col)
      */
-    this.increaseCellWeight = function (cell) {
-
-        let row = rowLabel.indexOf(cell[0]);
-        let col = colLabel.indexOf(cell[1]);
+    increaseCellWeight(cell) {
+        let row = this._rowLabel.indexOf(cell[0]);
+        let col = this._colLabel.indexOf(cell[1]);
 
         // Test for validity of the input
         if (row < 0 || col < 0) {
@@ -243,21 +239,24 @@ function Chart(matrixConfiguration) {
         }
 
         // Update weight of the element
-        let elementIndex = row * colLabel.length + col;
-        adjMatData[elementIndex].weight += 1;
+        let elementIndex = row * this._colLabel.length + col;
+        this._adjMatData[elementIndex].weight += 1;
 
-        drawMatrix();
-    };
+        this._drawMatrix();
+    }
 
-    this.resetMatrixWeight = function () {
+    /** 
+     * Reset the matix cell weight and updates color based on the weight
+     * @function chart.resetMatrixWeight 
+     */
+    resetMatrixWeight() {
         /* Reset each matrix cell weight to 0 */
-
-        for (let i = 0; i < adjMatData.length; i++) {
-            if (adjMatData[i].type === "cellData") {
-                adjMatData[i].weight = 0;
+        for (let i = 0; i < this._adjMatData.length; i++) {
+            if (this._adjMatData[i].type === "cellData") {
+                this._adjMatData[i].weight = 0;
             }
         }
 
-        drawMatrix();
+        this._drawMatrix();
     }
 }

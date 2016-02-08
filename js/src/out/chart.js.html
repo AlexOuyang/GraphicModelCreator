@@ -77,8 +77,8 @@ function Chart(matrixConfiguration) {
 
     let self = this,
         adjMatData = [], // The attributes of the n by n adjacency matrix
-        rowLabel = [], // A vector that contains the labels. e.g["square", "circle"]
-        colLabel = [], // A vector that contains the labels. e.g["square", "circle"]
+        _rowLabel = [], // A vector that contains the labels. e.g["square", "circle"]
+        _colLabel = [], // A vector that contains the labels. e.g["square", "circle"]
 
 
         svg = d3.select('#pgm')
@@ -191,11 +191,11 @@ function Chart(matrixConfiguration) {
      */
     this.createMatrix = function (rowLab, colLab) {
 
-        rowLabel = rowLab; // Update the labels
-        colLabel = colLab; // Update the labels
+        _rowLabel = rowLab; // Update the labels
+        _colLabel = colLab; // Update the labels
 
         // Calculate the dimension of each block and other matrix self.config properties
-        self.config.matrix.dim = self.config.matrix.dim * Array.min([self.config.transform.width, self.config.transform.height]) / Array.max([rowLabel.length, colLabel.length]);
+        self.config.matrix.dim = self.config.matrix.dim * Array.min([self.config.transform.width, self.config.transform.height]) / Array.max([_rowLabel.length, _colLabel.length]);
         self.config.matrix.spacing *= self.config.matrix.dim / 10;
         self.config.matrix.x *= self.config.transform.width;
         self.config.matrix.y *= self.config.transform.height;
@@ -204,8 +204,8 @@ function Chart(matrixConfiguration) {
         let id = 0;
         let x;
         let y;
-        for (let i = 0; i &lt; rowLabel.length; i++) {
-            for (let j = 0; j &lt; colLabel.length; j++) {
+        for (let i = 0; i &lt; _rowLabel.length; i++) {
+            for (let j = 0; j &lt; _colLabel.length; j++) {
                 x = (self.config.matrix.dim + self.config.matrix.spacing) * (j + 1 / 2) + self.config.matrix.x;
                 y = (self.config.matrix.dim + self.config.matrix.spacing) * (i + 1 / 2) + self.config.matrix.y;
                 adjMatData.push({
@@ -220,26 +220,26 @@ function Chart(matrixConfiguration) {
         }
 
         // Add labels to the adjMat as well
-        for (let i = 0; i &lt; colLabel.length; i++) {
+        for (let i = 0; i &lt; _colLabel.length; i++) {
             // Add column labels
             x = (self.config.matrix.dim + self.config.matrix.spacing) * (i + 1 / 2) + self.config.matrix.x;
             y = (self.config.matrix.dim + self.config.matrix.spacing) * (-1 / 2) + self.config.matrix.y;
             adjMatData.push({
                 type: "cellLabel",
-                label: colLabel[i],
+                label: _colLabel[i],
                 x: x,
                 y: y,
             });
         }
 
         // Add labels to the adjMat as well
-        for (let i = 0; i &lt; rowLabel.length; i++) {
+        for (let i = 0; i &lt; _rowLabel.length; i++) {
             // Add row labels
             x = (self.config.matrix.dim + self.config.matrix.spacing) * (-1 / 2) + self.config.matrix.x;
             y = (self.config.matrix.dim + self.config.matrix.spacing) * (i + 1 / 2) + self.config.matrix.y;
             adjMatData.push({
                 type: "cellLabel",
-                label: rowLabel[i],
+                label: _rowLabel[i],
                 x: x,
                 y: y,
             });
@@ -256,8 +256,8 @@ function Chart(matrixConfiguration) {
      */
     this.updateMatrix = function (cell) {
 
-        let row = rowLabel.indexOf(cell[0]);
-        let col = colLabel.indexOf(cell[1]);
+        let row = _rowLabel.indexOf(cell[0]);
+        let col = _colLabel.indexOf(cell[1]);
 
         // Test for validity of the input
         if (row &lt; 0 || col &lt; 0) {
@@ -265,7 +265,7 @@ function Chart(matrixConfiguration) {
         }
 
         // Update weight of the element
-        let elementIndex = row * colLabel.length + col;
+        let elementIndex = row * _colLabel.length + col;
         adjMatData[elementIndex].weight += 1;
 
         drawMatrix();

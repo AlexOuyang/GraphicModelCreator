@@ -203,10 +203,10 @@ myGraph.createChart(matConfig);
 
 // Way 2 to create a chart
 
-//var rowLabel = ["▢", "◯", "△"];
-//var colLabel = rowLabel;
+//var _rowLabel = ["▢", "◯", "△"];
+//var _colLabel = _rowLabel;
 //var adjMat = new Chart(matConfig);
-//adjMat.createMatrix(rowLabel, colLabel);
+//adjMat.createMatrix(_rowLabel, _colLabel);
 //
 //// Bind the chart to graph
 //myGraph.bindChart(adjMat);

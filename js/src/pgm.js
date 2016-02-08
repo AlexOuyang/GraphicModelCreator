@@ -813,9 +813,9 @@ function GraphicalModel(graphConfiguration) {
     function updateChart() {
         /* Used in drawVisitedPath() to update the adjacency matrix chart */
 
-        let rowLabel = graphData.data[directedPath[0]].label;
-        let colLabel = graphData.data[directedPath[directedPath.length - 1]].label;
-        let cellToUpdate = [rowLabel, colLabel];
+        let _rowLabel = graphData.data[directedPath[0]].label;
+        let _colLabel = graphData.data[directedPath[directedPath.length - 1]].label;
+        let cellToUpdate = [_rowLabel, _colLabel];
         log("Update Cell: [" + cellToUpdate + "]");
         self.chart.increaseCellWeight(cellToUpdate);
     }
@@ -835,9 +835,9 @@ function GraphicalModel(graphConfiguration) {
             throw new Error("Can not create adjacency matrix for graphical model with layer number less than 2");
             return;
         }
-        var rowLabel = graphData.clusterMat[0];
-        var colLabel = graphData.clusterMat[graphData.clusterMat.length - 1];
+        var _rowLabel = graphData.clusterMat[0];
+        var _colLabel = graphData.clusterMat[graphData.clusterMat.length - 1];
         self.chart = new Chart(chartConfig);
-        self.chart.createMatrix(rowLabel, colLabel);
+        self.chart.createMatrix(_rowLabel, _colLabel);
     };
 }
