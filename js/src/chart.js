@@ -51,6 +51,8 @@ class Chart {
 
         this.config = matrixConfiguration || defaultConfig;
 
+        this.divID = divID;
+
         this._adjMatData = []; // The attributes of the n by n adjacency matrix
 
         this._rowLabel = []; // A vector that contains the labels. e.g["square", "circle"]
@@ -59,6 +61,7 @@ class Chart {
 
         this._svg = d3.select(divID)
             .append('svg')
+            .attr("class", "chart")
             .attr('width', this.config.transform.width)
             .attr('height', this.config.transform.height)
             .append('g')
@@ -66,6 +69,7 @@ class Chart {
 
         // Create the background wrapper for color theme
         this._svg.append("rect")
+            .attr("class", "background")
             .attr("width", this.config.transform.width)
             .attr("height", this.config.transform.height)
             .style("fill", this.config.background.color);
@@ -107,8 +111,8 @@ class Chart {
     _drawMatrix() {
         /* Draw the adjancy matrix */
 
-        d3.selectAll(".cell").remove();
-        d3.selectAll(".label").remove();
+        d3.selectAll(this.divID + " g .cell").remove();
+        d3.selectAll(this.divID + " g .label").remove();
 
         // Each cell group holds 
         let cell = this._svg.selectAll('g')
@@ -158,7 +162,7 @@ class Chart {
     }
 
     appendToDOM(divID) {
-        
+
     }
 
     /** 
@@ -228,11 +232,12 @@ class Chart {
 
 
     /** 
-     * Increases the matix cell weight and updates color based on the weight
+     * Increases the matix cell weight and updates color by weight
      * @function chart.increaseCellWeight 
      * @param {Array} cell - the cell to increase weight is represented by a coordinate pair, ie. cell = (row, col)
+     * @param {Integer} weight - used to increase the weight of the cell
      */
-    increaseCellWeight(cell) {
+    increaseCellWeight(cell, weight) {
         let row = this._rowLabel.indexOf(cell[0]);
         let col = this._colLabel.indexOf(cell[1]);
 
@@ -243,8 +248,8 @@ class Chart {
 
         // Update weight of the element
         let elementIndex = row * this._colLabel.length + col;
-        this._adjMatData[elementIndex].weight += 1;
-        
+        this._adjMatData[elementIndex].weight += weight;
+
         this._drawMatrix();
     }
 
@@ -263,5 +268,3 @@ class Chart {
         this._drawMatrix();
     }
 }
-
-

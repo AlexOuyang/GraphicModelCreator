@@ -9,15 +9,15 @@ var pgmConfig2 = {
     },
     vertex: {
         radius: 0.35,
-        defaultColor: "lightsteelblue",
-        visitedColor: "steelblue",
+        defaultColor: "#52bf90",
+        visitedColor: "#1d4433",
     },
     edge: {
         baseWidth: 0.1, // base width offset = baseWidth * circle radius
         width: 0.5, // edge width = width * circle radius
         defaultColor: "#b6ddcc",
         visitedColor: "#1d4433",
-        timeInterval: 600 // timeInterval is in millisecond
+        timeInterval: 800 // timeInterval is in millisecond
     },
     text: {
         color: "white",
@@ -36,11 +36,10 @@ var pgmConfig2 = {
             dim: 1,
             color: "#74cba6"
         },
-        timeIntervalToUpdateChart: 400,
-        timeInterval: 800
+        timeIntervalBetweenCycle: 800
     },
     autoPlayable: true,  // If autoPlayable, creates the autoplay button
-    zoom: false,
+    zoomable: true,
 };
 
 

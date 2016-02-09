@@ -36,11 +36,10 @@ var pgmConfig = {
             dim: 1,
             color: "#74cba6"
         },
-        timeIntervalToUpdateChart: 400,
-        timeInterval: 800
+        timeIntervalBetweenCycle: 800
     },
     autoPlayable: true,  // If autoPlayable, creates the autoplay button
-    zoom: false,
+    zoomable: false,
 };
 
 

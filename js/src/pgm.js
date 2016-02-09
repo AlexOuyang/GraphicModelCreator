@@ -144,16 +144,15 @@ function GraphicalModel(graphConfiguration) {
             color: "#ecf6f2"
         },
         autoPlay: {
-            on: false,
+            on: false, // true when user clicks on the play button and the graph cycles, else false
             button: {
-                dim: 1,
+                dim: 1, // size of the play button
                 color: "#74cba6"
             },
-            timeIntervalToUpdateChart: 400,
-            timeInterval: 800
+            timeIntervalBetweenCycle: 800
         },
         autoPlayable: true, // If autoPlayable, creates the autoplay button
-        zoom: true,
+        zoomable: true,
     };
 
     this.config = graphConfiguration || defaultConfig;
@@ -186,6 +185,7 @@ function GraphicalModel(graphConfiguration) {
             });
 
         self.svg = d3.select(divID).append("svg")
+            .attr("class", "graph")
             .attr("width", self.config.transform.width)
             .attr("height", self.config.transform.height)
             .append("g")
@@ -193,6 +193,7 @@ function GraphicalModel(graphConfiguration) {
 
         // Set up the background rect wrapper
         self.rect = self.svg.append("rect")
+            .attr("class", "background")
             .attr("width", self.config.transform.width)
             .attr("height", self.config.transform.height)
             .style("fill", self.config.background.color)
@@ -230,7 +231,7 @@ function GraphicalModel(graphConfiguration) {
             });
 
         // Zoom behavior
-        if (self.config.zoom) {
+        if (self.config.zoomable) {
             self.svg.call(self.zoom);
         }
 
@@ -379,7 +380,7 @@ function GraphicalModel(graphConfiguration) {
     function drawVertices(data) {
         /* clear vertices then redraw all the vertices in the grpah */
 
-        d3.selectAll(".vertex").remove();
+        d3.selectAll(self.divID + " g .vertex").remove();
 
         // Create vertex groups, each group contains a cicle and a text
         self.vertices = self.container.append("g")
@@ -401,7 +402,7 @@ function GraphicalModel(graphConfiguration) {
         /* Draw all edges and high light visited color */
 
         // clear edges then redraw all the edges in the graph 
-        d3.selectAll("path").remove();
+        d3.selectAll(self.divID + " path").remove();
 
         // Draw all edges based on weight in default color
         for (let vertexIdx = 0; vertexIdx < data.length; vertexIdx++) {
@@ -498,29 +499,29 @@ function GraphicalModel(graphConfiguration) {
                             // Add a text element to the previously added g element.
                             drawText();
 
-                            // Draw visited path ending condition
+                            // Visited path ending condition
                             let endingVertexIdx = self.directedPath.length - 2;
                             if (vertexIdx === endingVertexIdx) {
 
-                                // If chart exist, update the chart adjacency matrix after the visited path finish highlighting
+                                // If chart exists, update the chart adjacency matrix after the visited path finish highlighting within [timeIntervalBetweenCycle/2] milliseconds
                                 if (self.chart) {
                                     setTimeout(() => {
                                         updateChart();
-                                    }, self.config.autoPlay.timeIntervalToUpdateChart);
+                                    }, self.config.autoPlay.timeIntervalBetweenCycle / 2.0);
                                 }
-                                // If autoplay is on, then auto click on another node from speak layer
+                                // If autoplay is on, then restart the cycle after [timeIntervalBetweenCycle] milliseconds
                                 if (self.config.autoPlay.on) {
                                     console.log("Auto play is on!");
                                     setTimeout(() => {
                                         let random_id = Math.floor(Math.random() * self.graphData.clusterMat[0].length);
                                         self.triggerSpeakerNode(random_id);
-                                    }, self.config.autoPlay.timeInterval);
+                                    }, self.config.autoPlay.timeIntervalBetweenCycle);
                                 }
                             }
 
                             // 0.95 is a time offset multiplier to make vertex colored faster since
                             // there is an unknown lag
-                        }, 0.95 * self.config.edge.timeInterval * (vertexIdx + 1));
+                        }, self.config.edge.timeInterval * (vertexIdx + 1));
 
                         // Draw the first vertex when the path start highlighting
                         self.vertices.append("circle")
@@ -569,8 +570,8 @@ function GraphicalModel(graphConfiguration) {
 
 
     function createPlayButton() {
-        /* Used to create a play button, it modifies the default button property */
         $(function () {
+            /* Used to create a play button, it modifies the default button property in button.css */
 
             var $Button = $("<div>", {
                 class: "play-button paused"
@@ -596,7 +597,9 @@ function GraphicalModel(graphConfiguration) {
             $Button.append($triangle2);
 
             // Update button dimension first
-            self.config.autoPlay.button.dim = Array.min([self.config.transform.height, self.config.transform.width]) / 10.0 * self.config.autoPlay.button.dim;
+            let resizedButton = Array.min([self.config.transform.height, self.config.transform.width]) / 10.0 * self.config.autoPlay.button.dim;
+            let maxButtonSize = 35.0; // The max button size is 40px so that buttons won't get too big
+            self.config.autoPlay.button.dim = (resizedButton > maxButtonSize) ? maxButtonSize : resizedButton;
 
             $(".play-button").css("height", self.config.autoPlay.button.dim + "px")
                 .css("width", self.config.autoPlay.button.dim + "px");
@@ -824,13 +827,16 @@ function GraphicalModel(graphConfiguration) {
         let _colLabel = self.graphData.data[self.directedPath[self.directedPath.length - 1]].label;
         let cellToUpdate = [_rowLabel, _colLabel];
         log("Update Cell: [" + cellToUpdate + "]");
-        self.chart.increaseCellWeight(cellToUpdate);
+        self.chart.increaseCellWeight(cellToUpdate, 1);
     }
 
     this.bindChart = function (chart) {
         /* Used to bind to an existing adjacency matrix chart to the graphical model */
-
-        self.chart = chart;
+        if (self.chart != null) {
+            self.chart = chart;
+        } else {
+            throw new Error("pgm.bindChart(): Graph already has a chart object.")
+        }
     };
 
     this.createChart = function (chartConfig) {
@@ -855,14 +861,15 @@ function GraphicalModel(graphConfiguration) {
 
 $(function () {
     $("#slider-range").slider({
-        range: false,
-        min: 100,
+        range: false, // two buttons caps a range
+        min: 50,
         max: 2000,
         value: 800,
         slide: function (event, ui) {
             console.log(ui.value);
             sphereRad = ui.value;
             myGraph.config.edge.timeInterval = ui.value;
+            myGraph.config.autoPlay.timeIntervalBetweenCycle = ui.value;
         }
     });
 });

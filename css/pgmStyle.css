@@ -59,5 +59,20 @@ p {
 /*============ Slider Button =============*/
 .slider{
   width:500px;
-  background: rgba(0,90,50,0.7);
+/*  background: rgba(0,90,50,0.7);*/
+}
+
+/* Override the default jQuery UI bar css*/
+.ui-widget-content {
+    border: 0px solid #52bf90;
+    background: #b6ddcc;
+/*    color: #222222;*/
+}
+
+/* Override the default jQuery UI slider button css*/
+.ui-state-default, .ui-widget-content .ui-state-default, .ui-widget-header .ui-state-default {
+    border: 0px solid #d3d3d3;
+    background: #52bf90;
+/*    font-weight: normal;*/
+/*    color: #555555;*/
 }
