@@ -91,8 +91,8 @@ var matConfig2 = {
     matrix: {
         x: 0.5,
         y: 0.5,
-        dim: 0.4,
-        spacing: 1,
+        cellDim: 0.4,
+        cellSpacing: 1,
         color: "#63c59b"
     },
     label: {
@@ -101,7 +101,7 @@ var matConfig2 = {
         anchor: "middle",
         alignment: "middle"
     },
-    text: {
+    weight: {
         color: "white",
         size: 0.6, // text size = size * circle radius
         anchor: "middle",

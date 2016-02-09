@@ -570,6 +570,16 @@ function GraphicalModel(graphConfiguration) {
     }
 
 
+    function createCyclingSpeedControllButton() {
+        $(function () {
+            var $DivSlider = $("<div>", {
+                class: "slider",
+                id: "slider-range"
+            });
+            $(self.divID).prepend($DivSlider);
+        });
+    }
+
     function createPlayButton() {
         $(function () {
             /* Used to create a play button, it modifies the default button property in button.css */
@@ -686,6 +696,9 @@ function GraphicalModel(graphConfiguration) {
     this.display = function () {
         /* Used to display the graph */
 
+        if (self.config.cyclingSpeedControllable) {
+            createCyclingSpeedControllButton();
+        }
         if (self.config.autoPlayable) {
             createPlayButton();
         }
@@ -851,7 +864,7 @@ function GraphicalModel(graphConfiguration) {
         }
         var _rowLabel = self.graphData.clusterMat[0];
         var _colLabel = self.graphData.clusterMat[self.graphData.clusterMat.length - 1];
-        self.chart = new Chart(self.divID, chartConfig);
+        self.chart = new WeightedAdjMat(self.divID, chartConfig);
         self.chart.createMatrix(_rowLabel, _colLabel);
     };
 }

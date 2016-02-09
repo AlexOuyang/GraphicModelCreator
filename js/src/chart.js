@@ -1,18 +1,19 @@
 "use strict";
 
-class Chart {
+class WeightedAdjMat {
 
     /**
-     * Creates a color coded adjacency matrix contained in a chart object
+     * Creates a color coded adjacency matrix contained in a WeightedAdjMat object
      * @class
      * @constructor
+     * @param {String} divID - the id of the div that contains the graph, e.g "#id"
      * @param {Object} matrixConfiguration - The configurations of the adjacency matrix
      */
     constructor(divID, matrixConfiguration) {
         /**
-         * @memberof chart
+         * @memberof WeightedAdjMat
          * @type {Object}
-         * @property {Object} transform - The transform property can be used to position and scale the chart object
+         * @property {Object} transform - The transform property can be used to position and scale the WeightedAdjMat object
          * @property {Object} matrix - The matix property can be used to position, scale and color the matrix
          * @property {Object} label - The label property can be used to color and scale the matrix labels
          * @property {Object} text - The text property can be used to color and scale the matrix cell weight
@@ -28,8 +29,8 @@ class Chart {
             matrix: {
                 x: 0.2,
                 y: 0.2,
-                dim: 0.6, // dimenion relative to the chart that contains the matrix
-                spacing: 1,
+                dim: 0.6, // dimenion relative to the WeightedAdjMat that contains the matrix
+                spacing: 1, // spacing between each cell
                 color: "#63c59b"
             },
             label: {
@@ -38,7 +39,7 @@ class Chart {
                 anchor: "middle",
                 alignment: "middle"
             },
-            text: {
+            weight: {
                 color: "white",
                 size: 0.6, // text size = size * circle radius
                 anchor: "middle",
@@ -51,7 +52,7 @@ class Chart {
 
         this.config = matrixConfiguration || defaultConfig;
 
-        this.divID = divID;
+        this._divID = divID;
 
         this._adjMatData = []; // The attributes of the n by n adjacency matrix
 
@@ -59,9 +60,9 @@ class Chart {
 
         this._colLabel = []; // A vector that contains the labels. e.g["square", "circle"]
 
-        this._svg = d3.select(divID)
+        this._svg = d3.select(this._divID)
             .append('svg')
-            .attr("class", "chart")
+            .attr("class", "weightedAdjMat")
             .attr('width', this.config.transform.width)
             .attr('height', this.config.transform.height)
             .append('g')
@@ -111,8 +112,8 @@ class Chart {
     _drawMatrix() {
         /* Draw the adjancy matrix */
 
-        d3.selectAll(this.divID + " g .cell").remove();
-        d3.selectAll(this.divID + " g .label").remove();
+        d3.selectAll(this._divID + " g .cell").remove();
+        d3.selectAll(this._divID + " g .label").remove();
 
         // Each cell group holds 
         let cell = this._svg.selectAll('g')
@@ -123,9 +124,9 @@ class Chart {
 
         // Each rect is a matrix cell
         cell.append("rect")
-            .attr("transform", "translate(" + -this.config.matrix.dim / 2 + "," + -this.config.matrix.dim / 2 + ")")
-            .attr('width', this.config.matrix.dim)
-            .attr('height', this.config.matrix.dim)
+            .attr("transform", "translate(" + -this.config.matrix.cellDim / 2 + "," + -this.config.matrix.cellDim / 2 + ")")
+            .attr('width', this.config.matrix.cellDim)
+            .attr('height', this.config.matrix.cellDim)
             .attr('fill', d => {
                 if (d.type === "cellData") {
                     return this._shadeColor(this.config.matrix.color, -d.weight * 5);
@@ -138,10 +139,10 @@ class Chart {
 
         // Add cell weight text
         cell.append("text")
-            .attr("font-size", this.config.matrix.dim * this.config.text.size)
-            .attr("text-anchor", this.config.text.anchor)
-            .attr("alignment-baseline", this.config.text.alignment)
-            .attr("fill", this.config.text.color)
+            .attr("font-size", this.config.matrix.cellDim * this.config.weight.size)
+            .attr("text-anchor", this.config.weight.anchor)
+            .attr("alignment-baseline", this.config.weight.alignment)
+            .attr("fill", this.config.weight.color)
             .text(d => {
                 if (d.type === "cellData") {
                     return d.weight;
@@ -150,7 +151,7 @@ class Chart {
 
         // Add cell label text
         cell.append("text")
-            .attr("font-size", this.config.matrix.dim * this.config.label.size)
+            .attr("font-size", this.config.matrix.cellDim * this.config.label.size)
             .attr("text-anchor", this.config.label.anchor)
             .attr("alignment-baseline", this.config.label.alignment)
             .attr("fill", this.config.label.color)
@@ -161,13 +162,9 @@ class Chart {
             });
     }
 
-    appendToDOM(divID) {
-
-    }
-
     /** 
      * Creates an adjacency matrix based on the row and column labels
-     * @function chart.createMatrix 
+     * @function WeightedAdjMat.createMatrix 
      * @param {Array} rowLab - labels that represent the row of the matrix
      * @param {Array} colLab - labels that represent the column of the matrix
      */
@@ -177,8 +174,8 @@ class Chart {
         this._colLabel = colLab; // Update the labels
 
         // Calculate the dimension of each block and other matrix config properties
-        this.config.matrix.dim = this.config.matrix.dim * Array.min([this.config.transform.width, this.config.transform.height]) / Array.max([this._rowLabel.length, this._colLabel.length]);
-        this.config.matrix.spacing *= this.config.matrix.dim / 10;
+        this.config.matrix.cellDim = this.config.matrix.cellDim * Array.min([this.config.transform.width, this.config.transform.height]) / Array.max([this._rowLabel.length, this._colLabel.length]);
+        this.config.matrix.cellSpacing *= this.config.matrix.cellDim / 10;
         this.config.matrix.x *= this.config.transform.width;
         this.config.matrix.y *= this.config.transform.height;
 
@@ -188,8 +185,8 @@ class Chart {
         let y;
         for (let i = 0; i < this._rowLabel.length; i++) {
             for (let j = 0; j < this._colLabel.length; j++) {
-                x = (this.config.matrix.dim + this.config.matrix.spacing) * (j + 1 / 2) + this.config.matrix.x;
-                y = (this.config.matrix.dim + this.config.matrix.spacing) * (i + 1 / 2) + this.config.matrix.y;
+                x = (this.config.matrix.cellDim + this.config.matrix.cellSpacing) * (j + 1 / 2) + this.config.matrix.x;
+                y = (this.config.matrix.cellDim + this.config.matrix.cellSpacing) * (i + 1 / 2) + this.config.matrix.y;
                 this._adjMatData.push({
                     type: "cellData",
                     id: id,
@@ -204,8 +201,8 @@ class Chart {
         // Add labels to the adjMat as well
         for (let i = 0; i < this._colLabel.length; i++) {
             // Add column labels
-            x = (this.config.matrix.dim + this.config.matrix.spacing) * (i + 1 / 2) + this.config.matrix.x;
-            y = (this.config.matrix.dim + this.config.matrix.spacing) * (-1 / 2) + this.config.matrix.y;
+            x = (this.config.matrix.cellDim + this.config.matrix.cellSpacing) * (i + 1 / 2) + this.config.matrix.x;
+            y = (this.config.matrix.cellDim + this.config.matrix.cellSpacing) * (-1 / 2) + this.config.matrix.y;
             this._adjMatData.push({
                 type: "cellLabel",
                 label: this._colLabel[i],
@@ -217,8 +214,8 @@ class Chart {
         // Add labels to the adjMat as well
         for (let i = 0; i < this._rowLabel.length; i++) {
             // Add row labels
-            x = (this.config.matrix.dim + this.config.matrix.spacing) * (-1 / 2) + this.config.matrix.x;
-            y = (this.config.matrix.dim + this.config.matrix.spacing) * (i + 1 / 2) + this.config.matrix.y;
+            x = (this.config.matrix.cellDim + this.config.matrix.cellSpacing) * (-1 / 2) + this.config.matrix.x;
+            y = (this.config.matrix.cellDim + this.config.matrix.cellSpacing) * (i + 1 / 2) + this.config.matrix.y;
             this._adjMatData.push({
                 type: "cellLabel",
                 label: this._rowLabel[i],
@@ -233,7 +230,7 @@ class Chart {
 
     /** 
      * Increases the matix cell weight and updates color by weight
-     * @function chart.increaseCellWeight 
+     * @function WeightedAdjMat.increaseCellWeight 
      * @param {Array} cell - the cell to increase weight is represented by a coordinate pair, ie. cell = (row, col)
      * @param {Integer} weight - used to increase the weight of the cell
      */
@@ -255,7 +252,7 @@ class Chart {
 
     /** 
      * Reset the matix cell weight and updates color based on the weight
-     * @function chart.resetMatrixWeight 
+     * @function WeightedAdjMat.resetMatrixWeight 
      */
     resetMatrixWeight() {
         /* Reset each matrix cell weight to 0 */

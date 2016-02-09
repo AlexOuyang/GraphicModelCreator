@@ -32,13 +32,14 @@ var pgmConfig = {
     },
     autoPlay: {
         on: false,
-        button:{
+        button: {
             dim: 1,
             color: "#74cba6"
         },
         timeIntervalBetweenCycle: 800
     },
-    autoPlayable: true,  // If autoPlayable, creates the autoplay button
+    autoPlayable: true, // If autoPlayable, creates the autoplay button
+    cyclingSpeedControllable: true, // if cyclingSpeedControllable, create speed button
     zoomable: false,
 };
 
@@ -173,10 +174,10 @@ var matConfig = {
         height: window.innerWidth / 3
     },
     matrix: {
-        x: 0.25,
+        x: 0.3,
         y: 0.3,
-        dim: 0.5,
-        spacing: 1,
+        cellDim: 0.5,
+        cellSpacing: 1,
         color: "#63c59b"
     },
     label: {
@@ -185,9 +186,9 @@ var matConfig = {
         anchor: "middle",
         alignment: "middle"
     },
-    text: {
+    weight: {
         color: "white",
-        size: 0.6, // text size = size * circle radius
+        size: 0.6, // weight text size = size * circle radius
         anchor: "middle",
         alignment: "middle"
     },
