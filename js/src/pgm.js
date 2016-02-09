@@ -168,6 +168,7 @@ function GraphicalModel(graphConfiguration) {
 
 
     this.appendToDOM = function (divID) {
+
         self.divID = divID;
 
         // Click on the node in the speaker layer to draw visited path
@@ -601,22 +602,22 @@ function GraphicalModel(graphConfiguration) {
             let maxButtonSize = 35.0; // The max button size is 40px so that buttons won't get too big
             self.config.autoPlay.button.dim = (resizedButton > maxButtonSize) ? maxButtonSize : resizedButton;
 
-            $(".play-button").css("height", self.config.autoPlay.button.dim + "px")
+            $(self.divID + " .play-button").css("height", self.config.autoPlay.button.dim + "px")
                 .css("width", self.config.autoPlay.button.dim + "px");
 
-            $(".triangle-1").css("border-right-width", self.config.autoPlay.button.dim + "px")
+            $(self.divID + " .triangle-1").css("border-right-width", self.config.autoPlay.button.dim + "px")
                 .css("border-top-width", self.config.autoPlay.button.dim / 2.0 + "px")
                 .css("border-bottom-width", self.config.autoPlay.button.dim / 2.0 + "px");
 
-            $(".triangle-2").css("border-right-width", self.config.autoPlay.button.dim + "px")
+            $(self.divID + " .triangle-2").css("border-right-width", self.config.autoPlay.button.dim + "px")
                 .css("border-top-width", self.config.autoPlay.button.dim / 1.9 + "px")
                 .css("border-bottom-width", self.config.autoPlay.button.dim / 2.0 + "px");
 
-            $(".left").css("background-color", self.config.autoPlay.button.color);
-            $(".right").css("background-color", self.config.autoPlay.button.color);
+            $(self.divID + " .left").css("background-color", self.config.autoPlay.button.color);
+            $(self.divID + " .right").css("background-color", self.config.autoPlay.button.color);
 
 
-            $(".play-button").click(function () {
+            $(self.divID + " .play-button").click(function () {
                 $(this).toggleClass("paused");
                 if (self.config.autoPlay.on) {
                     self.stopAutoPlay();
@@ -641,7 +642,7 @@ function GraphicalModel(graphConfiguration) {
             drawVisitedPath(self.graphData.data);
 
             // testing 
-            $('.path strong').text(self.directedPath);
+            $(self.divID + ' .path strong').text(self.directedPath);
         } else {
             // Else clear the path
             clearVisitedPath();
@@ -872,4 +873,13 @@ $(function () {
             myGraph.config.autoPlay.timeIntervalBetweenCycle = ui.value;
         }
     });
+});
+
+// Detect window resizing
+$(window).on('resize', function (e) {
+    clearTimeout(resizeTimer);
+    var resizeTimer = setTimeout(function () {
+        log("resized window");
+    }, 400);
+
 });
