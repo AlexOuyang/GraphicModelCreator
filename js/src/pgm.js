@@ -573,12 +573,13 @@ function GraphicalModel(graphConfiguration) {
 
     function createCyclingSpeedControllButton() {
         $(function () {
+            let sliderID = self.divID.substring(1) + "-slider-range";
             var $DivSlider = $("<div>", {
                 class: "slider",
-                id: "" + self.divID.substring(1) + "-slider-range"
+                id: sliderID
             });
             $(self.divID).prepend($DivSlider);
-            $(self.divID + "-slider-range").slider({
+            $("#" + sliderID).slider({
                 range: false, // two buttons caps a range
                 min: 50,
                 max: 2000,
