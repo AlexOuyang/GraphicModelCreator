@@ -151,7 +151,8 @@ function GraphicalModel(graphConfiguration) {
             },
             timeIntervalBetweenCycle: 800
         },
-        autoPlayable: true, // If autoPlayable, creates the autoplay button
+        autoPlayable: true, // If autoPlayable, creates the autoplay button    
+        cyclingSpeedControllable: true, // if cyclingSpeedControllable, create speed button
         zoomable: true,
     };
 
@@ -574,9 +575,21 @@ function GraphicalModel(graphConfiguration) {
         $(function () {
             var $DivSlider = $("<div>", {
                 class: "slider",
-                id: "slider-range"
+                id: "" + self.divID.substring(1) + "-slider-range"
             });
             $(self.divID).prepend($DivSlider);
+            $(self.divID + "-slider-range").slider({
+                range: false, // two buttons caps a range
+                min: 50,
+                max: 2000,
+                value: 800,
+                slide: function (event, ui) {
+                    console.log(ui.value);
+                    let sphereRad = ui.value;
+                    self.config.edge.timeInterval = ui.value;
+                    self.config.autoPlay.timeIntervalBetweenCycle = ui.value;
+                }
+            });
         });
     }
 
@@ -696,12 +709,14 @@ function GraphicalModel(graphConfiguration) {
     this.display = function () {
         /* Used to display the graph */
 
-        if (self.config.cyclingSpeedControllable) {
-            createCyclingSpeedControllButton();
-        }
         if (self.config.autoPlayable) {
             createPlayButton();
         }
+
+        if (self.config.cyclingSpeedControllable) {
+            createCyclingSpeedControllButton();
+        }
+
         dataScreening(self.graphData.data);
         createEdgesInGraphData(self.graphData.data);
         if (self.config.background.grid) {
@@ -874,18 +889,18 @@ function GraphicalModel(graphConfiguration) {
 /*========== Slider Button ============*/
 
 $(function () {
-    $("#slider-range").slider({
-        range: false, // two buttons caps a range
-        min: 50,
-        max: 2000,
-        value: 800,
-        slide: function (event, ui) {
-            console.log(ui.value);
-            sphereRad = ui.value;
-            myGraph.config.edge.timeInterval = ui.value;
-            myGraph.config.autoPlay.timeIntervalBetweenCycle = ui.value;
-        }
-    });
+    //    $("#slider-range").slider({
+    //        range: false, // two buttons caps a range
+    //        min: 50,
+    //        max: 2000,
+    //        value: 800,
+    //        slide: function (event, ui) {
+    //            console.log(ui.value);
+    //            sphereRad = ui.value;
+    //            myGraph.config.edge.timeInterval = ui.value;
+    //            myGraph.config.autoPlay.timeIntervalBetweenCycle = ui.value;
+    //        }
+    //    });
 });
 
 // Detect window resizing

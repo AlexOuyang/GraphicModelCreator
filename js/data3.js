@@ -32,14 +32,15 @@ var pgmConfig = {
     },
     autoPlay: {
         on: false,
-        button:{
+        button: {
             dim: 1,
             color: "#74cba6"
         },
         timeIntervalToUpdateChart: 400,
         timeInterval: 800
     },
-    autoPlayable: true,  // If autoPlayable, creates the autoplay button
+    autoPlayable: true, // If autoPlayable, creates the autoplay button
+    cyclingSpeedControllable: true, // if cyclingSpeedControllable, create speed button
     zoom: false,
 };
 

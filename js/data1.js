@@ -39,7 +39,8 @@ var pgmConfig2 = {
         timeIntervalBetweenCycle: 800
     },
     autoPlayable: true,  // If autoPlayable, creates the autoplay button
-    zoomable: true,
+    cyclingSpeedControllable: true, // if cyclingSpeedControllable, create speed button
+    zoomable: false,
 };
 
 
