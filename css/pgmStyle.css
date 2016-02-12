@@ -17,8 +17,8 @@
     stroke: lightsteelblue;
 */
     fill: #52bf90;
-    stroke: #52bf90;
-    stroke-width: 4px;
+    stroke: #1d4433;
+    stroke-width: 0.5%;
 }
 
 
@@ -54,7 +54,7 @@ p {
 }
 
 
-/*============= Chart styles ============*/
+/*============= Weighted Adjacency Matrix Styles ============*/
 /*
 .cell {
     fill: #52bf90;
@@ -65,12 +65,11 @@ p {
     font-family: "Helvetica";
 }
 
-/*============ Slider Button =============*/
-
+/*============ Slider Button To Control Cycling Speed =============*/
 
 .slider{
   width: 100%;
-/*  background: rgba(0,90,50,0.7);*/
+  background: rgba(0,90,50,0.7);
 }
 
 .ui-corner-all, .ui-corner-bottom, .ui-corner-right, .ui-corner-br {

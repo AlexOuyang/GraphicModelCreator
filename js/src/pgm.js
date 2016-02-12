@@ -575,7 +575,7 @@ function GraphicalModel(graphConfiguration) {
         $(function () {
             let sliderID = self.divID.substring(1) + "-slider-range";
             var $DivSlider = $("<div>", {
-                class: "slider",
+//                class: "slider",
                 id: sliderID
             });
             $(self.divID).prepend($DivSlider);
@@ -591,6 +591,9 @@ function GraphicalModel(graphConfiguration) {
                     self.config.autoPlay.timeIntervalBetweenCycle = ui.value;
                 }
             });
+            
+            let sliderWidth = (self.chart === null) ? self.config.transform.width : self.chart.config.transform.width + self.config.transform.width;
+            $("#" + sliderID).css("width", sliderWidth + "px");
         });
     }
 
