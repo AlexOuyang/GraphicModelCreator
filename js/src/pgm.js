@@ -861,6 +861,7 @@ function GraphicalModel(graphConfiguration) {
         let cellToUpdate = [_rowLabel, _colLabel];
         log("Update Cell: [" + cellToUpdate + "]");
         self.chart.increaseCellWeight(cellToUpdate, 1);
+        self.chart.increaseCellColor(cellToUpdate, 1);
     }
 
     this.bindChart = function (chart) {

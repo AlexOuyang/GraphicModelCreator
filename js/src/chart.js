@@ -128,8 +128,9 @@ class WeightedAdjMat {
             .attr('width', this.config.matrix.cellDim)
             .attr('height', this.config.matrix.cellDim)
             .attr('fill', d => {
+                // Add color to the cell matrix
                 if (d.type === "cellData") {
-                    return this._shadeColor(this.config.matrix.color, -d.weight * 5);
+                    return this._shadeColor(this.config.matrix.color, -d.colorWeight * 5);
                 }
                 if (d.type === "cellLabel") {
                     return this.config.background.color;
@@ -192,13 +193,14 @@ class WeightedAdjMat {
                     id: id,
                     x: x,
                     y: y,
-                    weight: 0
+                    weight: 0,
+                    colorWeight: 0
                 });
                 id++;
             }
         }
 
-        // Add labels to the adjMat as well
+        // Add column labels to the adjacent matrix.
         for (let i = 0; i < this._colLabel.length; i++) {
             // Add column labels
             x = (this.config.matrix.cellDim + this.config.matrix.cellSpacing) * (i + 1 / 2) + this.config.matrix.x;
@@ -211,7 +213,7 @@ class WeightedAdjMat {
             });
         }
 
-        // Add labels to the adjMat as well
+        // Add row labels to the adjacent matrix.
         for (let i = 0; i < this._rowLabel.length; i++) {
             // Add row labels
             x = (this.config.matrix.cellDim + this.config.matrix.cellSpacing) * (-1 / 2) + this.config.matrix.x;
@@ -229,7 +231,7 @@ class WeightedAdjMat {
 
 
     /** 
-     * Increases the matix cell weight and updates color by weight
+     * Increases the matix cell weight.
      * @function WeightedAdjMat.increaseCellWeight 
      * @param {Array} cell - the cell to increase weight is represented by a coordinate pair, ie. cell = (row, col)
      * @param {Integer} weight - used to increase the weight of the cell
@@ -246,6 +248,29 @@ class WeightedAdjMat {
         // Update weight of the element
         let elementIndex = row * this._colLabel.length + col;
         this._adjMatData[elementIndex].weight += weight;
+
+        this._drawMatrix();
+    }
+
+
+    /** 
+     * Increases the matix cell color weight and darkens the color
+     * @function WeightedAdjMat.increaseCellColor 
+     * @param {Array} cell - the cell to increase weight is represented by a coordinate pair, ie. cell = (row, col)
+     * @param {Integer} weight - used to increase the color weight of the cell
+     */
+    increaseCellColor(cell, colorWeight) {
+        let row = this._rowLabel.indexOf(cell[0]);
+        let col = this._colLabel.indexOf(cell[1]);
+
+        // Test for validity of the input
+        if (row < 0 || col < 0) {
+            throw new Error("updateMatrix(cell): the element updated does not exist in the adjacency matrix.");
+        }
+
+        // Update weight of the element
+        let elementIndex = row * this._colLabel.length + col;
+        this._adjMatData[elementIndex].colorWeight += colorWeight;
 
         this._drawMatrix();
     }
