@@ -831,6 +831,7 @@ function GraphicalModel(graphConfiguration) {
     function resetChart() {
         /* reset the chart */
         self.chart.resetMatrixWeight();
+        self.chart.redrawMatrix();
     }
 
     this.startAutoPlay = function () {
@@ -862,6 +863,7 @@ function GraphicalModel(graphConfiguration) {
         log("Update Cell: [" + cellToUpdate + "]");
         self.chart.increaseCellWeight(cellToUpdate, 1);
         self.chart.increaseCellColor(cellToUpdate, 1);
+        self.chart.redrawMatrix();
     }
 
     this.bindChart = function (chart) {

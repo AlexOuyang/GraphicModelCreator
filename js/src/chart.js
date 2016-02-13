@@ -54,11 +54,11 @@ class WeightedAdjMat {
 
         this._divID = divID;
 
-        this._adjMatData = []; // The attributes of the n by n adjacency matrix
+        this._adjMatData = []; // Contains the matrix cell data and cell label data
 
-        this._rowLabel = []; // A vector that contains the labels. e.g["square", "circle"]
+        this._rowLabel = []; // Contains the row labels in string. e.g["square", "circle"]
 
-        this._colLabel = []; // A vector that contains the labels. e.g["square", "circle"]
+        this._colLabel = []; // Contains the column labels in string. e.g["square", "circle"]
 
         this._svg = d3.select(this._divID)
             .append('svg')
@@ -107,9 +107,9 @@ class WeightedAdjMat {
 
     /** 
      * Draws the adjancy matrix based on the property of each cell
-     * @function _drawMatrix 
+     * @function redrawMatrix 
      */
-    _drawMatrix() {
+    redrawMatrix() {
         /* Draw the adjancy matrix */
 
         d3.selectAll(this._divID + " g .cell").remove();
@@ -226,7 +226,7 @@ class WeightedAdjMat {
             });
         }
 
-        this._drawMatrix();
+        this.redrawMatrix();
     }
 
 
@@ -240,16 +240,10 @@ class WeightedAdjMat {
         let row = this._rowLabel.indexOf(cell[0]);
         let col = this._colLabel.indexOf(cell[1]);
 
-        // Test for validity of the input
-        if (row < 0 || col < 0) {
-            throw new Error("updateMatrix(cell): the element updated does not exist in the adjacency matrix.");
-        }
+        if (row < 0 || col < 0) throw new Error("updateMatrix(cell): the element updated does not exist in the adjacency matrix.");
 
-        // Update weight of the element
         let elementIndex = row * this._colLabel.length + col;
         this._adjMatData[elementIndex].weight += weight;
-
-        this._drawMatrix();
     }
 
 
@@ -263,16 +257,10 @@ class WeightedAdjMat {
         let row = this._rowLabel.indexOf(cell[0]);
         let col = this._colLabel.indexOf(cell[1]);
 
-        // Test for validity of the input
-        if (row < 0 || col < 0) {
-            throw new Error("updateMatrix(cell): the element updated does not exist in the adjacency matrix.");
-        }
+        if (row < 0 || col < 0) throw new Error("updateMatrix(cell): the element updated does not exist in the adjacency matrix.");
 
-        // Update weight of the element
         let elementIndex = row * this._colLabel.length + col;
         this._adjMatData[elementIndex].colorWeight += colorWeight;
-
-        this._drawMatrix();
     }
 
     /** 
@@ -286,7 +274,5 @@ class WeightedAdjMat {
                 this._adjMatData[i].weight = 0;
             }
         }
-
-        this._drawMatrix();
     }
 }
