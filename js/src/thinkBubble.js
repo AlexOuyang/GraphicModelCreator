@@ -3,9 +3,9 @@
 
 class ThinkBubble {
 
-    constructor(graphConfiguration) {
+    constructor(graphConfiguration, divID) {
 
-        this.chart = null; // holds the adjacency matrix chart 
+        this._weightedAdjMat = null; // holds the adjacency matrix chart 
 
         let defaultConfig = {
             transform: {
@@ -66,13 +66,12 @@ class ThinkBubble {
         this.directedPath = []; // directedPath is a list of visited nodes' ID
 
         this.canClick = true; // Used to keep user from clicking when the graph is traversing
-    }
 
-
-
-    appendToDOM(divID) {
 
         this.divID = divID;
+
+        let pgm = this;
+
 
         // Click on the node in the speaker layer to draw visited path
         this.onClick = d3.behavior.drag()
@@ -81,10 +80,10 @@ class ThinkBubble {
                 // Check if the clicked node is in the first layer
                 // which are the num of nodes in first layer of clusterMat
                 // Only allow user to click the node if autoplay is off
-                if (this.canClick && !this.config.autoPlayable) {
+                if (pgm.canClick && !pgm.config.autoPlayable) {
                     d3.event.sourceEvent.stopPropagation();
                     d3.select(this).classed("dragging", true);
-                    this._triggerSpeakerNode(this.id);
+                    pgm._triggerSpeakerNode(this.id);
                 }
             });
 
@@ -103,12 +102,7 @@ class ThinkBubble {
             .style("fill", this.config.background.color)
             .style("pointer-events", "all")
             .on("click", d => {
-                if (this.canClick) {
-                    this._clearVisitedPath();
-                    // Do not allow user to click until visited path highlighting is finished
-                    this.canClick = false;
-                    setTimeout(() => this.canClick = true, this.config.edge.timeInterval * (this.directedPath.length - 1));
-                }
+                pgm._backgroundOnClick();
             });
 
         this.container = this.svg.append("g");
@@ -141,7 +135,14 @@ class ThinkBubble {
 
     }
 
-
+    _backgroundOnClick() {
+        if (this.canClick) {
+            this._clearVisitedPath();
+            // Do not allow user to click until visited path highlighting is finished
+            this.canClick = false;
+            setTimeout(() => this.canClick = true, this.config.edge.timeInterval * (this.directedPath.length - 1));
+        }
+    }
     _dataScreening(data) {
         /* Verifies if each vertex's id matches its position in the array 
         and the weights of all adjacent vertices sum to 1; */
@@ -406,8 +407,8 @@ class ThinkBubble {
                             let endingVertexIdx = this.directedPath.length - 2;
                             if (vertexIdx === endingVertexIdx) {
 
-                                // If chart exists, update the chart adjacency matrix after the visited path finish highlighting within [timeIntervalBetweenCycle/2] milliseconds
-                                if (this.chart) {
+                                // If _weightedAdjMat exists, update the _weightedAdjMat adjacency matrix after the visited path finish highlighting within [timeIntervalBetweenCycle/2] milliseconds
+                                if (this._weightedAdjMat) {
                                     setTimeout(() => {
                                         this._updateChart();
                                     }, this.config.autoPlay.timeIntervalBetweenCycle / 2.0);
@@ -474,7 +475,7 @@ class ThinkBubble {
 
     _createCyclingSpeedControllButton() {
         let pgm = this;
-        
+
         let sliderID = this.divID.substring(1) + "-slider-range";
         let $DivSlider = $("<div>", {
             id: sliderID
@@ -482,7 +483,7 @@ class ThinkBubble {
         $(this.divID).prepend($DivSlider);
         $("#" + sliderID).slider({
             range: false, // two buttons caps a range
-            min: 50,
+            min: 10,
             max: 2000,
             value: 800,
             slide: function (event, ui) {
@@ -492,8 +493,8 @@ class ThinkBubble {
                 pgm.config.autoPlay.timeIntervalBetweenCycle = ui.value;
             }
         });
-        
-        let sliderWidth = (this.chart === null) ? this.config.transform.width : this.chart.config.transform.width + this.config.transform.width;
+
+        let sliderWidth = (this._weightedAdjMat === null) ? this.config.transform.width : this._weightedAdjMat.config.transform.width + this.config.transform.width;
         $("#" + sliderID).css("width", sliderWidth + "px");
     }
 
@@ -546,9 +547,9 @@ class ThinkBubble {
         $(this.divID + " .play-button").click(function () {
             $(this).toggleClass("paused");
             if (pgm.config.autoPlay.on) {
-                pgm._stopAutoPlay();
+                pgm.stopAutoPlay();
             } else {
-                pgm._startAutoPlay();
+                pgm.startAutoPlay();
             }
         });
     }
@@ -623,6 +624,10 @@ class ThinkBubble {
         if (this.config.background.grid) this._drawGrid();
 
         this._drawGraph(this.graphData.data);
+    }
+
+    getWeightedAdjacencyMatrix() {
+        return this._weightedAdjMat;
     }
 
 
@@ -725,21 +730,21 @@ class ThinkBubble {
     /*=========== Graphical Model Autoplay ===========*/
 
     resetChart() {
-        /* reset the chart */
-        this.chart.resetMatrixWeight();
-        this.chart.redrawMatrix();
+        /* reset the _weightedAdjMat */
+        this._weightedAdjMat.resetMatrixWeight();
+        this._weightedAdjMat.redrawMatrix();
     }
 
-    _startAutoPlay() {
+    startAutoPlay() {
         /* called by the play button to start autoplay */
         this.canClick = false;
-        if (this.chart) this.resetChart();
+        if (this._weightedAdjMat) this.resetChart();
         this.config.autoPlay.on = true;
         let random_id = Math.floor(Math.random() * this.graphData.clusterMat[0].length);
         this._triggerSpeakerNode(random_id);
     }
 
-    _stopAutoPlay() {
+    stopAutoPlay() {
         /* called by the stop button to stop autoplay */
         this.canClick = true;
         this.config.autoPlay.on = false;
@@ -751,28 +756,28 @@ class ThinkBubble {
     /*======== Binding Adjacency Matrix To The Graphical Model =======*/
 
     _updateChart() {
-        /* Used in _drawVisitedPath() to update the adjacency matrix chart */
+        /* Used in _drawVisitedPath() to update the adjacency matrix _weightedAdjMat */
 
         let _rowLabel = this.graphData.data[this.directedPath[0]].label;
         let _colLabel = this.graphData.data[this.directedPath[this.directedPath.length - 1]].label;
         let cellToUpdate = [_rowLabel, _colLabel];
         log("Update Cell: [" + cellToUpdate + "]");
-        this.chart.increaseCellWeight(cellToUpdate, 1);
-        this.chart.increaseCellColor(cellToUpdate, 1);
-        this.chart.redrawMatrix();
+        this._weightedAdjMat.increaseCellWeight(cellToUpdate, 1);
+        //        this._weightedAdjMat.increaseCellColor(cellToUpdate, 1);
+        this._weightedAdjMat.redrawMatrix();
     }
 
-    //    bindChart (chart) {
-    //        /* Used to bind to an existing adjacency matrix chart to the graphical model */
-    //        if (this.chart != null) {
-    //            this.chart = chart;
-    //        } else {
-    //            throw new Error("pgm.bindChart(): Graph already has a chart object.")
-    //        }
-    //    }
+    bindChart(weightedAdjMat) {
+        /* Used to bind to an existing adjacency matrix _weightedAdjMatf to the graphical model */
+        if (!this._weightedAdjMat) {
+            this._weightedAdjMat = weightedAdjMat;
+        } else {
+            throw new Error("pgm.bindChart(): Graph already has a _weightedAdjMat object.")
+        }
+    }
 
     createChart(chartConfig) {
-        /* Create a chart and bind to the graphic model */
+        /* Create a _weightedAdjMat and bind to the graphic model */
 
         this.chartConfig = chartConfig;
 
@@ -782,7 +787,122 @@ class ThinkBubble {
         }
         var _rowLabel = this.graphData.clusterMat[0];
         var _colLabel = this.graphData.clusterMat[this.graphData.clusterMat.length - 1];
-        this.chart = new WeightedAdjacencyMatrix(this.divID, chartConfig);
-        this.chart.createMatrix(_rowLabel, _colLabel);
+        this._weightedAdjMat = new WeightedAdjacencyMatrix(this.divID, chartConfig);
+        this._weightedAdjMat.createMatrix(_rowLabel, _colLabel);
+    }
+}
+
+
+
+
+
+
+
+
+
+class ObservedPGM extends ThinkBubble {
+    constructor(graphConfiguration, divID) {
+        super(graphConfiguration, divID);
+    }
+
+    bindToListenerPGM(listener) {
+        this.listenerPGM = listener;
+    }
+
+    /* @Override */
+    _backgroundOnClick() {
+        if (this.canClick) {
+            
+            this._clearVisitedPath();
+            this._weightedAdjMat.resetMatrixWeight();
+            this._weightedAdjMat.resetMatrixColorWeight();
+            this._weightedAdjMat.redrawMatrix();
+            
+            this.listenerPGM.stopAutoPlay();
+            // Do not allow user to click until visited path highlighting is finished
+            this.canClick = false;
+            setTimeout(() => this.canClick = true, this.config.edge.timeInterval * (this.directedPath.length - 1));
+        }
+    }
+
+    /* @Override */
+    _triggerSpeakerNode(id) {
+        /* triggers a speaker node by id, traverse down and draw the visited path. */
+
+        let speakerLayerLength = this.graphData.clusterMat[0].length;
+
+        // Only allow the node to be clicked if it is in the speaker layer
+        if (id < speakerLayerLength) {
+            let clickedVertexId = parseInt(id, 10);
+            this._traverseGraph(clickedVertexId, this.graphData.data);
+            this._drawGraph(this.graphData.data);
+            this._drawVisitedPath(this.graphData.data, clickedVertexId);
+
+            // testing 
+            $(this.divID + ' .path strong').text(this.directedPath);
+        } else {
+            // Else clear the path
+            this._clearVisitedPath();
+
+            this.listenerPGM.stopAutoPlay();
+            this._weightedAdjMat.resetMatrixWeight();
+            this._weightedAdjMat.resetMatrixColorWeight();
+            this._weightedAdjMat.redrawMatrix();
+        }
+
+        // Do not allow user to click
+        this.canClick = false;
+        setTimeout(() => this.canClick = true, this.config.edge.timeInterval * (this.directedPath.length - 1));
+
+    }
+
+
+    /* @Override */
+    _drawVisitedPath(data, clickedVertexId) {
+        /* Draw visited edges based on weight in highlighted color */
+
+        for (let vertexIdx = 0; vertexIdx < this.directedPath.length; vertexIdx++) {
+            // Iterate through the list of ID in directedPath 
+            let currentVertex = data[this.directedPath[vertexIdx]];
+            if (currentVertex.edges) {
+                for (let edgeIdx = 0; edgeIdx < currentVertex.edges.length; edgeIdx++) {
+                    let edgeNodes = currentVertex.edges[edgeIdx].edgeNodes;
+                    let edgeWeight = currentVertex.edges[edgeIdx].edgeWeight * this.config.edge.width;
+                    // If the edge is in the directedPath then draw different color
+                    if (this.directedPath.indexOf(edgeNodes[0].id) > -1 && this.directedPath.indexOf(edgeNodes[1].id) > -1) {
+
+                        // Draw the first vertex when the path start highlighting
+                        this.vertices.append("circle")
+                            .attr("class", d => {
+                                // if the node is in the path then draw it in a different color
+                                if (this.directedPath[0] === d.id) {
+                                    return "visitedVertex";
+                                }
+                            })
+                            .attr("r", d => d.r);
+
+                        // Add a text element to the previously added g element.
+                        this._drawText();
+
+
+
+                        // Notify the weightedAdjacencyMatrix to update its column
+                        setTimeout(() => {
+                            this._weightedAdjMat.resetMatrixWeight();
+                            this._weightedAdjMat.resetMatrixColorWeight();
+                            let columnLabel = this.graphData.clusterMat[0][clickedVertexId];
+                            this._weightedAdjMat.increaseColumnColor(columnLabel, 8);
+                            this._weightedAdjMat.redrawMatrix();
+                        }, this.config.edge.timeInterval * (vertexIdx + 1));
+
+                        // Notify the listener to start playing
+                        setTimeout(() => {
+                            this.listenerPGM.startAutoPlay();
+                        }, this.config.edge.timeInterval * (vertexIdx + 2));
+
+                    }
+                }
+            }
+        }
     }
 }

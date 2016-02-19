@@ -266,8 +266,27 @@ class WeightedAdjacencyMatrix {
         this._adjMatData[elementIndex].colorWeight += colorWeight;
     }
 
+
     /** 
-     * Reset the matix cell weight and updates color based on the weight
+     * Increases the matix column color weight and darkens the color
+     * @function WeightedAdjMat.increaseColumnColor 
+     * @param {Array} colLabel - the label of the column to increase weight is represented by a label in string
+     * @param {Integer} weight - used to increase the color weight of the cell
+     */
+    increaseColumnColor(colLabel, colorWeight) {
+        let col = this._colLabel.indexOf(colLabel);
+
+        if (col < 0) throw new Error("increaseColumnColor: the column updated does not exist in the adjacency matrix.");
+
+        for (let row = 0; row < this._rowLabel.length; row++) {
+            let elementIndex = row * this._colLabel.length + col;
+            this._adjMatData[elementIndex].colorWeight += colorWeight;
+        }
+    }
+
+
+    /** 
+     * Reset the matix cell weight
      * @function WeightedAdjMat.resetMatrixWeight 
      */
     resetMatrixWeight() {
@@ -278,4 +297,25 @@ class WeightedAdjacencyMatrix {
             }
         }
     }
+
+    /** 
+     * Reset the matix cell color weight and updates color based on the weight
+     * @function WeightedAdjMat.resetMatrixColorWeight 
+     */
+    resetMatrixColorWeight() {
+        /* Reset each matrix cell weight to 0 */
+        for (let i = 0; i < this._adjMatData.length; i++) {
+            if (this._adjMatData[i].type === "cellData") {
+                this._adjMatData[i].colorWeight = 0;
+            }
+        }
+    }
+
+    //    resetRowLabel(row) {
+    //        this._rowLabel = row;
+    //    }
+    //
+    //    resetColLabel(col) {
+    //        this._colLabel = col;
+    //    }
 }

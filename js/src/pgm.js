@@ -3,7 +3,7 @@
 
 class GraphicalModel {
 
-    constructor(graphConfiguration) {
+    constructor(graphConfiguration, divID) {
 
         this._weightedAdjMat = null; // holds the adjacency matrix chart 
 
@@ -66,13 +66,12 @@ class GraphicalModel {
         this.directedPath = []; // directedPath is a list of visited nodes' ID
 
         this.canClick = true; // Used to keep user from clicking when the graph is traversing
-    }
 
 
 
-    appendToDOM(divID) {
+
         let pgm = this;
-        
+
         this.divID = divID;
 
         // Click on the node in the speaker layer to draw visited path
@@ -104,12 +103,7 @@ class GraphicalModel {
             .style("fill", this.config.background.color)
             .style("pointer-events", "all")
             .on("click", d => {
-                if (this.canClick) {
-                    this._clearVisitedPath();
-                    // Do not allow user to click until visited path highlighting is finished
-                    this.canClick = false;
-                    setTimeout(() => this.canClick = true, this.config.edge.timeInterval * (this.directedPath.length - 1));
-                }
+                pgm._backgroundOnClick();
             });
 
         this.container = this.svg.append("g");
@@ -142,6 +136,15 @@ class GraphicalModel {
 
     }
 
+
+    _backgroundOnClick() {
+        if (this.canClick) {
+            this._clearVisitedPath();
+            // Do not allow user to click until visited path highlighting is finished
+            this.canClick = false;
+            setTimeout(() => this.canClick = true, this.config.edge.timeInterval * (this.directedPath.length - 1));
+        }
+    }
 
     _dataScreening(data) {
         /* Verifies if each vertex's id matches its position in the array 
@@ -475,7 +478,7 @@ class GraphicalModel {
 
     _createCyclingSpeedControllButton() {
         let pgm = this;
-        
+
         let sliderID = this.divID.substring(1) + "-slider-range";
         let $DivSlider = $("<div>", {
             id: sliderID
@@ -493,7 +496,7 @@ class GraphicalModel {
                 pgm.config.autoPlay.timeIntervalBetweenCycle = ui.value;
             }
         });
-        
+
         let sliderWidth = (this._weightedAdjMat === null) ? this.config.transform.width : this._weightedAdjMat.config.transform.width + this.config.transform.width;
         $("#" + sliderID).css("width", sliderWidth + "px");
     }
@@ -626,6 +629,9 @@ class GraphicalModel {
         this._drawGraph(this.graphData.data);
     }
 
+    getWeightedAdjacencyMatrix() {
+        return this._weightedAdjMat;
+    }
 
     setAdjacentVertex(id, adjVtx) {
         /* Set adjacent vertex for vertex with id */

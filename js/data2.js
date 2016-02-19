@@ -58,8 +58,7 @@ var clusterMat = [["▢", "◯", "△"],
 
 // Create a new Graph based on the configuration
 // and bind the data to the graph for rendering
-var myGraph = new GraphicalModel(pgmConfig);
-myGraph.appendToDOM("#pgm2");
+var myGraph = new GraphicalModel(pgmConfig, "#pgm2");
 var dataTemp = myGraph.createCluster(clusterMat);
 
 // Auto play

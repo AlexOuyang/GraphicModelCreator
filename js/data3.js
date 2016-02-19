@@ -1,6 +1,6 @@
 // Handles the configuration of the graph
 
-var pgmConfig = {
+var listenerConfig = {
     transform: {
         x: 0,
         y: 0,
@@ -18,7 +18,7 @@ var pgmConfig = {
         width: 0.5, // edge width = width * circle radius
         defaultColor: "#b6ddcc",
         visitedColor: "#1d4433",
-        timeInterval: 800 // timeInterval is in millisecond
+        timeInterval: 500 // timeInterval is in millisecond
     },
     text: {
         color: "white",
@@ -39,31 +39,25 @@ var pgmConfig = {
         },
         timeIntervalBetweenCycle: 800
     },
-    autoPlayable: true, // If autoPlayable, creates the autoplay button
-    cyclingSpeedControllable: true, // if cyclingSpeedControllable, create speed button
+    autoPlayable: false, // If autoPlayable, creates the autoplay button
+    cyclingSpeedControllable: false, // if cyclingSpeedControllable, create speed button
     zoomable: false,
 };
 
 
 var clusterMat = [["▢", "◯", "△"],
-                  ["Square", "Circle", "Triangle"],
-                  ["▢", "◯", "△"]];
-
-
-
-//var clusterMatPrototype = [["0"],["1"],["2"],["3"],["4"]];
+                  ["Sqr", "Cir", "Tri"]];
 
 // Create a new Graph based on the configuration
 // and bind the data to the graph for rendering
-var myGraph = new ThinkBubble(pgmConfig);
-myGraph.appendToDOM("#pgm3");
-var dataTemp = myGraph.createCluster(clusterMat);
+var listenerPGM = new ThinkBubble(listenerConfig, "#pgm3");
+//listenerPGM.appendToDOM("#pgm3");
+listenerPGM.createCluster(clusterMat);
 
-// Auto play
-//myGraph.config.playable = true;
+
 
 // Layer 1
-myGraph.setAdjacentVertex(0, adjacentVertex = [{
+listenerPGM.setAdjacentVertex(0, adjacentVertex = [{
     id: 3,
     weight: 0.1
 }, {
@@ -73,7 +67,7 @@ myGraph.setAdjacentVertex(0, adjacentVertex = [{
     id: 5,
     weight: 0.5
 }]);
-myGraph.setAdjacentVertex(1, adjacentVertex = [{
+listenerPGM.setAdjacentVertex(1, adjacentVertex = [{
     id: 3,
     weight: 0.4
 }, {
@@ -83,7 +77,7 @@ myGraph.setAdjacentVertex(1, adjacentVertex = [{
     id: 5,
     weight: 0.4
 }]);
-myGraph.setAdjacentVertex(2, adjacentVertex = [{
+listenerPGM.setAdjacentVertex(2, adjacentVertex = [{
     id: 3,
     weight: 0.4
 }, {
@@ -94,81 +88,12 @@ myGraph.setAdjacentVertex(2, adjacentVertex = [{
     weight: 0.4
 }]);
 
-// Layer 2
-myGraph.setAdjacentVertex(3, adjacentVertex = [{
-    id: 6,
-    weight: 0.4
-}, {
-    id: 7,
-    weight: 0.2
-}, {
-    id: 8,
-    weight: 0.4
-}]);
-myGraph.setAdjacentVertex(4, adjacentVertex = [{
-    id: 6,
-    weight: 0.4
-}, {
-    id: 7,
-    weight: 0.2
-}, {
-    id: 8,
-    weight: 0.4
-}]);
-myGraph.setAdjacentVertex(5, adjacentVertex = [{
-    id: 6,
-    weight: 0.4
-}, {
-    id: 7,
-    weight: 0.2
-}, {
-    id: 8,
-    weight: 0.4
-}]);
-
-
-// Layer 3
-//myGraph.setAdjacentVertex(6, adjacentVertex = [{
-//    id: 9,
-//    weight: 0.4
-//}, {
-//    id: 10,
-//    weight: 0.2
-//}, {
-//    id: 11,
-//    weight: 0.4
-//}]);
-//myGraph.setAdjacentVertex(7, adjacentVertex = [{
-//    id: 9,
-//    weight: 0.4
-//}, {
-//    id: 10,
-//    weight: 0.2
-//}, {
-//    id: 11,
-//    weight: 0.4
-//}]);
-//myGraph.setAdjacentVertex(8, adjacentVertex = [{
-//    id: 9,
-//    weight: 0.4
-//}, {
-//    id: 10,
-//    weight: 0.2
-//}, {
-//    id: 11,
-//    weight: 0.4
-//}]);
-
-
-
-//var data = myGraph.getGraphData();
-//myGraph.bindData(data);
 
 
 
 
 // Adjacency matrix configuration
-var matConfig = {
+var listenerAdjMatConfig = {
     transform: {
         x: 0,
         y: 0,
@@ -201,17 +126,100 @@ var matConfig = {
 
 // Way 1 to create a chart
 
-myGraph.createChart(matConfig);
-myGraph.display();
+listenerPGM.createChart(listenerAdjMatConfig);
+//listenerPGM.getWeightedAdjacencyMatrix().resetColLabel(["Sqr", "Cir", "Tri"]);
+listenerPGM.display();
 
 
 
-// Way 2 to create a chart
+var observedConfig = {
+    transform: {
+        x: 0,
+        y: 0,
+        width: window.innerWidth  - 20,
+        height: window.innerWidth / 3
+    },
+    vertex: {
+        radius: 0.35,
+        defaultColor: "#52bf90",
+        visitedColor: "#1d4433",
+        outlineColor: "#317256"
+    },
+    edge: {
+        baseWidth: 0.1, // base width offset = baseWidth * circle radius
+        width: 0.5, // edge width = width * circle radius
+        defaultColor: "#b6ddcc",
+        visitedColor: "#1d4433",
+        timeInterval: 500 // timeInterval is in millisecond
+    },
+    text: {
+        color: "white",
+        size: 0.5, // text size = size * circle radius
+        anchor: "middle",
+        alignment: "middle"
 
-//var _rowLabel = ["▢", "◯", "△"];
-//var _colLabel = _rowLabel;
-//var adjMat = new Chart("pgm1", matConfig);
-//adjMat.createMatrix(_rowLabel, _colLabel);
-//
-////// Bind the chart to graph
-//myGraph.bindChart(adjMat);
+    },
+    background: {
+        grid: true,
+        color: "#ecf6f2"
+    },
+    autoPlay: {
+        on: false,
+        button: {
+            dim: 1,
+            color: "#74cba6"
+        },
+        timeIntervalBetweenCycle: 800
+    },
+    autoPlayable: false, // If autoPlayable, creates the autoplay button
+    cyclingSpeedControllable: false, // if cyclingSpeedControllable, create speed button
+    zoomable: false,
+};
+
+
+
+var clusterMat2 = [["Sqr", "Cir", "Tri"], ["▢", "◯", "△"]];
+
+// Create a new Graph based on the configuration
+// and bind the data to the graph for rendering
+var observed = new ObservedPGM(observedConfig, "#pgm4");
+//observed.appendToDOM("#pgm4");
+observed.createCluster(clusterMat2);
+observed.bindChart(listenerPGM.getWeightedAdjacencyMatrix());
+observed.bindToListenerPGM(listenerPGM);
+
+
+// Layer 1
+observed.setAdjacentVertex(0, adjacentVertex = [{
+    id: 3,
+    weight: 0.1
+}, {
+    id: 4,
+    weight: 0.4
+}, {
+    id: 5,
+    weight: 0.5
+}]);
+observed.setAdjacentVertex(1, adjacentVertex = [{
+    id: 3,
+    weight: 0.4
+}, {
+    id: 4,
+    weight: 0.2
+}, {
+    id: 5,
+    weight: 0.4
+}]);
+observed.setAdjacentVertex(2, adjacentVertex = [{
+    id: 3,
+    weight: 0.4
+}, {
+    id: 4,
+    weight: 0.2
+}, {
+    id: 5,
+    weight: 0.4
+}]);
+
+//observed.createChart(matConfig);
+observed.display();
