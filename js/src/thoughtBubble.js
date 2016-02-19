@@ -1,7 +1,7 @@
 /*=============== Probability Graphic Model ====================*/
 "use strict";
 
-class ThinkBubble {
+class ThoughtBubble {
 
     constructor(graphConfiguration, divID) {
 
@@ -800,7 +800,7 @@ class ThinkBubble {
 
 
 
-class ObservedPGM extends ThinkBubble {
+class ObservedPGM extends ThoughtBubble {
     constructor(graphConfiguration, divID) {
         super(graphConfiguration, divID);
     }

@@ -50,7 +50,7 @@ var clusterMat = [["▢", "◯", "△"],
 
 // Create a new Graph based on the configuration
 // and bind the data to the graph for rendering
-var listenerPGM = new ThinkBubble(listenerConfig, "#pgm3");
+var listenerPGM = new ThoughtBubble(listenerConfig, "#pgm3");
 //listenerPGM.appendToDOM("#pgm3");
 listenerPGM.createCluster(clusterMat);
 
