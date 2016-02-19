@@ -812,12 +812,12 @@ class ObservedPGM extends ThoughtBubble {
     /* @Override */
     _backgroundOnClick() {
         if (this.canClick) {
-            
+
             this._clearVisitedPath();
             this._weightedAdjMat.resetMatrixWeight();
             this._weightedAdjMat.resetMatrixColorWeight();
             this._weightedAdjMat.redrawMatrix();
-            
+
             this.listenerPGM.stopAutoPlay();
             // Do not allow user to click until visited path highlighting is finished
             this.canClick = false;
@@ -833,6 +833,12 @@ class ObservedPGM extends ThoughtBubble {
 
         // Only allow the node to be clicked if it is in the speaker layer
         if (id < speakerLayerLength) {
+            
+            this.listenerPGM.stopAutoPlay();
+            this._weightedAdjMat.resetMatrixWeight();
+            this._weightedAdjMat.resetMatrixColorWeight();
+            this._weightedAdjMat.redrawMatrix();
+
             let clickedVertexId = parseInt(id, 10);
             this._traverseGraph(clickedVertexId, this.graphData.data);
             this._drawGraph(this.graphData.data);
@@ -888,8 +894,6 @@ class ObservedPGM extends ThoughtBubble {
 
                         // Notify the weightedAdjacencyMatrix to update its column
                         setTimeout(() => {
-                            this._weightedAdjMat.resetMatrixWeight();
-                            this._weightedAdjMat.resetMatrixColorWeight();
                             let columnLabel = this.graphData.clusterMat[0][clickedVertexId];
                             this._weightedAdjMat.increaseColumnColor(columnLabel, 8);
                             this._weightedAdjMat.redrawMatrix();
