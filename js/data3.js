@@ -11,13 +11,14 @@ var pgmConfig = {
         radius: 0.35,
         defaultColor: "#52bf90",
         visitedColor: "#1d4433",
+        outlineColor: "#317256"
     },
     edge: {
         baseWidth: 0.1, // base width offset = baseWidth * circle radius
         width: 0.5, // edge width = width * circle radius
         defaultColor: "#b6ddcc",
         visitedColor: "#1d4433",
-        timeInterval: 600 // timeInterval is in millisecond
+        timeInterval: 800 // timeInterval is in millisecond
     },
     text: {
         color: "white",
@@ -36,12 +37,11 @@ var pgmConfig = {
             dim: 1,
             color: "#74cba6"
         },
-        timeIntervalToUpdateChart: 400,
-        timeInterval: 800
+        timeIntervalBetweenCycle: 800
     },
     autoPlayable: true, // If autoPlayable, creates the autoplay button
     cyclingSpeedControllable: true, // if cyclingSpeedControllable, create speed button
-    zoom: false,
+    zoomable: false,
 };
 
 
@@ -49,13 +49,14 @@ var clusterMat = [["▢", "◯", "△"],
                   ["Square", "Circle", "Triangle"],
                   ["▢", "◯", "△"]];
 
+
+
 //var clusterMatPrototype = [["0"],["1"],["2"],["3"],["4"]];
 
 // Create a new Graph based on the configuration
 // and bind the data to the graph for rendering
-var myGraph = new GraphicalModel(pgmConfig);
-myGraph.appendToDOM("#pgm2");
-
+var myGraph = new ThinkBubble(pgmConfig);
+myGraph.appendToDOM("#pgm3");
 var dataTemp = myGraph.createCluster(clusterMat);
 
 // Auto play
@@ -159,7 +160,6 @@ myGraph.setAdjacentVertex(5, adjacentVertex = [{
 //}]);
 
 
-myGraph.display();
 
 //var data = myGraph.getGraphData();
 //myGraph.bindData(data);
@@ -176,10 +176,10 @@ var matConfig = {
         height: window.innerWidth / 3
     },
     matrix: {
-        x: 0.25,
+        x: 0.3,
         y: 0.3,
-        dim: 0.5,
-        spacing: 1,
+        cellDim: 0.5,
+        cellSpacing: 1,
         color: "#63c59b"
     },
     label: {
@@ -188,9 +188,9 @@ var matConfig = {
         anchor: "middle",
         alignment: "middle"
     },
-    text: {
+    weight: {
         color: "white",
-        size: 0.6, // text size = size * circle radius
+        size: 0.6, // weight text size = size * circle radius
         anchor: "middle",
         alignment: "middle"
     },
@@ -201,15 +201,17 @@ var matConfig = {
 
 // Way 1 to create a chart
 
-//myGraph.createChart(matConfig);
+myGraph.createChart(matConfig);
+myGraph.display();
+
+
 
 // Way 2 to create a chart
 
-var _rowLabel = ["▢", "◯", "△"];
-var _colLabel = _rowLabel;
-var adjMat = new Chart("#pgm1", matConfig);
-adjMat.createMatrix(_rowLabel, _colLabel);
-
+//var _rowLabel = ["▢", "◯", "△"];
+//var _colLabel = _rowLabel;
+//var adjMat = new Chart("pgm1", matConfig);
+//adjMat.createMatrix(_rowLabel, _colLabel);
 //
-//// Bind the chart to graph
-myGraph.bindChart(adjMat);
+////// Bind the chart to graph
+//myGraph.bindChart(adjMat);

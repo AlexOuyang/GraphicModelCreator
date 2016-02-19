@@ -23,7 +23,6 @@
 
 
 /* Visited vertex Color attributes */
-
 .vertex .visitedVertex {
 /*
     fill: steelblue;
@@ -31,7 +30,7 @@
 */
     fill: #1d4433;
     stroke: #1d4433;
-    stroke-width: 4px;
+    stroke-width: 0.5%;
 }
 
 /* Vertex label text color attributes*/

@@ -9,8 +9,14 @@ var pgmConfig = {
     },
     vertex: {
         radius: 0.35,
-        defaultColor: "#52bf90",
-        visitedColor: "#1d4433",
+        default:{
+            backgroundColor: "#52bf90",
+            outlineColor: "#317256"
+        },
+        visited:{ 
+            visitedColor: "#1d4433",
+            outlineColor: "#1d4433"
+        }
     },
     edge: {
         baseWidth: 0.1, // base width offset = baseWidth * circle radius
@@ -38,7 +44,7 @@ var pgmConfig = {
         },
         timeIntervalBetweenCycle: 800
     },
-    autoPlayable: true, // If autoPlayable, creates the autoplay button
+    autoPlayable: false, // If autoPlayable, creates the autoplay button
     cyclingSpeedControllable: true, // if cyclingSpeedControllable, create speed button
     zoomable: false,
 };
@@ -53,7 +59,7 @@ var clusterMat = [["▢", "◯", "△"],
 // Create a new Graph based on the configuration
 // and bind the data to the graph for rendering
 var myGraph = new GraphicalModel(pgmConfig);
-myGraph.appendToDOM("#pgm1");
+myGraph.appendToDOM("#pgm2");
 var dataTemp = myGraph.createCluster(clusterMat);
 
 // Auto play
@@ -157,8 +163,6 @@ myGraph.setAdjacentVertex(5, adjacentVertex = [{
 //}]);
 
 
-myGraph.display();
-
 //var data = myGraph.getGraphData();
 //myGraph.bindData(data);
 
@@ -200,6 +204,7 @@ var matConfig = {
 // Way 1 to create a chart
 
 myGraph.createChart(matConfig);
+myGraph.display();
 
 // Way 2 to create a chart
 

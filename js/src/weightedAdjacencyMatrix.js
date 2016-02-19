@@ -1,6 +1,9 @@
+/*=============== Weighted Adjacency Matrix Graph ====================*/
+
+
 "use strict";
 
-class WeightedAdjMat {
+class WeightedAdjacencyMatrix {
 
     /**
      * Creates a color coded adjacency matrix contained in a WeightedAdjMat object

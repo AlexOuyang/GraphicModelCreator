@@ -11,6 +11,7 @@ var pgmConfig2 = {
         radius: 0.35,
         defaultColor: "#52bf90",
         visitedColor: "#1d4433",
+        outlineColor: "#317256"
     },
     edge: {
         baseWidth: 0.1, // base width offset = baseWidth * circle radius
@@ -50,7 +51,7 @@ var clusterMatPrototype2 = [["0"], ["1"], ["2"], ["3"], ["4"]];
 // Create a new Graph based on the configuration
 // and bind the data to the graph for rendering
 var myGraph2 = new GraphicalModel(pgmConfig2);
-myGraph2.appendToDOM("#pgm2");
+myGraph2.appendToDOM("#pgm1");
 
 var dataTemp2 = myGraph2.createCluster(clusterMatPrototype2);
 
@@ -73,7 +74,6 @@ myGraph2.setAdjacentVertex(3, adjacentVertex = [{
 }]);
 
 
-myGraph2.display();
 
 //var data = myGraph.getGraphData();
 //myGraph.bindData(data);
@@ -116,6 +116,7 @@ var matConfig2 = {
 // Way 1 to create a chart
 
 myGraph2.createChart(matConfig2);
+myGraph2.display();
 
 // Way 2 to create a chart
 

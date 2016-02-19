@@ -2,6 +2,8 @@
     // JSHint Default Configuration File (as on JSHint website)
     // See http://jshint.com/docs/ for more details
 
+    "esnext": true,
+    "esversion": 6, // allow es6 syntax
     "maxerr": 50, // {int} Maximum error before stopping
 
     // Enforcing
