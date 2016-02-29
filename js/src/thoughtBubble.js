@@ -217,6 +217,7 @@ class ThoughtBubble {
             }
         }
     }
+    
     _traverseGraph(vertexId, data) {
         /* 
         Takes in the id of a node and traverse trough the graph to connect 

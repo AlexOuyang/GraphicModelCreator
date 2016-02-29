@@ -51,7 +51,7 @@ var clusterMatPrototype2 = [["0"], ["1"], ["2"], ["3"], ["4"]];
 // Create a new Graph based on the configuration
 // and bind the data to the graph for rendering
 var myGraph2 = new GraphicalModel(pgmConfig2, "#pgm1");
-var dataTemp2 = myGraph2.createCluster(clusterMatPrototype2);
+var dataTemp2 = myGraph2.createCluster(clusterMatPrototype2, [1], true);
 
 // Layer 1
 myGraph2.setAdjacentVertex(0, adjacentVertex = [{

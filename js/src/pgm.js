@@ -67,6 +67,8 @@ class GraphicalModel {
 
         this.canClick = true; // Used to keep user from clicking when the graph is traversing
 
+        this.speakerLayerProbabilityDistribution = []; //  an array of probability given to each node in the speaker layer, probabilityDistribution=[] if uniform distribution
+
 
 
 
@@ -203,8 +205,30 @@ class GraphicalModel {
         }
     }
 
+    _chooseRandomAdjVertexFromSpeakerLayer() {
+        /*
+        Choose a random adjacent vertex in the speaker layer based on the edge weights 
+        */
+        let weightDistribution = [0]; // weightDistribution is a distribution from 0 to 1, ex: [0, 0.4, 1]
+        let weight = 0;
+        for (let i = 0; i < this.speakerLayerProbabilityDistribution.length; i++) {
+            weight += this.speakerLayerProbabilityDistribution[i];
+            weightDistribution.push(weight);
+        }
+
+        let randomPick = Math.random();
+        console.log("weight distribution corresponding to the speaker layer: (" + weightDistribution + ") random pick: " + randomPick);
+        for (let i = 0; i < weightDistribution.length - 1; i++) {
+            if (randomPick >= weightDistribution[i] && randomPick <= weightDistribution[i + 1]) {
+                return this.graphData.data[i].id;
+            }
+        }
+    }
+
     _chooseRandomAdjVertex(vertex) {
-        // Takes in a vertex and choose a random adjacent vertex in the next layer based on the edge weights 
+        /*
+        Takes in a vertex and choose a random adjacent vertex in the next layer based on the edge weights 
+        */
         let weightDistribution = [0]; // weightDistribution is a distribution from 0 to 1, ex: [0, 0.4, 1]
         let weight = 0;
         for (let i = 0; i < vertex.adjacentVertex.length; i++) {
@@ -420,8 +444,7 @@ class GraphicalModel {
                                 if (this.config.autoPlay.on) {
                                     console.log("Auto play is on!");
                                     setTimeout(() => {
-                                        let random_id = Math.floor(Math.random() * this.graphData.clusterMat[0].length);
-                                        this._triggerSpeakerNode(random_id);
+                                        this._triggerSpeakerNodeAutoPlay();
                                     }, this.config.autoPlay.timeIntervalBetweenCycle);
                                 }
                             }
@@ -558,6 +581,19 @@ class GraphicalModel {
     }
 
 
+    _triggerSpeakerNodeAutoPlay() {
+        /* Triggers a speaker node randomly following the specified distribution */
+        
+        let chosen_id;
+        // If speaker node is of uniform distribution
+        if (this.speakerLayerProbabilityDistribution.length == 0) {
+            chosen_id = Math.floor(Math.random() * this.graphData.clusterMat[0].length);
+        } else {
+            chosen_id = this._chooseRandomAdjVertexFromSpeakerLayer();
+        }
+        this._triggerSpeakerNode(chosen_id);
+    }
+    
     _triggerSpeakerNode(id) {
         /* triggers a speaker node by id, traverse down and draw the visited path. */
 
@@ -663,11 +699,33 @@ class GraphicalModel {
     //    };
 
 
-    createCluster(cMat) {
+
+    createCluster(cMat, probabilityDistribution, changeNodeRadiusBasedOnDistribution) {
         /* 
-        Used to create a clusters of nodes (Graphdata) based on the cMat(cluster matrix)
-        Ex of cluster mat [layer1_label_array, layer2_label_array, layer3_label_array] 
+        Used to create a clusters of nodes (Graphdata) based on the cMat(cluster matrix).
+        Also set the speaker layer probabilility distribution and have the option to
+        chagne the spekaer nodes radius based on probability
+        
+        cMat is the cluster matrix. Ex of cluster mat [layer1_label_array, layer2_label_array, layer3_label_array] 
+        probabilityDistribution is the array of probability given to each node in the speaker layer
+        set probabilityDistribution=[] for uniform distribution
+        changeNodeRadiusBasedOnDistribution is the boolean that governs whether nodes radius are affected by its distribution
         */
+
+        // Error checking
+        if (cMat[0].length != probabilityDistribution.length) {
+            throw new Error("pgm.createCluster(): the number of the nodes in the first layer in cMat does not match the length of the probabilityDistribution array");
+        }
+        let tempDistTotal = 0;
+        for (let i = 0; i < probabilityDistribution.length; i++) {
+            tempDistTotal += probabilityDistribution[i];
+        }
+        if (tempDistTotal != 1.0) {
+            throw new Error("pgm.createCluster(): the probability of each node in the speaker layer does not add up to 1.0 in probabilityDistribution array");
+        }
+
+        this.speakerLayerProbabilityDistribution = probabilityDistribution;
+
 
         // Populate cMatDim, cMatDim is the dimension of the matrix, ex: [3,3,3]
         let cMatDim = [];
@@ -703,6 +761,16 @@ class GraphicalModel {
             }
 
         }
+
+        // Change speaker node radius based on distribution
+        if (changeNodeRadiusBasedOnDistribution && probabilityDistribution.length > 0) {
+            for (let i = 0; i < probabilityDistribution.length; i++) {
+                // Normalize the radius
+                let normalizationFactor = 1.0 / probabilityDistribution.length;
+                data[i].r *= (probabilityDistribution[i] * 1.0) / normalizationFactor;
+            }
+        }
+
 
         // Label each vertex based on cMat labels
         let id_temp = 0;
@@ -743,7 +811,7 @@ class GraphicalModel {
         if (this._weightedAdjMat) this.resetChart();
         this.config.autoPlay.on = true;
         let random_id = Math.floor(Math.random() * this.graphData.clusterMat[0].length);
-        this._triggerSpeakerNode(random_id);
+        this._triggerSpeakerNodeAutoPlay();
     }
 
     _stopAutoPlay() {
@@ -784,7 +852,7 @@ class GraphicalModel {
         this.chartConfig = chartConfig;
 
         if (this.graphData.clusterMat.length < 2) {
-            throw new Error("Can not create adjacency matrix for graphical model with layer number less than 2");
+            throw new Error("pgm.createChart(): Can not create adjacency matrix for graphical model with layer number less than 2");
             return;
         }
         var _rowLabel = this.graphData.clusterMat[0];
