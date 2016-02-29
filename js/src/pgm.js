@@ -71,7 +71,6 @@ class GraphicalModel {
 
 
 
-
         let pgm = this;
 
         this.divID = divID;
@@ -79,7 +78,7 @@ class GraphicalModel {
         // Click on the node in the speaker layer to draw visited path
         this.onClick = d3.behavior.drag()
             .origin(d => d)
-            .on("dragstart", function (d) {
+            .on("dragstart", function(d) {
                 // Check if the clicked node is in the first layer
                 // which are the num of nodes in first layer of clusterMat
                 // Only allow user to click the node if autoplay is off
@@ -386,10 +385,10 @@ class GraphicalModel {
                         let tempEdges = [{
                             x: x0 + distX * ratio0,
                             y: y0 - distY * ratio1
-                            }, {
+                        }, {
                             x: x1 - distX * ratio0,
                             y: y1 + distY * ratio1
-                            }];
+                        }];
 
                         let lineLength = dist; // The line length
 
@@ -417,14 +416,14 @@ class GraphicalModel {
                         setTimeout(() => {
                             /* clear vertices then redraw all the vertices in the grpah */
                             this.vertices.append("circle")
-                                //                                .attr("class", "node")
-                                .attr("class", d => {
-                                    // if the node is in the path then draw it in a different color
-                                    if (this.directedPath.indexOf(d.id) <= (vertexIdx + 1) &&
-                                        this.directedPath.indexOf(d.id) > -1) {
-                                        return "visitedVertex";
-                                    }
-                                })
+                            //                                .attr("class", "node")
+                            .attr("class", d => {
+                                // if the node is in the path then draw it in a different color
+                                if (this.directedPath.indexOf(d.id) <= (vertexIdx + 1) &&
+                                    this.directedPath.indexOf(d.id) > -1) {
+                                    return "visitedVertex";
+                                }
+                            })
                                 .attr("r", d => d.r);
 
                             // Add a text element to the previously added g element.
@@ -512,7 +511,7 @@ class GraphicalModel {
             min: 10,
             max: 2000,
             value: 800,
-            slide: function (event, ui) {
+            slide: function(event, ui) {
                 console.log(ui.value);
                 let sphereRad = ui.value;
                 pgm.config.edge.timeInterval = ui.value;
@@ -570,7 +569,7 @@ class GraphicalModel {
         $(this.divID + " .right").css("background-color", this.config.autoPlay.button.color);
 
         let pgm = this;
-        $(this.divID + " .play-button").click(function () {
+        $(this.divID + " .play-button").click(function() {
             $(this).toggleClass("paused");
             if (pgm.config.autoPlay.on) {
                 pgm._stopAutoPlay();
@@ -583,7 +582,7 @@ class GraphicalModel {
 
     _triggerSpeakerNodeAutoPlay() {
         /* Triggers a speaker node randomly following the specified distribution */
-        
+
         let chosen_id;
         // If speaker node is of uniform distribution
         if (this.speakerLayerProbabilityDistribution.length == 0) {
@@ -593,7 +592,7 @@ class GraphicalModel {
         }
         this._triggerSpeakerNode(chosen_id);
     }
-    
+
     _triggerSpeakerNode(id) {
         /* triggers a speaker node by id, traverse down and draw the visited path. */
 
@@ -700,6 +699,19 @@ class GraphicalModel {
 
 
 
+    _changeNodeRadius() {
+        /* 
+        Change the speaker layer ndoe radius based on the probability distribution
+        probabilityDistribution is the array of probability given to each node in the speaker layer
+        set probabilityDistribution=[] for uniform distribution
+        */
+        for (let i = 0; i < this.speakerLayerProbabilityDistribution.length; i++) {
+            // Normalize the radius
+            let normalizationFactor = 1.0 / this.speakerLayerProbabilityDistribution.length;
+            this.graphData.data[i].r *= (this.speakerLayerProbabilityDistribution[i] * 1.0) / normalizationFactor;
+        }
+    }
+
     createCluster(cMat, probabilityDistribution, changeNodeRadiusBasedOnDistribution) {
         /* 
         Used to create a clusters of nodes (Graphdata) based on the cMat(cluster matrix).
@@ -713,15 +725,17 @@ class GraphicalModel {
         */
 
         // Error checking
-        if (cMat[0].length != probabilityDistribution.length) {
-            throw new Error("pgm.createCluster(): the number of the nodes in the first layer in cMat does not match the length of the probabilityDistribution array");
-        }
-        let tempDistTotal = 0;
-        for (let i = 0; i < probabilityDistribution.length; i++) {
-            tempDistTotal += probabilityDistribution[i];
-        }
-        if (tempDistTotal != 1.0) {
-            throw new Error("pgm.createCluster(): the probability of each node in the speaker layer does not add up to 1.0 in probabilityDistribution array");
+        if (probabilityDistribution.length != 0) {
+            if (cMat[0].length != probabilityDistribution.length) {
+                throw new Error("pgm.createCluster(): the number of the nodes in the first layer in cMat does not match the length of the probabilityDistribution array");
+            }
+            let tempDistTotal = 0;
+            for (let i = 0; i < probabilityDistribution.length; i++) {
+                tempDistTotal += probabilityDistribution[i];
+            }
+            if (tempDistTotal != 1.0) {
+                throw new Error("pgm.createCluster(): the probability of each node in the speaker layer does not add up to 1.0 in probabilityDistribution array");
+            }
         }
 
         this.speakerLayerProbabilityDistribution = probabilityDistribution;
@@ -762,15 +776,6 @@ class GraphicalModel {
 
         }
 
-        // Change speaker node radius based on distribution
-        if (changeNodeRadiusBasedOnDistribution && probabilityDistribution.length > 0) {
-            for (let i = 0; i < probabilityDistribution.length; i++) {
-                // Normalize the radius
-                let normalizationFactor = 1.0 / probabilityDistribution.length;
-                data[i].r *= (probabilityDistribution[i] * 1.0) / normalizationFactor;
-            }
-        }
-
 
         // Label each vertex based on cMat labels
         let id_temp = 0;
@@ -791,10 +796,10 @@ class GraphicalModel {
             data: data
         };
 
-        //        return {
-        //            clusterMat: cMat,
-        //            data: data
-        //        };
+        // Change speaker node radius based on distribution
+        if (changeNodeRadiusBasedOnDistribution && probabilityDistribution.length > 0) {
+            this._changeNodeRadius();
+        }
     }
 
     /*=========== Graphical Model Autoplay ===========*/

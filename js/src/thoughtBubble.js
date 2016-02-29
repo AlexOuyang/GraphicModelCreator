@@ -67,6 +67,8 @@ class ThoughtBubble {
 
         this.canClick = true; // Used to keep user from clicking when the graph is traversing
 
+        this.speakerLayerProbabilityDistribution = []; //  an array of probability given to each node in the speaker layer, probabilityDistribution=[] if uniform distribution
+
 
         this.divID = divID;
 
@@ -76,7 +78,7 @@ class ThoughtBubble {
         // Click on the node in the speaker layer to draw visited path
         this.onClick = d3.behavior.drag()
             .origin(d => d)
-            .on("dragstart", function (d) {
+            .on("dragstart", function(d) {
                 // Check if the clicked node is in the first layer
                 // which are the num of nodes in first layer of clusterMat
                 // Only allow user to click the node if autoplay is off
@@ -84,6 +86,7 @@ class ThoughtBubble {
                     d3.event.sourceEvent.stopPropagation();
                     d3.select(this).classed("dragging", true);
                     pgm._triggerSpeakerNode(this.id);
+                    this._triggerSpeakerNodeAutoPlay();
                 }
             });
 
@@ -200,6 +203,26 @@ class ThoughtBubble {
         }
     }
 
+    _chooseRandomAdjVertexFromSpeakerLayer() {
+        /*
+        Choose a random adjacent vertex in the speaker layer based on the edge weights 
+        */
+        let weightDistribution = [0]; // weightDistribution is a distribution from 0 to 1, ex: [0, 0.4, 1]
+        let weight = 0;
+        for (let i = 0; i < this.speakerLayerProbabilityDistribution.length; i++) {
+            weight += this.speakerLayerProbabilityDistribution[i];
+            weightDistribution.push(weight);
+        }
+
+        let randomPick = Math.random();
+        console.log("weight distribution corresponding to the speaker layer: (" + weightDistribution + ") random pick: " + randomPick);
+        for (let i = 0; i < weightDistribution.length - 1; i++) {
+            if (randomPick >= weightDistribution[i] && randomPick <= weightDistribution[i + 1]) {
+                return this.graphData.data[i].id;
+            }
+        }
+    }
+
     _chooseRandomAdjVertex(vertex) {
         // Takes in a vertex and choose a random adjacent vertex in the next layer based on the edge weights 
         let weightDistribution = [0]; // weightDistribution is a distribution from 0 to 1, ex: [0, 0.4, 1]
@@ -217,7 +240,7 @@ class ThoughtBubble {
             }
         }
     }
-    
+
     _traverseGraph(vertexId, data) {
         /* 
         Takes in the id of a node and traverse trough the graph to connect 
@@ -360,10 +383,10 @@ class ThoughtBubble {
                         let tempEdges = [{
                             x: x0 + distX * ratio0,
                             y: y0 - distY * ratio1
-                            }, {
+                        }, {
                             x: x1 - distX * ratio0,
                             y: y1 + distY * ratio1
-                            }];
+                        }];
 
                         let lineLength = dist; // The line length
 
@@ -391,14 +414,14 @@ class ThoughtBubble {
                         setTimeout(() => {
                             /* clear vertices then redraw all the vertices in the grpah */
                             this.vertices.append("circle")
-                                //                                .attr("class", "node")
-                                .attr("class", d => {
-                                    // if the node is in the path then draw it in a different color
-                                    if (this.directedPath.indexOf(d.id) <= (vertexIdx + 1) &&
-                                        this.directedPath.indexOf(d.id) > -1) {
-                                        return "visitedVertex";
-                                    }
-                                })
+                            //                                .attr("class", "node")
+                            .attr("class", d => {
+                                // if the node is in the path then draw it in a different color
+                                if (this.directedPath.indexOf(d.id) <= (vertexIdx + 1) &&
+                                    this.directedPath.indexOf(d.id) > -1) {
+                                    return "visitedVertex";
+                                }
+                            })
                                 .attr("r", d => d.r);
 
                             // Add a text element to the previously added g element.
@@ -418,8 +441,7 @@ class ThoughtBubble {
                                 if (this.config.autoPlay.on) {
                                     console.log("Auto play is on!");
                                     setTimeout(() => {
-                                        let random_id = Math.floor(Math.random() * this.graphData.clusterMat[0].length);
-                                        this._triggerSpeakerNode(random_id);
+                                        this._triggerSpeakerNodeAutoPlay();
                                     }, this.config.autoPlay.timeIntervalBetweenCycle);
                                 }
                             }
@@ -487,7 +509,7 @@ class ThoughtBubble {
             min: 10,
             max: 2000,
             value: 800,
-            slide: function (event, ui) {
+            slide: function(event, ui) {
                 console.log(ui.value);
                 let sphereRad = ui.value;
                 pgm.config.edge.timeInterval = ui.value;
@@ -545,7 +567,7 @@ class ThoughtBubble {
         $(this.divID + " .right").css("background-color", this.config.autoPlay.button.color);
 
         let pgm = this;
-        $(this.divID + " .play-button").click(function () {
+        $(this.divID + " .play-button").click(function() {
             $(this).toggleClass("paused");
             if (pgm.config.autoPlay.on) {
                 pgm.stopAutoPlay();
@@ -553,6 +575,19 @@ class ThoughtBubble {
                 pgm.startAutoPlay();
             }
         });
+    }
+
+    _triggerSpeakerNodeAutoPlay() {
+        /* Triggers a speaker node randomly following the specified distribution */
+
+        let chosen_id;
+        // If speaker node is of uniform distribution
+        if (this.speakerLayerProbabilityDistribution.length == 0) {
+            chosen_id = Math.floor(Math.random() * this.graphData.clusterMat[0].length);
+        } else {
+            chosen_id = this._chooseRandomAdjVertexFromSpeakerLayer();
+        }
+        this._triggerSpeakerNode(chosen_id);
     }
 
 
@@ -662,11 +697,47 @@ class ThoughtBubble {
     //    };
 
 
-    createCluster(cMat) {
+    _changeNodeRadius() {
         /* 
-        Used to create a clusters of nodes (Graphdata) based on the cMat(cluster matrix)
-        Ex of cluster mat [layer1_label_array, layer2_label_array, layer3_label_array] 
+        Change the speaker layer ndoe radius based on the probability distribution
+        probabilityDistribution is the array of probability given to each node in the speaker layer
+        set probabilityDistribution=[] for uniform distribution
         */
+        for (let i = 0; i < this.speakerLayerProbabilityDistribution.length; i++) {
+            // Normalize the radius
+            let normalizationFactor = 1.0 / this.speakerLayerProbabilityDistribution.length;
+            this.graphData.data[i].r *= (this.speakerLayerProbabilityDistribution[i] * 1.0) / normalizationFactor;
+        }
+    }
+
+    createCluster(cMat, probabilityDistribution, changeNodeRadiusBasedOnDistribution) {
+        /* 
+        Used to create a clusters of nodes (Graphdata) based on the cMat(cluster matrix).
+        Also set the speaker layer probabilility distribution and have the option to
+        chagne the spekaer nodes radius based on probability
+        
+        cMat is the cluster matrix. Ex of cluster mat [layer1_label_array, layer2_label_array, layer3_label_array] 
+        probabilityDistribution is the array of probability given to each node in the speaker layer
+        set probabilityDistribution=[] for uniform distribution
+        changeNodeRadiusBasedOnDistribution is the boolean that governs whether nodes radius are affected by its distribution
+        */
+
+        // Error checking
+        if (probabilityDistribution.length != 0) {
+            if (cMat[0].length != probabilityDistribution.length) {
+                throw new Error("pgm.createCluster(): the number of the nodes in the first layer in cMat does not match the length of the probabilityDistribution array");
+            }
+            let tempDistTotal = 0;
+            for (let i = 0; i < probabilityDistribution.length; i++) {
+                tempDistTotal += probabilityDistribution[i];
+            }
+            if (tempDistTotal != 1.0) {
+                throw new Error("pgm.createCluster(): the probability of each node in the speaker layer does not add up to 1.0 in probabilityDistribution array");
+            }
+        }
+
+        this.speakerLayerProbabilityDistribution = probabilityDistribution;
+
 
         // Populate cMatDim, cMatDim is the dimension of the matrix, ex: [3,3,3]
         let cMatDim = [];
@@ -703,6 +774,7 @@ class ThoughtBubble {
 
         }
 
+
         // Label each vertex based on cMat labels
         let id_temp = 0;
         for (let i = 0; i < cMat.length; i++) {
@@ -722,11 +794,12 @@ class ThoughtBubble {
             data: data
         };
 
-        //        return {
-        //            clusterMat: cMat,
-        //            data: data
-        //        };
+        // Change speaker node radius based on distribution
+        if (changeNodeRadiusBasedOnDistribution && probabilityDistribution.length > 0) {
+            this._changeNodeRadius();
+        }
     }
+
 
     /*=========== Graphical Model Autoplay ===========*/
 
@@ -795,12 +868,6 @@ class ThoughtBubble {
 
 
 
-
-
-
-
-
-
 class ObservedPGM extends ThoughtBubble {
     constructor(graphConfiguration, divID) {
         super(graphConfiguration, divID);
@@ -834,7 +901,7 @@ class ObservedPGM extends ThoughtBubble {
 
         // Only allow the node to be clicked if it is in the speaker layer
         if (id < speakerLayerLength) {
-            
+
             this.listenerPGM.stopAutoPlay();
             this._weightedAdjMat.resetMatrixWeight();
             this._weightedAdjMat.resetMatrixColorWeight();
@@ -910,4 +977,21 @@ class ObservedPGM extends ThoughtBubble {
             }
         }
     }
+
+    // /* @Override */
+    // _changeNodeRadius() {
+    //     /* 
+    //     Change the speaker layer ndoe radius based on the probability distribution, the speaker layer here is the bottom layer, not the top layer
+    //     */
+    //     let totalNumOfNodesOffset = -1;
+    //     let cMat = this.graphData.clusterMat;
+    //     for (let i = 0; i < cMat.length - 1; i++) {
+    //         totalNumOfNodesOffset += cMat[i].length;
+    //     }
+    //     for (let i = 0; i < this.speakerLayerProbabilityDistribution.length; i++) {
+    //         // Normalize the radius
+    //         let normalizationFactor = 1.0 / this.speakerLayerProbabilityDistribution.length;
+    //         this.graphData.data[i + totalNumOfNodesOffset].r *= (this.speakerLayerProbabilityDistribution[i] * 1.0) / normalizationFactor;
+    //     }
+    // }
 }

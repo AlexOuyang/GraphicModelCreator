@@ -52,7 +52,7 @@ var clusterMat = [["▢", "◯", "△"],
 // and bind the data to the graph for rendering
 var listenerPGM = new ThoughtBubble(listenerConfig, "#pgm3");
 //listenerPGM.appendToDOM("#pgm3");
-listenerPGM.createCluster(clusterMat, [], true);
+listenerPGM.createCluster(clusterMat, [0.3, 0.4, 0.3], true);
 
 
 
@@ -184,7 +184,7 @@ var clusterMat2 = [["Sqr", "Cir", "Tri"], ["▢", "◯", "△"]];
 // and bind the data to the graph for rendering
 var observed = new ObservedPGM(observedConfig, "#pgm4");
 //observed.appendToDOM("#pgm4");
-observed.createCluster(clusterMat2, [], true);
+observed.createCluster(clusterMat2, [0.3, 0.4, 0.3], true);
 observed.bindChart(listenerPGM.getWeightedAdjacencyMatrix());
 observed.bindToListenerPGM(listenerPGM);
 
