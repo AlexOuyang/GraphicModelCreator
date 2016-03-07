@@ -13,8 +13,11 @@ class ListenerBeliefPGM extends GraphicalModel {
 
         let weight = [];
 
-        for (let i = 0; i < this.graphData.clusterMat[0].length; i++) {
-            for (let j = 0; j < this.graphData.clusterMat[this.graphData.clusterMat.length - 1].length; j++) {
+        let firstLayerLength = this.graphData.clusterMat[0].length;
+        let lastLayerLength = this.graphData.clusterMat[this.graphData.clusterMat.length - 1].length;
+        // Calculate the new edge weights based on adj matrix
+        for (let i = 0; i < firstLayerLength; i++) {
+            for (let j = 0; j < lastLayerLength; j++) {
                 let M_ij = this.getWeightedAdjacencyMatrix().getCellWeight([i, j]);
                 let Mij_summation_over_j = 0;
                 for (let sigma_sub_j = 0; sigma_sub_j <= j; sigma_sub_j++) {
@@ -26,9 +29,36 @@ class ListenerBeliefPGM extends GraphicalModel {
             }
         }
 
-        // log("Weight = " + weight);
+        log("Weight = " + weight);
 
-        this.listenerPGM.updateWeight(weight);
+        // Noralize the weights so that all node's edge weights sum up to 1
+
+        let vertexWeightSumTemp = []; // each element is the weight sum for a vertex
+        let weightIdx = 1;
+        let tempWeightSumForVertex = 0;
+        for (let i = 0; i < weight.length; i++) {
+            tempWeightSumForVertex += weight[i];
+            if (weightIdx % lastLayerLength == 0) {
+                // push vertex sum "lastLayerLength" many times so its easier to normalize weight
+                for (let j = 0; j < lastLayerLength; j++) {
+                    vertexWeightSumTemp.push(tempWeightSumForVertex);
+                }
+                tempWeightSumForVertex = 0;
+            }
+            weightIdx++;
+        }
+
+        log("vertexWeightSumTemp = " + vertexWeightSumTemp);
+
+        // Normalize
+        let normalizedWeight = [];
+        for (let i = 0; i < weight.length; i++) {
+            normalizedWeight[i] = weight[i] / vertexWeightSumTemp[i];
+        }
+
+        log("normalized weight = " + normalizedWeight);
+
+        this.listenerPGM.updateWeight(normalizedWeight);
         this.listenerPGM.display();
     }
 
