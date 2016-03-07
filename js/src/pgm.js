@@ -162,19 +162,22 @@ class GraphicalModel {
         }
 
         let weightSum = 0;
-
         for (let vertexIdx = 0; vertexIdx < data.length; vertexIdx++) {
             if (data[vertexIdx].id !== vertexIdx) {
                 throw new Error("Vertex's id must match its position index in the list of vertices. The " + vertexIdx + " th element in the list does not match its position index");
             }
-
+            let allEdgeZero = true;
             let adjVertices = data[vertexIdx].adjacentVertex;
             if (adjVertices) {
+                // Check if all edges have weight 0
+
                 for (let i = 0; i < adjVertices.length; i++) {
                     weightSum += adjVertices[i].weight;
+                    if (adjVertices[i].weight !== 0) allEdgeZero = false;
                 }
-                if (weightSum !== 1.0) {
-                    throw new Error("The sum of a vertex's adjacent vertice's weight must be 1. " + "The " + vertexIdx + "th node's adjacent vertices's weights do not sum to 1");
+
+                if (weightSum !== 1.0 && allEdgeZero === false) {
+                    throw new Error("The sum of a vertex's adjacent edge's weight must be 1 or all edges have a weight of 0. " + "The " + vertexIdx + "th vertex is invalid.");
                 }
             }
             weightSum = 0;

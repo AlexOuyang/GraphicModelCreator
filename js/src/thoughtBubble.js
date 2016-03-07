@@ -37,6 +37,13 @@ class ListenerBeliefPGM extends GraphicalModel {
         this.listenerPGM = listener;
     }
 
+    _stopAutoPlay() {
+        // When stop button is clicked, reset the listenerPGM edgeweights as well
+        super._stopAutoPlay();
+        this.listenerPGM._clearVisitedPath();
+        this.listenerPGM.resetEdgeWeightsToBeListenerBeliefPGMEdgeWeights();
+        this.listenerPGM.display();
+    }
 }
 
 
@@ -60,18 +67,23 @@ class ListenerPGM extends GraphicalModel {
         }
     }
 
+    resetEdgeWeightsToBeListenerBeliefPGMEdgeWeights() {
+        // Set listenerPGM's weights to be listenerBeliefPGM's edge weights
+        for (let i = 0; i < this.graphData.clusterMat[0].length; i++) {
+            let listenerBeliefAdjVtx = this.listenerBeliefPGM.getGraphData().data[i].adjacentVertex;
+            let adjVtx = Utils.cloneDR(listenerBeliefAdjVtx);
+            this.graphData.data[i].adjacentVertex = adjVtx;
+        }
+    }
+
     bindToListenerBeliefPGM(belief) {
-        // This binds the listener and the listener's belief to each other and updates listener's weight.
+        // This binds the listener and the listener's belief to each other and set listener's weight.
         belief.bindToListenerPGM(this);
         this.listenerBeliefPGM = belief;
 
-        for (let i = 0; i < this.graphData.clusterMat[0].length; i++) {
-            let listenerBeliefAdjVtx = this.listenerBeliefPGM.getGraphData().data[i].adjacentVertex;
-            // let adjVtx = Utils.cloneDR(listenerBeliefAdjVtx);
-            // this.graphData.data[i].adjacentVertex = adjVtx;
-            this.graphData.data[i].adjacentVertex = listenerBeliefAdjVtx;
-        }
+        this.resetEdgeWeightsToBeListenerBeliefPGMEdgeWeights();
     }
+
 
     updateWeight(weight) {
         // Udate the pgm weigth
@@ -79,7 +91,7 @@ class ListenerPGM extends GraphicalModel {
         for (let i = 0; i < this.graphData.clusterMat[0].length; i++) {
             for (let j = 0; j < this.graphData.data[i].adjacentVertex.length; j++) {
                 this.graphData.data[i].adjacentVertex[j].weight = weight[weightIdx];
-                log(this.graphData.data[i].adjacentVertex[j].weight);
+                // log(this.graphData.data[i].adjacentVertex[j].weight);
                 weightIdx++;
             }
         }

@@ -49,7 +49,7 @@ var pgmConfig = {
         },
         timeIntervalBetweenCycle: 800
     },
-    autoPlayable: true, // If autoPlayable, creates the autoplay button
+    autoPlayable: false, // If autoPlayable, creates the autoplay button
     cyclingSpeedControllable: true, // if cyclingSpeedControllable, create speed button
     zoomable: false,
 };
@@ -78,10 +78,10 @@ myGraph.setAdjacentVertex(0, adjacentVertex = [{
     weight: 0
 }, {
     id: 4,
-    weight: 0.5
+    weight: 0
 }, {
     id: 5,
-    weight: 0.5
+    weight: 0
 }]);
 myGraph.setAdjacentVertex(1, adjacentVertex = [{
     id: 3,
