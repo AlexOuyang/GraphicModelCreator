@@ -143,9 +143,9 @@ class GraphicalModel {
             // Do not allow user to click until visited path highlighting is finished
             this.canClick = false;
             setTimeout(() => this.canClick = true, this.config.edge.timeInterval * (this.directedPath.length - 1));
-            
+
             // click on background to reset adjacency matrix
-            if(this._weightedAdjMat) {
+            if (this._weightedAdjMat) {
                 this._weightedAdjMat.resetMatrixWeight();
                 this._weightedAdjMat.resetMatrixColorWeight();
                 this._weightedAdjMat.redrawMatrix();
@@ -243,12 +243,22 @@ class GraphicalModel {
 
         let randomPick = Math.random();
         console.log("weight distribution corresponding to adjacent vertices in the next layer: (" + weightDistribution + ") random pick: " + randomPick);
+
+        // if the sum of distribution is 0 then return -1
+        let distributionSum = weightDistribution.reduce(function(a, b) {
+            return a + b;
+        }, 0);
+        if (distributionSum === 0) {
+            return -1;
+        }
+
         for (let i = 0; i < weightDistribution.length - 1; i++) {
             if (randomPick >= weightDistribution[i] && randomPick <= weightDistribution[i + 1]) {
                 return vertex.adjacentVertex[i].id;
             }
         }
     }
+
     _traverseGraph(vertexId, data) {
         /* 
         Takes in the id of a node and traverse trough the graph to connect 
@@ -258,9 +268,10 @@ class GraphicalModel {
         let visitedNodes = [vertexId];
         let node = data[vertexId];
 
-        while (node.adjacentVertex !== undefined) {
+        while (node !== undefined && node.adjacentVertex !== undefined) {
             console.log("Current Vertex: " + vertexId);
             vertexId = this._chooseRandomAdjVertex(node);
+            // if (vertexId < 0) break;
             console.log("Vextex chosen: " + vertexId);
             console.log("--------");
             node = data[vertexId];
@@ -363,113 +374,154 @@ class GraphicalModel {
     _drawVisitedPath(data) {
         /* Draw visited edges based on weight in highlighted color */
 
+        // // check if there's -1 in directedPath, if yes, do not draw the path
+        // for(let i = 0; i < this.directedPath.length; i++) {
+
+        // }
+
         for (let vertexIdx = 0; vertexIdx < this.directedPath.length; vertexIdx++) {
-            // Iterate through the list of ID in directedPath 
-            let currentVertex = data[this.directedPath[vertexIdx]];
-            if (currentVertex.edges) {
-                for (let edgeIdx = 0; edgeIdx < currentVertex.edges.length; edgeIdx++) {
-                    let edgeNodes = currentVertex.edges[edgeIdx].edgeNodes;
-                    let edgeWeight = currentVertex.edges[edgeIdx].edgeWeight * this.config.edge.width;
-                    // If the edge is in the directedPath then draw different color
-                    if (this.directedPath.indexOf(edgeNodes[0].id) > -1 && this.directedPath.indexOf(edgeNodes[1].id) > -1) {
+            // check if there's -1 in directedPath, if yes, do not draw the path and trigger a new speaker
+            if (this.directedPath[vertexIdx] < 0) {
+                setTimeout(() => {
+                    // Draw the first vertex when the path start highlighting
+                    this.vertices.append("circle")
+                        .attr("class", d => {
+                            // if the node is in the path then draw it in a different color
+                            if (this.directedPath[0] === d.id) {
+                                return "visitedVertex";
+                            }
+                        })
+                        .attr("r", d => d.r);
 
-                        // Create two new points to draw a shorter edge so the new 
-                        // edge will not cover the id in the node
-                        let x0 = edgeNodes[0].x,
-                            y0 = edgeNodes[0].y,
-                            r0 = edgeNodes[0].r,
-                            x1 = edgeNodes[1].x,
-                            y1 = edgeNodes[1].y,
-                            r1 = edgeNodes[1].r,
-                            distX = x1 - x0,
-                            distY = y0 - y1,
-                            dist = Math.sqrt(distX * distX + distY * distY),
-                            ratio0 = r0 / (1.0 * dist),
-                            ratio1 = r1 / (1.0 * dist);
+                    // Add a text element to the previously added g element.
+                    this._drawText();
 
-                        // tempEdges for highlighting the visited edges
-                        let tempEdges = [{
-                            x: x0 + distX * ratio0,
-                            y: y0 - distY * ratio1
-                        }, {
-                            x: x1 - distX * ratio0,
-                            y: y1 + distY * ratio1
-                        }];
-
-                        let lineLength = dist; // The line length
-
-                        // Wait for 0.8 second until the next node is highlighted
-                        // Draw the next visited path after time Interval
+                    // If _weightedAdjMat exists, update the _weightedAdjMat adjacency matrix after the visited path finish highlighting within [timeIntervalBetweenCycle/2] milliseconds
+                    if (this._weightedAdjMat) {
                         setTimeout(() => {
+                            this._updateChart();
+                        }, this.config.autoPlay.timeIntervalBetweenCycle / 2.0);
+                    }
+                    // If autoplay is on, then restart the cycle after [timeIntervalBetweenCycle] milliseconds
+                    if (this.config.autoPlay.on) {
+                        console.log("Auto play is on!");
+                        setTimeout(() => {
+                            this._triggerSpeakerNodeAutoPlay();
+                        }, this.config.autoPlay.timeIntervalBetweenCycle);
+                    }
 
-                            // Append a path that completes drawing wthin a time duration
-                            this.container.append("svg:path")
-                                .style("stroke-width", this.config.edge.baseWidth + edgeWeight)
-                                .style("stroke", this.config.edge.visitedColor)
-                                .style("fill", "none")
-                                .attr({
-                                    'd': this.line(tempEdges),
-                                    'stroke-dasharray': lineLength + " " + lineLength,
-                                    'stroke-dashoffset': lineLength
+                }, this.config.edge.timeInterval);
+            } else {
+
+                log(this.directedPath[vertexIdx]);
+                // If there's no -1 in directed path
+                // Iterate through the list of ID in directedPath 
+                let currentVertex = data[this.directedPath[vertexIdx]];
+                if (currentVertex.edges) {
+                    for (let edgeIdx = 0; edgeIdx < currentVertex.edges.length; edgeIdx++) {
+                        let edgeNodes = currentVertex.edges[edgeIdx].edgeNodes;
+                        let edgeWeight = currentVertex.edges[edgeIdx].edgeWeight * this.config.edge.width;
+                        // If the edge is in the directedPath then draw different color
+                        if (this.directedPath.indexOf(edgeNodes[0].id) > -1 && this.directedPath.indexOf(edgeNodes[1].id) > -1) {
+
+                            // Create two new points to draw a shorter edge so the new 
+                            // edge will not cover the id in the node
+                            let x0 = edgeNodes[0].x,
+                                y0 = edgeNodes[0].y,
+                                r0 = edgeNodes[0].r,
+                                x1 = edgeNodes[1].x,
+                                y1 = edgeNodes[1].y,
+                                r1 = edgeNodes[1].r,
+                                distX = x1 - x0,
+                                distY = y0 - y1,
+                                dist = Math.sqrt(distX * distX + distY * distY),
+                                ratio0 = r0 / (1.0 * dist),
+                                ratio1 = r1 / (1.0 * dist);
+
+                            // tempEdges for highlighting the visited edges
+                            let tempEdges = [{
+                                x: x0 + distX * ratio0,
+                                y: y0 - distY * ratio1
+                            }, {
+                                x: x1 - distX * ratio0,
+                                y: y1 + distY * ratio1
+                            }];
+
+                            let lineLength = dist; // The line length
+
+                            // Wait for 0.8 second until the next node is highlighted
+                            // Draw the next visited path after time Interval
+                            setTimeout(() => {
+
+                                // Append a path that completes drawing wthin a time duration
+                                this.container.append("svg:path")
+                                    .style("stroke-width", this.config.edge.baseWidth + edgeWeight)
+                                    .style("stroke", this.config.edge.visitedColor)
+                                    .style("fill", "none")
+                                    .attr({
+                                        'd': this.line(tempEdges),
+                                        'stroke-dasharray': lineLength + " " + lineLength,
+                                        'stroke-dashoffset': lineLength
+                                    })
+                                    .transition()
+                                    .duration(this.config.edge.timeInterval)
+                                    .attr('stroke-dashoffset', 0);
+
+                            }, this.config.edge.timeInterval * vertexIdx);
+
+                            // Draw the next visited vertex after time Interval
+                            setTimeout(() => {
+                                /* clear vertices then redraw all the vertices in the grpah */
+                                this.vertices.append("circle")
+                                //                                .attr("class", "node")
+                                .attr("class", d => {
+                                    // if the node is in the path then draw it in a different color
+                                    if (this.directedPath.indexOf(d.id) <= (vertexIdx + 1) &&
+                                        this.directedPath.indexOf(d.id) > -1) {
+                                        return "visitedVertex";
+                                    }
                                 })
-                                .transition()
-                                .duration(this.config.edge.timeInterval)
-                                .attr('stroke-dashoffset', 0);
+                                    .attr("r", d => d.r);
 
-                        }, this.config.edge.timeInterval * vertexIdx);
+                                // Add a text element to the previously added g element.
+                                this._drawText();
 
-                        // Draw the next visited vertex after time Interval
-                        setTimeout(() => {
-                            /* clear vertices then redraw all the vertices in the grpah */
-                            this.vertices.append("circle")
-                            //                                .attr("class", "node")
-                            .attr("class", d => {
-                                // if the node is in the path then draw it in a different color
-                                if (this.directedPath.indexOf(d.id) <= (vertexIdx + 1) &&
-                                    this.directedPath.indexOf(d.id) > -1) {
-                                    return "visitedVertex";
+                                // Visited path ending condition
+                                let endingVertexIdx = this.directedPath.length - 2;
+                                if (vertexIdx === endingVertexIdx) {
+
+                                    // If _weightedAdjMat exists, update the _weightedAdjMat adjacency matrix after the visited path finish highlighting within [timeIntervalBetweenCycle/2] milliseconds
+                                    if (this._weightedAdjMat) {
+                                        setTimeout(() => {
+                                            this._updateChart();
+                                        }, this.config.autoPlay.timeIntervalBetweenCycle / 2.0);
+                                    }
+                                    // If autoplay is on, then restart the cycle after [timeIntervalBetweenCycle] milliseconds
+                                    if (this.config.autoPlay.on) {
+                                        console.log("Auto play is on!");
+                                        setTimeout(() => {
+                                            this._triggerSpeakerNodeAutoPlay();
+                                        }, this.config.autoPlay.timeIntervalBetweenCycle);
+                                    }
                                 }
-                            })
+
+                                // 0.95 is a time offset multiplier to make vertex colored faster since
+                                // there is an unknown lag
+                            }, this.config.edge.timeInterval * (vertexIdx + 1));
+
+                            // Draw the first vertex when the path start highlighting
+                            this.vertices.append("circle")
+                                .attr("class", d => {
+                                    // if the node is in the path then draw it in a different color
+                                    if (this.directedPath[0] === d.id) {
+                                        return "visitedVertex";
+                                    }
+                                })
                                 .attr("r", d => d.r);
 
                             // Add a text element to the previously added g element.
                             this._drawText();
-
-                            // Visited path ending condition
-                            let endingVertexIdx = this.directedPath.length - 2;
-                            if (vertexIdx === endingVertexIdx) {
-
-                                // If _weightedAdjMat exists, update the _weightedAdjMat adjacency matrix after the visited path finish highlighting within [timeIntervalBetweenCycle/2] milliseconds
-                                if (this._weightedAdjMat) {
-                                    setTimeout(() => {
-                                        this._updateChart();
-                                    }, this.config.autoPlay.timeIntervalBetweenCycle / 2.0);
-                                }
-                                // If autoplay is on, then restart the cycle after [timeIntervalBetweenCycle] milliseconds
-                                if (this.config.autoPlay.on) {
-                                    console.log("Auto play is on!");
-                                    setTimeout(() => {
-                                        this._triggerSpeakerNodeAutoPlay();
-                                    }, this.config.autoPlay.timeIntervalBetweenCycle);
-                                }
-                            }
-
-                            // 0.95 is a time offset multiplier to make vertex colored faster since
-                            // there is an unknown lag
-                        }, this.config.edge.timeInterval * (vertexIdx + 1));
-
-                        // Draw the first vertex when the path start highlighting
-                        this.vertices.append("circle")
-                            .attr("class", d => {
-                                // if the node is in the path then draw it in a different color
-                                if (this.directedPath[0] === d.id) {
-                                    return "visitedVertex";
-                                }
-                            })
-                            .attr("r", d => d.r);
-
-                        // Add a text element to the previously added g element.
-                        this._drawText();
+                        }
                     }
                 }
             }
@@ -608,6 +660,7 @@ class GraphicalModel {
         if (id < speakerLayerLength) {
             let clickedVertexId = parseInt(id, 10);
             this._traverseGraph(clickedVertexId, this.graphData.data);
+            log("visited path = [" + this.directedPath + "]");
             this._drawGraph(this.graphData.data);
             this._drawVisitedPath(this.graphData.data);
 
