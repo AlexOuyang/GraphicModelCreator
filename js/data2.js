@@ -1,3 +1,8 @@
+// Middle graph
+
+// (function() {
+// "use strict";
+
 // Handles the configuration of the graph
 
 var pgmConfig = {
@@ -9,7 +14,7 @@ var pgmConfig = {
     },
     vertex: {
         radius: 0.35,
-        default: {
+        defaultStyle: {
             backgroundColor: "#52bf90",
             outlineColor: "#317256"
         },
@@ -19,8 +24,8 @@ var pgmConfig = {
         }
     },
     edge: {
-        baseWidth: 0.1, // base width offset = baseWidth * circle radius
-        width: 0.5, // edge width = width * circle radius
+        baseWidth: 0, // base width offset = baseWidth * circle radius
+        width: 1, // edge width = width * circle radius
         defaultColor: "#b6ddcc",
         visitedColor: "#1d4433",
         timeInterval: 800 // timeInterval is in millisecond
@@ -50,16 +55,19 @@ var pgmConfig = {
 };
 
 
-var clusterMat = [["▢", "◯", "△"],
-                  ["Square", "Circle", "Triangle"],
-                  ["▢", "◯", "△"]];
+var clusterMat = [
+    ["▢", "◯", "△"],
+    ["Square", "Circle", "Triangle"],
+    ["▢", "◯", "△"]
+];
 
+var speakerNodeProbabilityDistribution = [0.1, 0.2, 0.7];
 //var clusterMatPrototype = [["0"],["1"],["2"],["3"],["4"]];
 
 // Create a new Graph based on the configuration
 // and bind the data to the graph for rendering
 var myGraph = new GraphicalModel(pgmConfig, "#pgm2");
-myGraph.createCluster(clusterMat,[0.1, 0.4, 0.5], true);
+myGraph.createCluster(clusterMat, speakerNodeProbabilityDistribution, false);
 
 // Auto play
 //myGraph.config.playable = true;
@@ -67,10 +75,10 @@ myGraph.createCluster(clusterMat,[0.1, 0.4, 0.5], true);
 // Layer 1
 myGraph.setAdjacentVertex(0, adjacentVertex = [{
     id: 3,
-    weight: 0.1
+    weight: 0
 }, {
     id: 4,
-    weight: 0.4
+    weight: 0.5
 }, {
     id: 5,
     weight: 0.5
@@ -167,7 +175,6 @@ myGraph.setAdjacentVertex(5, adjacentVertex = [{
 
 
 
-
 // Adjacency matrix configuration
 var matConfig = {
     transform: {
@@ -205,6 +212,13 @@ var matConfig = {
 myGraph.createChart(matConfig);
 myGraph.display();
 
+
+
+
+
+
+// myGraph.getWeightedAdjacencyMatrix().getMatrix1D();
+
 // Way 2 to create a chart
 
 //var _rowLabel = ["▢", "◯", "△"];
@@ -214,3 +228,5 @@ myGraph.display();
 //
 ////// Bind the chart to graph
 //myGraph.bindChart(adjMat);
+
+// }).call(this);

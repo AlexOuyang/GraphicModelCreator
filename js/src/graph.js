@@ -143,13 +143,6 @@ class GraphicalModel {
             // Do not allow user to click until visited path highlighting is finished
             this.canClick = false;
             setTimeout(() => this.canClick = true, this.config.edge.timeInterval * (this.directedPath.length - 1));
-            
-            // click on background to reset adjacency matrix
-            if(this._weightedAdjMat) {
-                this._weightedAdjMat.resetMatrixWeight();
-                this._weightedAdjMat.resetMatrixColorWeight();
-                this._weightedAdjMat.redrawMatrix();
-            }
         }
     }
 
@@ -806,10 +799,6 @@ class GraphicalModel {
         if (changeNodeRadiusBasedOnDistribution && probabilityDistribution.length > 0) {
             this._changeNodeRadius();
         }
-    }
-
-    getGraphData() {
-        return this.graphData;
     }
 
     /*=========== Graphical Model Autoplay ===========*/

@@ -1,7 +1,7 @@
 /*=============== Probability Graphic Model ====================*/
 "use strict";
 
-class GraphicalModel {
+class ThoughtBubble {
 
     constructor(graphConfiguration, divID) {
 
@@ -16,7 +16,7 @@ class GraphicalModel {
             },
             vertex: {
                 radius: 0.35,
-                defaultStyle: {
+                default: {
                     backgroundColor: "#52bf90",
                     outlineColor: "#317256"
                 },
@@ -26,7 +26,7 @@ class GraphicalModel {
                 }
             },
             edge: {
-                baseWidth: 0, // base width offset = baseWidth * circle radius
+                baseWidth: 0.1, // base width offset = baseWidth * circle radius
                 width: 0.5, // edge width = width * circle radius
                 defaultColor: "#b6ddcc",
                 visitedColor: "#1d4433",
@@ -70,9 +70,10 @@ class GraphicalModel {
         this.speakerLayerProbabilityDistribution = []; //  an array of probability given to each node in the speaker layer, probabilityDistribution=[] if uniform distribution
 
 
+        this.divID = divID;
+
         let pgm = this;
 
-        this.divID = divID;
 
         // Click on the node in the speaker layer to draw visited path
         this.onClick = d3.behavior.drag()
@@ -85,6 +86,7 @@ class GraphicalModel {
                     d3.event.sourceEvent.stopPropagation();
                     d3.select(this).classed("dragging", true);
                     pgm._triggerSpeakerNode(this.id);
+                    this._triggerSpeakerNodeAutoPlay();
                 }
             });
 
@@ -136,23 +138,14 @@ class GraphicalModel {
 
     }
 
-
     _backgroundOnClick() {
         if (this.canClick) {
             this._clearVisitedPath();
             // Do not allow user to click until visited path highlighting is finished
             this.canClick = false;
             setTimeout(() => this.canClick = true, this.config.edge.timeInterval * (this.directedPath.length - 1));
-            
-            // click on background to reset adjacency matrix
-            if(this._weightedAdjMat) {
-                this._weightedAdjMat.resetMatrixWeight();
-                this._weightedAdjMat.resetMatrixColorWeight();
-                this._weightedAdjMat.redrawMatrix();
-            }
         }
     }
-
     _dataScreening(data) {
         /* Verifies if each vertex's id matches its position in the array 
         and the weights of all adjacent vertices sum to 1; */
@@ -231,9 +224,7 @@ class GraphicalModel {
     }
 
     _chooseRandomAdjVertex(vertex) {
-        /*
-        Takes in a vertex and choose a random adjacent vertex in the next layer based on the edge weights 
-        */
+        // Takes in a vertex and choose a random adjacent vertex in the next layer based on the edge weights 
         let weightDistribution = [0]; // weightDistribution is a distribution from 0 to 1, ex: [0, 0.4, 1]
         let weight = 0;
         for (let i = 0; i < vertex.adjacentVertex.length; i++) {
@@ -249,6 +240,7 @@ class GraphicalModel {
             }
         }
     }
+
     _traverseGraph(vertexId, data) {
         /* 
         Takes in the id of a node and traverse trough the graph to connect 
@@ -578,13 +570,12 @@ class GraphicalModel {
         $(this.divID + " .play-button").click(function() {
             $(this).toggleClass("paused");
             if (pgm.config.autoPlay.on) {
-                pgm._stopAutoPlay();
+                pgm.stopAutoPlay();
             } else {
-                pgm._startAutoPlay();
+                pgm.startAutoPlay();
             }
         });
     }
-
 
     _triggerSpeakerNodeAutoPlay() {
         /* Triggers a speaker node randomly following the specified distribution */
@@ -598,6 +589,7 @@ class GraphicalModel {
         }
         this._triggerSpeakerNode(chosen_id);
     }
+
 
     _triggerSpeakerNode(id) {
         /* triggers a speaker node by id, traverse down and draw the visited path. */
@@ -674,6 +666,7 @@ class GraphicalModel {
         return this._weightedAdjMat;
     }
 
+
     setAdjacentVertex(id, adjVtx) {
         /* Set adjacent vertex for vertex with id */
 
@@ -702,7 +695,6 @@ class GraphicalModel {
     //
     //        return JSON.stringify(jsonGraphData);
     //    };
-
 
 
     _changeNodeRadius() {
@@ -808,28 +800,25 @@ class GraphicalModel {
         }
     }
 
-    getGraphData() {
-        return this.graphData;
-    }
 
     /*=========== Graphical Model Autoplay ===========*/
 
     resetChart() {
         /* reset the _weightedAdjMat */
-        this._weightedAdjMat.resetMatrixWeight();
+        // this._weightedAdjMat.resetMatrixWeight();
         this._weightedAdjMat.redrawMatrix();
     }
 
-    _startAutoPlay() {
+    startAutoPlay() {
         /* called by the play button to start autoplay */
         this.canClick = false;
         if (this._weightedAdjMat) this.resetChart();
         this.config.autoPlay.on = true;
         let random_id = Math.floor(Math.random() * this.graphData.clusterMat[0].length);
-        this._triggerSpeakerNodeAutoPlay();
+        this._triggerSpeakerNode(random_id);
     }
 
-    _stopAutoPlay() {
+    stopAutoPlay() {
         /* called by the stop button to stop autoplay */
         this.canClick = true;
         this.config.autoPlay.on = false;
@@ -848,18 +837,18 @@ class GraphicalModel {
         let cellToUpdate = [_rowLabel, _colLabel];
         log("Update Cell: [" + cellToUpdate + "]");
         this._weightedAdjMat.increaseCellWeight(cellToUpdate, 1);
-        this._weightedAdjMat.increaseCellColor(cellToUpdate, 1);
+        //        this._weightedAdjMat.increaseCellColor(cellToUpdate, 1);
         this._weightedAdjMat.redrawMatrix();
     }
 
-    //    bindChart (_weightedAdjMat) {
-    //        /* Used to bind to an existing adjacency matrix _weightedAdjMatf to the graphical model */
-    //        if (this._weightedAdjMat != null) {
-    //            this._weightedAdjMat = _weightedAdjMat;
-    //        } else {
-    //            throw new Error("pgm.bindChart(): Graph already has a _weightedAdjMat object.")
-    //        }
-    //    }
+    bindChart(weightedAdjMat) {
+        /* Used to bind to an existing adjacency matrix _weightedAdjMatf to the graphical model */
+        if (!this._weightedAdjMat) {
+            this._weightedAdjMat = weightedAdjMat;
+        } else {
+            throw new Error("pgm.bindChart(): Graph already has a _weightedAdjMat object.")
+        }
+    }
 
     createChart(chartConfig) {
         /* Create a _weightedAdjMat and bind to the graphic model */
@@ -867,7 +856,7 @@ class GraphicalModel {
         this.chartConfig = chartConfig;
 
         if (this.graphData.clusterMat.length < 2) {
-            throw new Error("pgm.createChart(): Can not create adjacency matrix for graphical model with layer number less than 2");
+            throw new Error("Can not create adjacency matrix for graphical model with layer number less than 2");
             return;
         }
         var _rowLabel = this.graphData.clusterMat[0];
@@ -875,4 +864,150 @@ class GraphicalModel {
         this._weightedAdjMat = new WeightedAdjacencyMatrix(this.divID, chartConfig);
         this._weightedAdjMat.createMatrix(_rowLabel, _colLabel);
     }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class ObservedPGM extends ThoughtBubble {
+    constructor(graphConfiguration, divID) {
+        super(graphConfiguration, divID);
+    }
+
+    bindToListenerPGM(listener) {
+        this.listenerPGM = listener;
+    }
+
+    /* @Override */
+    _backgroundOnClick() {
+        if (this.canClick) {
+
+            this._clearVisitedPath();
+            this._weightedAdjMat.resetMatrixWeight();
+            this._weightedAdjMat.resetMatrixColorWeight();
+            this._weightedAdjMat.redrawMatrix();
+
+            this.listenerPGM.stopAutoPlay();
+            // Do not allow user to click until visited path highlighting is finished
+            this.canClick = false;
+            setTimeout(() => this.canClick = true, this.config.edge.timeInterval * (this.directedPath.length - 1));
+        }
+    }
+
+    /* @Override */
+    _triggerSpeakerNode(id) {
+        /* triggers a speaker node by id, traverse down and draw the visited path. */
+
+        let speakerLayerLength = this.graphData.clusterMat[0].length;
+
+        // Only allow the node to be clicked if it is in the speaker layer
+        if (id < speakerLayerLength) {
+
+            this.listenerPGM.stopAutoPlay();
+            // this._weightedAdjMat.resetMatrixWeight();
+            this._weightedAdjMat.resetMatrixColorWeight();
+            this._weightedAdjMat.redrawMatrix();
+
+            let clickedVertexId = parseInt(id, 10);
+            this._traverseGraph(clickedVertexId, this.graphData.data);
+            this._drawGraph(this.graphData.data);
+            this._drawVisitedPath(this.graphData.data, clickedVertexId);
+
+            // testing 
+            $(this.divID + ' .path strong').text(this.directedPath);
+        } else {
+            // Else clear the path
+            this._clearVisitedPath();
+
+            this.listenerPGM.stopAutoPlay();
+            // this._weightedAdjMat.resetMatrixWeight();
+            this._weightedAdjMat.resetMatrixColorWeight();
+            this._weightedAdjMat.redrawMatrix();
+        }
+
+        // Do not allow user to click
+        this.canClick = false;
+        setTimeout(() => this.canClick = true, this.config.edge.timeInterval * (this.directedPath.length - 1));
+
+    }
+
+
+    /* @Override */
+    _drawVisitedPath(data, clickedVertexId) {
+        /* Draw visited edges based on weight in highlighted color */
+
+        for (let vertexIdx = 0; vertexIdx < this.directedPath.length; vertexIdx++) {
+            // Iterate through the list of ID in directedPath 
+            let currentVertex = data[this.directedPath[vertexIdx]];
+            if (currentVertex.edges) {
+                for (let edgeIdx = 0; edgeIdx < currentVertex.edges.length; edgeIdx++) {
+                    let edgeNodes = currentVertex.edges[edgeIdx].edgeNodes;
+                    let edgeWeight = currentVertex.edges[edgeIdx].edgeWeight * this.config.edge.width;
+                    // If the edge is in the directedPath then draw different color
+                    if (this.directedPath.indexOf(edgeNodes[0].id) > -1 && this.directedPath.indexOf(edgeNodes[1].id) > -1) {
+
+                        // Draw the first vertex when the path start highlighting
+                        this.vertices.append("circle")
+                            .attr("class", d => {
+                                // if the node is in the path then draw it in a different color
+                                if (this.directedPath[0] === d.id) {
+                                    return "visitedVertex";
+                                }
+                            })
+                            .attr("r", d => d.r);
+
+                        // Add a text element to the previously added g element.
+                        this._drawText();
+
+
+
+                        // Notify the weightedAdjacencyMatrix to update its column
+                        setTimeout(() => {
+                            let columnLabel = this.graphData.clusterMat[0][clickedVertexId];
+                            this._weightedAdjMat.increaseColumnColor(columnLabel, 8);
+                            this._weightedAdjMat.redrawMatrix();
+                        }, this.config.edge.timeInterval * (vertexIdx + 1));
+
+                        // Notify the listener to start playing
+                        setTimeout(() => {
+                            this.listenerPGM.startAutoPlay();
+                        }, this.config.edge.timeInterval * (vertexIdx + 2));
+
+                    }
+                }
+            }
+        }
+    }
+
+    // /* @Override */
+    // _changeNodeRadius() {
+    //     /* 
+    //     Change the speaker layer ndoe radius based on the probability distribution, the speaker layer here is the bottom layer, not the top layer
+    //     */
+    //     let totalNumOfNodesOffset = -1;
+    //     let cMat = this.graphData.clusterMat;
+    //     for (let i = 0; i < cMat.length - 1; i++) {
+    //         totalNumOfNodesOffset += cMat[i].length;
+    //     }
+    //     for (let i = 0; i < this.speakerLayerProbabilityDistribution.length; i++) {
+    //         // Normalize the radius
+    //         let normalizationFactor = 1.0 / this.speakerLayerProbabilityDistribution.length;
+    //         this.graphData.data[i + totalNumOfNodesOffset].r *= (this.speakerLayerProbabilityDistribution[i] * 1.0) / normalizationFactor;
+    //     }
+    // }
 }

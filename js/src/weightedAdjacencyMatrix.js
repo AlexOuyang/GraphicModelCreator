@@ -82,7 +82,7 @@ class WeightedAdjacencyMatrix {
 
     /**
      * Darkens or lightens hex color value
-     * @function _shadeColor 
+     * @function _shadeColor
      * @param {String} colorHex - a hex color string. ie. "#63c59b"
      * @param {Number} percentage - shading ranges form -100(dark) to +100(light)
      */
@@ -110,7 +110,7 @@ class WeightedAdjacencyMatrix {
 
     /** 
      * Draws the adjancy matrix based on the property of each cell
-     * @function redrawMatrix 
+     * @function redrawMatrix
      */
     redrawMatrix() {
         /* Draw the adjancy matrix */
@@ -168,7 +168,7 @@ class WeightedAdjacencyMatrix {
 
     /** 
      * Creates an adjacency matrix based on the row and column labels
-     * @function WeightedAdjMat.createMatrix 
+     * @function WeightedAdjMat.createMatrix
      * @param {Array} rowLab - labels that represent the row of the matrix
      * @param {Array} colLab - labels that represent the column of the matrix
      */
@@ -234,9 +234,9 @@ class WeightedAdjacencyMatrix {
 
 
     /** 
-     * Increases the matix cell weight.
-     * @function WeightedAdjMat.increaseCellWeight 
-     * @param {Array} cell - the cell to increase weight is represented by a coordinate pair, ie. cell = (row, col)
+     * Increases the matix cell weight by label pair.
+     * @function WeightedAdjMat.increaseCellWeight
+     * @param {Array} cell - the cell to increase weight is represented by a coordinate pair using labels, ie. cell = (rowLabel, colLabel)
      * @param {Integer} weight - used to increase the weight of the cell
      */
     increaseCellWeight(cell, weight) {
@@ -251,9 +251,9 @@ class WeightedAdjacencyMatrix {
 
 
     /** 
-     * Increases the matix cell color weight and darkens the color
-     * @function WeightedAdjMat.increaseCellColor 
-     * @param {Array} cell - the cell to increase weight is represented by a coordinate pair, ie. cell = (row, col)
+     * Increases the matix cell color weight and darkens the color by label pair.
+     * @function WeightedAdjMat.increaseCellColor
+     * @param {Array} cell - the cell to increase weight is represented by a coordinate pair using labels, ie. cell = (rowLabel, colLabel)
      * @param {Integer} weight - used to increase the color weight of the cell
      */
     increaseCellColor(cell, colorWeight) {
@@ -269,7 +269,7 @@ class WeightedAdjacencyMatrix {
 
     /** 
      * Increases the matix column color weight and darkens the color
-     * @function WeightedAdjMat.increaseColumnColor 
+     * @function WeightedAdjMat.increaseColumnColor
      * @param {Array} colLabel - the label of the column to increase weight is represented by a label in string
      * @param {Integer} weight - used to increase the color weight of the cell
      */
@@ -287,7 +287,7 @@ class WeightedAdjacencyMatrix {
 
     /** 
      * Reset the matix cell weight
-     * @function WeightedAdjMat.resetMatrixWeight 
+     * @function WeightedAdjMat.resetMatrixWeight
      */
     resetMatrixWeight() {
         /* Reset each matrix cell weight to 0 */
@@ -300,7 +300,7 @@ class WeightedAdjacencyMatrix {
 
     /** 
      * Reset the matix cell color weight and updates color based on the weight
-     * @function WeightedAdjMat.resetMatrixColorWeight 
+     * @function WeightedAdjMat.resetMatrixColorWeight
      */
     resetMatrixColorWeight() {
         /* Reset each matrix cell weight to 0 */
@@ -310,6 +310,41 @@ class WeightedAdjacencyMatrix {
             }
         }
     }
+
+    /** 
+     * Get the matix cell weight by cell pair = (i, j)
+     * @function WeightedAdjMat.getCellWeight
+     * @param {Array} cell - the cell to increase weight is represented by a coordinate pair, ie. cell = (i, j)
+     * @return {Integer} cell weight
+     */
+    getCellWeight(cell) {
+        let i = cell[0];
+        let j = cell[1];
+
+        if (i > this._colLabel.length || j > this._rowLabel.length || i < 0 || j < 0) throw new Error("getCellWeight(cell): the element to get does not exist in the adjacency matrix.");
+
+        let elementIndex = i + j * this._colLabel.length;
+        return this._adjMatData[elementIndex].weight;
+    }
+
+
+    getMatrix1D() {
+        // Returns the adjacency matrix as a 1D array
+        let matrix1D = [];
+        for (let i = 0; i < this._adjMatData.length; i++) {
+            if (this._adjMatData[i].type == "cellData") {
+                matrix1D.push(this._adjMatData[i].weight);
+            }
+        }
+        return matrix1D;
+    }
+
+    getMatrix2D() {
+        // Returns the adjacency matrix as a 2D array,
+        // matrix = [col1, col2, col3];
+        let matrix1D = this.getMatrix1D();
+    }
+
 
     //    resetRowLabel(row) {
     //        this._rowLabel = row;
