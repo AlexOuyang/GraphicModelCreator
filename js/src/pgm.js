@@ -375,21 +375,24 @@ class GraphicalModel {
         /* Draw visited edges based on weight in highlighted color */
 
         for (let vertexIdx = 0; vertexIdx < this.directedPath.length; vertexIdx++) {
+
             // check if there's -1 in directedPath, if yes, do not draw the path and trigger a new speaker
             if (this.directedPath[vertexIdx] < 0) {
-                setTimeout(() => {
-                    // Draw the first vertex when the path start highlighting
-                    this.vertices.append("circle")
-                        .attr("class", d => {
-                            // if the node is in the path then draw it in a different color
-                            if (this.directedPath[0] === d.id) {
-                                return "visitedVertex";
-                            }
-                        })
-                        .attr("r", d => d.r);
 
-                    // Add a text element to the previously added g element.
-                    this._drawText();
+                // Draw the first vertex when the path start highlighting
+                this.vertices.append("circle")
+                    .attr("class", d => {
+                        // if the node is in the path then draw it in a different color
+                        if (this.directedPath[0] === d.id) {
+                            return "visitedVertex";
+                        }
+                    })
+                    .attr("r", d => d.r);
+
+                // Add a text element to the previously added g element.
+                this._drawText();
+
+                setTimeout(() => {
 
                     // If _weightedAdjMat exists, update the _weightedAdjMat adjacency matrix after the visited path finish highlighting within [timeIntervalBetweenCycle/2] milliseconds
                     if (this._weightedAdjMat) {
@@ -408,7 +411,6 @@ class GraphicalModel {
                 }, this.config.edge.timeInterval);
             } else {
 
-                log(this.directedPath[vertexIdx]);
                 // If there's no -1 in directed path
                 // Iterate through the list of ID in directedPath 
                 let currentVertex = data[this.directedPath[vertexIdx]];
