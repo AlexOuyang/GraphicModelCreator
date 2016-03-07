@@ -397,12 +397,6 @@ class GraphicalModel {
 
                 setTimeout(() => {
 
-                    // If _weightedAdjMat exists, update the _weightedAdjMat adjacency matrix after the visited path finish highlighting within [timeIntervalBetweenCycle/2] milliseconds
-                    if (this._weightedAdjMat) {
-                        setTimeout(() => {
-                            this._updateChart();
-                        }, this.config.autoPlay.timeIntervalBetweenCycle / 2.0);
-                    }
                     // If autoplay is on, then restart the cycle after [timeIntervalBetweenCycle] milliseconds
                     if (this.config.autoPlay.on) {
                         console.log("Auto play is on!");
@@ -888,6 +882,12 @@ class GraphicalModel {
         this.config.autoPlay.on = false;
 
         this._clearVisitedPath();
+
+        if (this._weightedAdjMat) {
+            this._weightedAdjMat.resetMatrixWeight();
+            this._weightedAdjMat.resetMatrixColorWeight();
+            // this._weightedAdjMat.redrawMatrix();
+        }
     }
 
 
@@ -895,9 +895,12 @@ class GraphicalModel {
 
     _updateChart() {
         /* Used in _drawVisitedPath() to update the adjacency matrix _weightedAdjMat */
+        let _rowIdx = this.directedPath[0];
+        let _colIdx = this.directedPath[this.directedPath.length - 1];
+        if (_rowIdx < 0 || _colIdx < 0) return;
 
-        let _rowLabel = this.graphData.data[this.directedPath[0]].label;
-        let _colLabel = this.graphData.data[this.directedPath[this.directedPath.length - 1]].label;
+        let _rowLabel = this.graphData.data[_rowIdx].label;
+        let _colLabel = this.graphData.data[_colIdx].label;
         let cellToUpdate = [_rowLabel, _colLabel];
         log("Update Cell: [" + cellToUpdate + "]");
         this._weightedAdjMat.increaseCellWeight(cellToUpdate, 1);

@@ -49,7 +49,7 @@ var pgmConfig = {
         },
         timeIntervalBetweenCycle: 800
     },
-    autoPlayable: false, // If autoPlayable, creates the autoplay button
+    autoPlayable: true, // If autoPlayable, creates the autoplay button
     cyclingSpeedControllable: true, // if cyclingSpeedControllable, create speed button
     zoomable: false,
 };
