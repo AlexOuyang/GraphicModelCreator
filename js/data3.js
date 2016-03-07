@@ -61,7 +61,7 @@
     ];
 
 
-    var speakerLayerProbabilityDistribution = [0.1, 0.4, 0.5];
+    var speakerLayerProbabilityDistribution = [0.1, 0.3, 0.6];
     // Create a new Graph based on the configuration
     // and bind the data to the graph for rendering
     var listenerObserver = new ListenerBeliefPGM(listenerBeliefConfig, "#listenerBeliefPGMdiv");

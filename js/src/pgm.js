@@ -757,16 +757,20 @@ class GraphicalModel {
 
 
 
-    _changeNodeRadius() {
+    _changeNodeRadius(baseRadius) {
         /* 
         Change the speaker layer ndoe radius based on the probability distribution
         probabilityDistribution is the array of probability given to each node in the speaker layer
         set probabilityDistribution=[] for uniform distribution
         */
+
+        let normalizeBaseRadiusMultiplier = 0.4; // increase base radius size
+        let normalizeExtraRadiusBasedOnDistributionMultiplier = 0.7; // increase extra radius size
+
         for (let i = 0; i < this.speakerLayerProbabilityDistribution.length; i++) {
             // Normalize the radius
-            let normalizationFactor = 1.0 / this.speakerLayerProbabilityDistribution.length;
-            this.graphData.data[i].r *= (this.speakerLayerProbabilityDistribution[i] * 1.0) / normalizationFactor;
+            let normalizationFactor = 1.0 / this.speakerLayerProbabilityDistribution.length / normalizeExtraRadiusBasedOnDistributionMultiplier;
+            this.graphData.data[i].r = (baseRadius * normalizeBaseRadiusMultiplier) + this.graphData.data[i].r * (this.speakerLayerProbabilityDistribution[i] * 1.0) / normalizationFactor;
         }
     }
 
@@ -856,7 +860,7 @@ class GraphicalModel {
 
         // Change speaker node radius based on distribution
         if (changeNodeRadiusBasedOnDistribution && probabilityDistribution.length > 0) {
-            this._changeNodeRadius();
+            this._changeNodeRadius(r);
         }
     }
 
