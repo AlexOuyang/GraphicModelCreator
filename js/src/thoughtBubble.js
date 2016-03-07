@@ -190,7 +190,7 @@ class ListenerPGM extends GraphicalModel {
                 // Check if the clicked node is in the first layer
                 // which are the num of nodes in first layer of clusterMat
                 // Only allow user to click the node if autoplay is off
-                if (listenerPGM.canClick && !listenerPGM.listenerBeliefPGM.config.autoPlay.on) {
+                if (!listenerPGM.listenerBeliefPGM.config.autoPlay.on) {
                     d3.event.sourceEvent.stopPropagation();
                     d3.select(this).classed("dragging", true);
 
