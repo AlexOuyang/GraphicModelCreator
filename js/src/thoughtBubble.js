@@ -80,8 +80,17 @@ class ListenerBeliefPGM extends GraphicalModel {
 
     /*@Override*/
     _startAutoPlay() {
-        // When stop button is clicked, reset the listenerPGM edgeweights as well
+        /* When stop button is clicked, reset the listenerPGM edgeweights as well */
+
+
+        // Stop listenerPGM autoplay before calling super._startPlay() so that _clearVisitedPath() method won't destroy both listenerPGM's autoPlay and this graph's autoPlay
+        if (this.listenerPGM.config.autoPlay.on) {
+            this.listenerPGM._stopAutoPlay();
+        }
+
         super._startAutoPlay();
+
+        // reset the listenerPGM edge weights
         this.listenerPGM.resetEdgeWeightsToBeListenerBeliefPGMEdgeWeights();
         this.listenerPGM.display();
     }
@@ -185,11 +194,16 @@ class ListenerPGM extends GraphicalModel {
                     d3.event.sourceEvent.stopPropagation();
                     d3.select(this).classed("dragging", true);
 
+                    // Option 1: Only draw visited path once
                     // listenerPGM._triggerSpeakerNode(this.id);
 
-                    // autoPlay when speaker node is clicked
+                    // Option 2: AutoPlay when speaker node is clicked
                     let speakerLayerLength = listenerPGM.graphData.clusterMat[0].length;
-                    listenerPGM._startAutoPlay();
+                    if (listenerPGM.config.autoPlay.on) {
+                        listenerPGM._stopAutoPlay();
+                    } else {
+                        listenerPGM._startAutoPlay();
+                    }
                 }
             });
 
