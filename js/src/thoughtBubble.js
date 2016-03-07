@@ -7,6 +7,7 @@ class ListenerBeliefPGM extends GraphicalModel {
         super(graphConfiguration, divID);
     }
 
+    /*@Override*/
     _updateChart() {
         // After updating the chart updating the weight in ListenerPGM as well
         super._updateChart();
@@ -62,11 +63,14 @@ class ListenerBeliefPGM extends GraphicalModel {
         this.listenerPGM.display();
     }
 
-    bindToListenerPGM(listener) {
-        // Used to bind listenerPGM to listenerBeliefPGM
-        this.listenerPGM = listener;
-    }
+    /*@Override*/
+    // _backgroundOnClickToResetAdjMatrix() {
+    //     // overrie original function so when background is clicked the matrix won't reset
+    //     return false;
+    // }
+    // _backgroundOnClick() {}
 
+    /*@Override*/
     _stopAutoPlay() {
         // When stop button is clicked, reset the listenerPGM edgeweights as well
         super._stopAutoPlay();
@@ -74,11 +78,18 @@ class ListenerBeliefPGM extends GraphicalModel {
         // this.listenerPGM.display();
     }
 
+    /*@Override*/
     _startAutoPlay() {
         // When stop button is clicked, reset the listenerPGM edgeweights as well
         super._startAutoPlay();
         this.listenerPGM.resetEdgeWeightsToBeListenerBeliefPGMEdgeWeights();
         this.listenerPGM.display();
+    }
+
+
+    bindToListenerPGM(listener) {
+        // Used to bind listenerPGM to listenerBeliefPGM
+        this.listenerPGM = listener;
     }
 }
 
@@ -90,10 +101,13 @@ class ListenerPGM extends GraphicalModel {
         super(graphConfiguration, divID);
     }
 
+    /*@Override*/
     _dataScreening(data) {}
 
+    /*@Override*/
     _updateChart() {}
 
+    /*@Override*/
     _backgroundOnClick() {
         // Prevent adjMatrix gets reset when click on background
         if (this.canClick && !this.listenerBeliefPGM.config.autoPlay.on) {
@@ -101,32 +115,40 @@ class ListenerPGM extends GraphicalModel {
         }
     }
 
-    _triggerSpeakerNode(id) {
-        // /* triggers a speaker node by id, traverse down and draw the visited path. */
+    /*@Override*/
+    // _triggerSpeakerNode(id) {
+    // /* triggers a speaker node by id, traverse down and draw the visited path. */
 
-        // let speakerLayerLength = this.graphData.clusterMat[0].length;
+    // let speakerLayerLength = this.graphData.clusterMat[0].length;
 
-        // // Only allow the node to be clicked if it is in the speaker layer
-        // if (id < speakerLayerLength) {
-        //     let clickedVertexId = parseInt(id, 10);
-        //     this._traverseGraph(clickedVertexId, this.graphData.data);
-        //     log("visited path = [" + this.directedPath + "]");
-        //     this._drawGraph(this.graphData.data);
-        //     this._drawVisitedPath(this.graphData.data);
+    // // Only allow the node to be clicked if it is in the speaker layer
+    // if (id < speakerLayerLength) {
+    //     let clickedVertexId = parseInt(id, 10);
+    //     this._traverseGraph(clickedVertexId, this.graphData.data);
+    //     log("visited path = [" + this.directedPath + "]");
+    //     this._drawGraph(this.graphData.data);
+    //     this._drawVisitedPath(this.graphData.data);
 
-        //     // testing 
-        //     $(this.divID + ' .path strong').text(this.directedPath);
-        // } else {
-        //     // Else clear the path
-        //     this._clearVisitedPath();
-        // }
+    //     // testing 
+    //     $(this.divID + ' .path strong').text(this.directedPath);
+    // } else {
+    //     // Else clear the path
+    //     this._clearVisitedPath();
+    // }
 
-        // // Do not allow user to click
-        // this.canClick = false;
-        // setTimeout(() => this.canClick = true, this.config.edge.timeInterval * (this.directedPath.length - 1));
+    // // Do not allow user to click
+    // this.canClick = false;
+    // setTimeout(() => this.canClick = true, this.config.edge.timeInterval * (this.directedPath.length - 1));
 
-        super._triggerSpeakerNode(id);
-    }
+    // super._triggerSpeakerNode(id);
+
+    // let speakerLayerLength = this.graphData.clusterMat[0].length;
+    // // Only allow the node to be clicked and starting autoplay only if it is in the speaker layer
+    // if (id < speakerLayerLength) {
+    //     this._startAutoPlay();
+    // }
+
+    // }
 
     // bindChart(weightedAdjMat) {
     //     /* Used to bind to an existing adjacency matrix _weightedAdjMatf to the graphical model */
@@ -151,33 +173,25 @@ class ListenerPGM extends GraphicalModel {
         belief.bindToListenerPGM(this);
         this.listenerBeliefPGM = belief;
 
-        // Redefine onClick when bind to listenerBeliefPGM to prevent adjMatrix gets reset when click on background
-        // this.rect = this.svg.append("rect")
-        //     .attr("class", "background")
-        //     .attr("width", this.config.transform.width)
-        //     .attr("height", this.config.transform.height)
-        //     .style("fill", this.config.background.color)
-        //     .style("pointer-events", "all")
-        //     .on("click", d => {
-        //         if (pgm.canClick && !this.listenerBeliefPGM.config.autoPlayable) {
-        //             pgm._backgroundOnClick();
-        //         }
-        //     });
-
         let listenerPGM = this;
+        // Redefine onClick when bind to listenerBeliefPGM to prevent adjMatrix gets reset when click on background
+        this.onClick = d3.behavior.drag()
+            .origin(d => d)
+            .on("dragstart", function(d) {
+                // Check if the clicked node is in the first layer
+                // which are the num of nodes in first layer of clusterMat
+                // Only allow user to click the node if autoplay is off
+                if (listenerPGM.canClick && !listenerPGM.listenerBeliefPGM.config.autoPlay.on) {
+                    d3.event.sourceEvent.stopPropagation();
+                    d3.select(this).classed("dragging", true);
 
-        // this.onClick = d3.behavior.drag()
-        //     .origin(d => d)
-        //     .on("dragstart", function(d) {
-        //         // Check if the clicked node is in the first layer
-        //         // which are the num of nodes in first layer of clusterMat
-        //         // Only allow user to click the node if autoplay is off
-        //         if (listenerPGM.canClick && !listenerPGM.listenerBeliefPGM.config.autoPlayable) {
-        //             d3.event.sourceEvent.stopPropagation();
-        //             d3.select(this).classed("dragging", true);
-        //             listenerPGM._triggerSpeakerNode(this.id);
-        //         }
-        //     });
+                    // listenerPGM._triggerSpeakerNode(this.id);
+
+                    // autoPlay when speaker node is clicked
+                    let speakerLayerLength = listenerPGM.graphData.clusterMat[0].length;
+                    listenerPGM._startAutoPlay();
+                }
+            });
 
         this.resetEdgeWeightsToBeListenerBeliefPGMEdgeWeights();
     }

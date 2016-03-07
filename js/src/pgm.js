@@ -136,19 +136,24 @@ class GraphicalModel {
 
     }
 
+    _backgroundOnClickToResetAdjMatrix() {
+        if (this._weightedAdjMat) {
+            this._weightedAdjMat.resetMatrixWeight();
+            this._weightedAdjMat.resetMatrixColorWeight();
+            this._weightedAdjMat.redrawMatrix();
+        }
+    }
 
     _backgroundOnClick() {
-        if (this.canClick && !this.config.autoPlay.on) {
-            this._clearVisitedPath();
-            // Do not allow user to click until visited path highlighting is finished
-            this.canClick = false;
-            setTimeout(() => this.canClick = true, this.config.edge.timeInterval * (this.directedPath.length - 1));
+        if (!this.config.autoPlayable) {
+            if (this.canClick && !this.config.autoPlay.on) {
+                this._clearVisitedPath();
+                // Do not allow user to click until visited path highlighting is finished
+                this.canClick = false;
+                setTimeout(() => this.canClick = true, this.config.edge.timeInterval * (this.directedPath.length - 1));
 
-            // click on background to reset adjacency matrix
-            if (this._weightedAdjMat) {
-                this._weightedAdjMat.resetMatrixWeight();
-                this._weightedAdjMat.resetMatrixColorWeight();
-                this._weightedAdjMat.redrawMatrix();
+                // click on background to reset adjacency matrix
+                this._backgroundOnClickToResetAdjMatrix();
             }
         }
     }
@@ -872,7 +877,6 @@ class GraphicalModel {
         this.canClick = false;
         if (this._weightedAdjMat) this.resetChart();
         this.config.autoPlay.on = true;
-        let random_id = Math.floor(Math.random() * this.graphData.clusterMat[0].length);
         this._triggerSpeakerNodeAutoPlay();
     }
 
