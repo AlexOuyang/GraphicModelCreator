@@ -138,7 +138,7 @@ class GraphicalModel {
 
 
     _backgroundOnClick() {
-        if (this.canClick) {
+        if (this.canClick && !this.config.autoPlay.on) {
             this._clearVisitedPath();
             // Do not allow user to click until visited path highlighting is finished
             this.canClick = false;

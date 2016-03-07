@@ -58,6 +58,13 @@ class ListenerPGM extends GraphicalModel {
 
     _updateChart() {}
 
+    _backgroundOnClick() {
+        // Prevent adjMatrix gets reset when click on background
+        if (this.canClick && !this.listenerBeliefPGM.config.autoPlay.on) {
+            super._backgroundOnClick();
+        }
+    }
+
     bindChart(weightedAdjMat) {
         /* Used to bind to an existing adjacency matrix _weightedAdjMatf to the graphical model */
         if (!this._weightedAdjMat) {
@@ -80,6 +87,33 @@ class ListenerPGM extends GraphicalModel {
         // This binds the listener and the listener's belief to each other and set listener's weight.
         belief.bindToListenerPGM(this);
         this.listenerBeliefPGM = belief;
+
+        // Redefine onClick when bind to listenerBeliefPGM to prevent adjMatrix gets reset when click on background
+        // this.rect = this.svg.append("rect")
+        //     .attr("class", "background")
+        //     .attr("width", this.config.transform.width)
+        //     .attr("height", this.config.transform.height)
+        //     .style("fill", this.config.background.color)
+        //     .style("pointer-events", "all")
+        //     .on("click", d => {
+        //         if (pgm.canClick && !this.listenerBeliefPGM.config.autoPlayable) {
+        //             pgm._backgroundOnClick();
+        //         }
+        //     });
+
+
+        // this.onClick = d3.behavior.drag()
+        //     .origin(d => d)
+        //     .on("dragstart", function(d) {
+        //         // Check if the clicked node is in the first layer
+        //         // which are the num of nodes in first layer of clusterMat
+        //         // Only allow user to click the node if autoplay is off
+        //         if (pgm.canClick && !pgm.config.autoPlayable) {
+        //             d3.event.sourceEvent.stopPropagation();
+        //             d3.select(this).classed("dragging", true);
+        //             pgm._triggerSpeakerNode(this.id);
+        //         }
+        //     });
 
         this.resetEdgeWeightsToBeListenerBeliefPGMEdgeWeights();
     }

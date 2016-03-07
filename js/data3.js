@@ -200,7 +200,7 @@ var clusterMat2 = [
 var listener = new ListenerPGM(listenerConfig, "#listenerPGMdiv");
 //observed.appendToDOM("#pgm4");
 listener.createCluster(clusterMat2, speakerLayerProbabilityDistribution, true);
-listener.bindChart(listenerObserver.getWeightedAdjacencyMatrix());
+// listener.bindChart(listenerObserver.getWeightedAdjacencyMatrix());
 listener.bindToListenerBeliefPGM(listenerObserver);
 
 
