@@ -374,11 +374,6 @@ class GraphicalModel {
     _drawVisitedPath(data) {
         /* Draw visited edges based on weight in highlighted color */
 
-        // // check if there's -1 in directedPath, if yes, do not draw the path
-        // for(let i = 0; i < this.directedPath.length; i++) {
-
-        // }
-
         for (let vertexIdx = 0; vertexIdx < this.directedPath.length; vertexIdx++) {
             // check if there's -1 in directedPath, if yes, do not draw the path and trigger a new speaker
             if (this.directedPath[vertexIdx] < 0) {
