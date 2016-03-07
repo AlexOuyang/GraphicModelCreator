@@ -53,7 +53,7 @@ class ListenerBeliefPGM extends GraphicalModel {
         // Normalize
         let normalizedWeight = [];
         for (let i = 0; i < weight.length; i++) {
-            normalizedWeight[i] = weight[i] / vertexWeightSumTemp[i];
+            normalizedWeight[i] = (vertexWeightSumTemp[i] === 0) ? 0 : weight[i] / vertexWeightSumTemp[i];
         }
 
         log("normalized weight = " + normalizedWeight);
@@ -70,7 +70,13 @@ class ListenerBeliefPGM extends GraphicalModel {
     _stopAutoPlay() {
         // When stop button is clicked, reset the listenerPGM edgeweights as well
         super._stopAutoPlay();
-        this.listenerPGM._clearVisitedPath();
+        // this.listenerPGM.resetEdgeWeightsToBeListenerBeliefPGMEdgeWeights();
+        // this.listenerPGM.display();
+    }
+
+    _startAutoPlay() {
+        // When stop button is clicked, reset the listenerPGM edgeweights as well
+        super._startAutoPlay();
         this.listenerPGM.resetEdgeWeightsToBeListenerBeliefPGMEdgeWeights();
         this.listenerPGM.display();
     }
@@ -95,14 +101,41 @@ class ListenerPGM extends GraphicalModel {
         }
     }
 
-    bindChart(weightedAdjMat) {
-        /* Used to bind to an existing adjacency matrix _weightedAdjMatf to the graphical model */
-        if (!this._weightedAdjMat) {
-            this._weightedAdjMat = weightedAdjMat;
-        } else {
-            throw new Error("pgm.bindChart(): Graph already has a _weightedAdjMat object.")
-        }
+    _triggerSpeakerNode(id) {
+        // /* triggers a speaker node by id, traverse down and draw the visited path. */
+
+        // let speakerLayerLength = this.graphData.clusterMat[0].length;
+
+        // // Only allow the node to be clicked if it is in the speaker layer
+        // if (id < speakerLayerLength) {
+        //     let clickedVertexId = parseInt(id, 10);
+        //     this._traverseGraph(clickedVertexId, this.graphData.data);
+        //     log("visited path = [" + this.directedPath + "]");
+        //     this._drawGraph(this.graphData.data);
+        //     this._drawVisitedPath(this.graphData.data);
+
+        //     // testing 
+        //     $(this.divID + ' .path strong').text(this.directedPath);
+        // } else {
+        //     // Else clear the path
+        //     this._clearVisitedPath();
+        // }
+
+        // // Do not allow user to click
+        // this.canClick = false;
+        // setTimeout(() => this.canClick = true, this.config.edge.timeInterval * (this.directedPath.length - 1));
+
+        super._triggerSpeakerNode(id);
     }
+
+    // bindChart(weightedAdjMat) {
+    //     /* Used to bind to an existing adjacency matrix _weightedAdjMatf to the graphical model */
+    //     if (!this._weightedAdjMat) {
+    //         this._weightedAdjMat = weightedAdjMat;
+    //     } else {
+    //         throw new Error("pgm.bindChart(): Graph already has a _weightedAdjMat object.")
+    //     }
+    // }
 
     resetEdgeWeightsToBeListenerBeliefPGMEdgeWeights() {
         // Set listenerPGM's weights to be listenerBeliefPGM's edge weights
@@ -131,6 +164,7 @@ class ListenerPGM extends GraphicalModel {
         //         }
         //     });
 
+        let listenerPGM = this;
 
         // this.onClick = d3.behavior.drag()
         //     .origin(d => d)
@@ -138,10 +172,10 @@ class ListenerPGM extends GraphicalModel {
         //         // Check if the clicked node is in the first layer
         //         // which are the num of nodes in first layer of clusterMat
         //         // Only allow user to click the node if autoplay is off
-        //         if (pgm.canClick && !pgm.config.autoPlayable) {
+        //         if (listenerPGM.canClick && !listenerPGM.listenerBeliefPGM.config.autoPlayable) {
         //             d3.event.sourceEvent.stopPropagation();
         //             d3.select(this).classed("dragging", true);
-        //             pgm._triggerSpeakerNode(this.id);
+        //             listenerPGM._triggerSpeakerNode(this.id);
         //         }
         //     });
 
