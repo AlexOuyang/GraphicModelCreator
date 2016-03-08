@@ -8,6 +8,11 @@ class ListenerBeliefPGM extends GraphicalModel {
     }
 
     /*@Override*/
+    // _dataScreening(data) {
+    //     super._dataScreening(data);
+    // }
+
+    /*@Override*/
     _updateChart() {
         // After updating the chart updating the weight in ListenerPGM as well
         super._updateChart();
@@ -95,6 +100,13 @@ class ListenerBeliefPGM extends GraphicalModel {
         this.listenerPGM.display();
     }
 
+    /* @Override */
+    createCluster(cMat, probabilityDistribution, changeNodeRadiusBasedOnDistribution) {
+        if (cMat.length != 2)
+            throw new Error("ListenerBeliefPGM.createCluster(): invalid cMat length. This graph only supports two layer graphs.");
+        super.createCluster(cMat, probabilityDistribution, changeNodeRadiusBasedOnDistribution);
+    }
+
 
     bindToListenerPGM(listener) {
         // Used to bind listenerPGM to listenerBeliefPGM
@@ -110,8 +122,6 @@ class ListenerPGM extends GraphicalModel {
         super(graphConfiguration, divID);
     }
 
-    /*@Override*/
-    _dataScreening(data) {}
 
     /*@Override*/
     _updateChart() {}
