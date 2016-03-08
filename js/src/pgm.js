@@ -379,6 +379,41 @@ class GraphicalModel {
 
     }
 
+    /* EdgeNodes contains a pair of nodes (e.g. [node1, node2]) which are two ends of an edge, lengthMultiplier is used to determine the magnitude of the edge
+
+    @returns a highlightedEdge objects that contains the nodes information and the length information
+     */
+    _drawHighlightedEdge(edgeNodes, lengthMultiplier) {
+        let x0 = edgeNodes[0].x,
+            y0 = edgeNodes[0].y,
+            r0 = edgeNodes[0].r,
+            x1 = edgeNodes[1].x,
+            y1 = edgeNodes[1].y,
+            r1 = edgeNodes[1].r,
+            distX = x1 - x0,
+            distY = y0 - y1,
+            dist = Math.sqrt(distX * distX + distY * distY),
+            ratio0 = r0 / (lengthMultiplier * dist),
+            ratio1 = r1 / (lengthMultiplier * dist),
+
+            // tempEdges for highlighting the visited edges
+            highlightedEdgeNodes = [{
+                x: x0 + distX * ratio0,
+                y: y0 - distY * ratio0
+            }, {
+                x: x1 - distX * ratio1,
+                y: y1 + distY * ratio1
+            }];
+
+
+        let highlightedEdge = {
+            nodes: highlightedEdgeNodes,
+            length: dist
+        };
+
+        return highlightedEdge;
+    }
+
     _drawVisitedPath(data) {
         /* Draw visited edges based on weight in highlighted color */
 
@@ -425,28 +460,10 @@ class GraphicalModel {
 
                             // Create two new points to draw a shorter edge so the new 
                             // edge will not cover the id in the node
-                            let x0 = edgeNodes[0].x,
-                                y0 = edgeNodes[0].y,
-                                r0 = edgeNodes[0].r,
-                                x1 = edgeNodes[1].x,
-                                y1 = edgeNodes[1].y,
-                                r1 = edgeNodes[1].r,
-                                distX = x1 - x0,
-                                distY = y0 - y1,
-                                dist = Math.sqrt(distX * distX + distY * distY),
-                                ratio0 = r0 / (1.0 * dist),
-                                ratio1 = r1 / (1.0 * dist);
-
-                            // tempEdges for highlighting the visited edges
-                            let tempEdges = [{
-                                x: x0 + distX * ratio0,
-                                y: y0 - distY * ratio1
-                            }, {
-                                x: x1 - distX * ratio0,
-                                y: y1 + distY * ratio1
-                            }];
-
-                            let lineLength = dist; // The line length
+                            let highlightingEdgeLengthMultiplier = 1.1; // Used to increase the length of the highlighted edge on both ends;
+                            let highlightedEdge = this._drawHighlightedEdge(edgeNodes, highlightingEdgeLengthMultiplier);
+                            let tempEdges = highlightedEdge.nodes
+                            let lineLength = highlightedEdge.length;
 
                             // Wait for 0.8 second until the next node is highlighted
                             // Draw the next visited path after time Interval
@@ -471,15 +488,15 @@ class GraphicalModel {
                             // Draw the next visited vertex after time Interval
                             setTimeout(() => {
                                 /* clear vertices then redraw all the vertices in the grpah */
-                                this.vertices.append("circle")
-                                //                                .attr("class", "node")
-                                .attr("class", d => {
-                                    // if the node is in the path then draw it in a different color
-                                    if (this.directedPath.indexOf(d.id) <= (vertexIdx + 1) &&
-                                        this.directedPath.indexOf(d.id) > -1) {
-                                        return "visitedVertex";
-                                    }
-                                })
+                                this.vertices
+                                    .append("circle")
+                                    .attr("class", d => {
+                                        // if the node is in the path then draw it in a different color
+                                        if (this.directedPath.indexOf(d.id) <= (vertexIdx + 1) &&
+                                            this.directedPath.indexOf(d.id) > -1) {
+                                            return "visitedVertex";
+                                        }
+                                    })
                                     .attr("r", d => d.r);
 
                                 // Add a text element to the previously added g element.
@@ -756,7 +773,7 @@ class GraphicalModel {
     //    };
 
 
-
+    // Used by createCluster()
     _changeNodeRadius(baseRadius) {
         /* 
         Change the speaker layer ndoe radius based on the probability distribution
