@@ -654,6 +654,7 @@ class GraphicalModel {
     }
 
 
+
     _triggerSpeakerNodeAutoPlay() {
         /* Triggers a speaker node randomly following the specified distribution */
 
@@ -747,7 +748,7 @@ class GraphicalModel {
         /* Set adjacent vertex for vertex with id */
 
         if (id === undefined || adjVtx === undefined) {
-            throw new Error("pgm.setAdjacentVertex(id, adjVtx) params are not satisfied.");
+            throw new Error("pgm.setAdjacentVertex(id, adjVtx) params are not defined.");
         }
 
         this.graphData.data[id].adjacentVertex = adjVtx;
@@ -819,15 +820,15 @@ class GraphicalModel {
 
         this.speakerLayerProbabilityDistribution = probabilityDistribution;
 
+        this.cMatDim = []; //cMatDim is the dimension of the matrix, ex: [3,3,3]
 
-        // Populate cMatDim, cMatDim is the dimension of the matrix, ex: [3,3,3]
-        let cMatDim = [];
+        // Populate cMatDim
         for (let i = 0; i < cMat.length; i++) {
-            cMatDim[i] = cMat[i].length;
+            this.cMatDim[i] = cMat[i].length;
         }
 
-        let offsetPosX = this.config.transform.width / (cMatDim.length + 1); // get the x offset for first node
-        let minPosY = this.config.transform.height / (Array.max(cMatDim) + 1); // get the y offset for the layer with the most amount of nodes
+        let offsetPosX = this.config.transform.width / (this.cMatDim.length + 1); // get the x offset for first node
+        let minPosY = this.config.transform.height / (Array.max(this.cMatDim) + 1); // get the y offset for the layer with the most amount of nodes
 
         // Data properties: id, x, y, r 
         let data = [];
@@ -838,10 +839,10 @@ class GraphicalModel {
 
         this.config.vertex.radius = r;
 
-        for (let i = 0; i < cMatDim.length; i++) {
+        for (let i = 0; i < this.cMatDim.length; i++) {
             // Reset offset Y coordinate for each layer
-            let offSetPosY = this.config.transform.height / (cMatDim[i] + 1);
-            for (let j = 0; j < cMatDim[i]; j++) {
+            let offSetPosY = this.config.transform.height / (this.cMatDim[i] + 1);
+            for (let j = 0; j < this.cMatDim[i]; j++) {
                 x = offsetPosX * (i + 1);
                 y = offSetPosY * (j + 1);
                 data.push({
@@ -858,11 +859,10 @@ class GraphicalModel {
 
         // Label each vertex based on cMat labels
         let id_temp = 0;
-        for (let i = 0; i < cMat.length; i++) {
-            for (let j = 0; j < cMat[i].length; j++) {
+        for (let i = 0; i < cMat.length; i++)
+            for (let j = 0; j < cMat[i].length; j++)
                 data[id_temp++].label = cMat[i][j];
-            }
-        }
+
 
         // Update the this.config edge width and baseWidth
         this.config.edge.width = r * this.config.edge.width;
@@ -876,13 +876,31 @@ class GraphicalModel {
         };
 
         // Change speaker node radius based on distribution
-        if (changeNodeRadiusBasedOnDistribution && probabilityDistribution.length > 0) {
-            this._changeNodeRadius(r);
-        }
+        if (changeNodeRadiusBasedOnDistribution && probabilityDistribution.length > 0) this._changeNodeRadius(r);
+
     }
+
 
     getGraphData() {
         return this.graphData;
+    }
+
+
+    getVertexId(vertexCoordinate) {
+        // get vertex id by coordinate
+        // vertexCoordinate is a coordiante pair = [layer index, vertex index at that layer]
+
+        let layerIdx = vertexCoordinate[0];
+        let vertexIdx = vertexCoordinate[1];
+
+        if (layerIdx >= this.cMatDim.length || vertexIdx >= this.cMatDim[layerIdx])
+            throw new Error("pgm.getVertexId(): invalid vertex coordinate input, the vertex being accessed does not exist in the graph. Your input vertex coordinate is [" + vertexCoordinate + "], but the dimention of the cluster matrix is [" + this.cMatDim + "].");
+
+        let id_temp = 0;
+        for (let i = 0; i < layerIdx; i++) id_temp += this.cMatDim[i];
+        id_temp += vertexIdx;
+
+        return id_temp;
     }
 
     /*=========== Graphical Model Autoplay ===========*/

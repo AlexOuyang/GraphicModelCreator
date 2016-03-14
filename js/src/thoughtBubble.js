@@ -74,7 +74,6 @@ class ThoughtBubble {
         listener.bindToListenerBeliefPGM(listenerObserver);
         listener.display();
 
-
     }
 }
 
