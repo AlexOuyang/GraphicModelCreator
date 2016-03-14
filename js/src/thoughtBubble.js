@@ -1,6 +1,85 @@
 /*=============== Listener Observer Probability Graphic Model ====================*/
 "use strict";
 
+
+// A wrapper that combines both listenerBeliefPGM and ListenerPGM
+
+
+class ThoughtBubble {
+
+    constructor(divID, listenerBeliefConfig, listenerConfig, adjacencyMatrixConfig, clusterMat, speakerLayerProbabilityDistribution, changeNodeRadiusBasedOnDistribution) {
+
+        this.divID = divID;
+        // parepare two id html elemnts for both listener and listener's belief pgms
+        let listenerBeliefID = divID + "ListenerBeliefPGM";
+        let listenerID = divID + "ListenerPGM";
+
+        let $listenerBelief = $("<div>", {
+            id: listenerBeliefID.substring(1)
+        });
+        let $listener = $("<div>", {
+            id: listenerID.substring(1)
+        });
+
+        $(this.divID).append($listenerBelief);
+        $(this.divID).append($listener);
+
+        // Creating ListenerBeliefPGM first
+        let listenerObserver = new ListenerBeliefPGM(listenerBeliefConfig, listenerBeliefID);
+        listenerObserver.createCluster(clusterMat, speakerLayerProbabilityDistribution, true);
+
+        // Layer 1
+        listenerObserver.setAdjacentVertex(0, [{
+            id: 3,
+            weight: 1.0 / 3.0
+        }, {
+            id: 4,
+            weight: 1.0 / 3.0
+        }, {
+            id: 5,
+            weight: 1.0 / 3.0
+        }]);
+        listenerObserver.setAdjacentVertex(1, [{
+            id: 3,
+            weight: 1.0 / 3.0
+        }, {
+            id: 4,
+            weight: 1.0 / 3.0
+        }, {
+            id: 5,
+            weight: 1.0 / 3.0
+        }]);
+        listenerObserver.setAdjacentVertex(2, [{
+            id: 3,
+            weight: 1.0 / 3.0
+        }, {
+            id: 4,
+            weight: 1.0 / 3.0
+        }, {
+            id: 5,
+            weight: 1.0 / 3.0
+        }]);
+
+        // Create adjacencyMatrix
+        listenerObserver.createChart(adjacencyMatrixConfig);
+        listenerObserver.display();
+
+
+        // Then create ListenerPGM first based on the configuration
+        // and bind the data to the graph for rendering
+        let listener = new ListenerPGM(listenerConfig, listenerID);
+        //observed.appendToDOM("#pgm4");
+        listener.createCluster(clusterMat, speakerLayerProbabilityDistribution, true);
+        // listener.bindChart(listenerObserver.getWeightedAdjacencyMatrix());
+        listener.bindToListenerBeliefPGM(listenerObserver);
+        listener.display();
+
+
+    }
+}
+
+
+
 class ListenerBeliefPGM extends GraphicalModel {
 
     constructor(graphConfiguration, divID) {
@@ -102,9 +181,13 @@ class ListenerBeliefPGM extends GraphicalModel {
 
     /* @Override */
     createCluster(cMat, probabilityDistribution, changeNodeRadiusBasedOnDistribution) {
+
+        this.listenerClusterMatrix = cMat; // mirror image of the belisef graph
+        this.listenerBeliefClusterMatrix = [cMat[1], cMat[0]];
+
         if (cMat.length != 2)
             throw new Error("ListenerBeliefPGM.createCluster(): invalid cMat length. This graph only supports two layer graphs.");
-        super.createCluster(cMat, probabilityDistribution, changeNodeRadiusBasedOnDistribution);
+        super.createCluster(this.listenerBeliefClusterMatrix, probabilityDistribution, changeNodeRadiusBasedOnDistribution);
     }
 
 
