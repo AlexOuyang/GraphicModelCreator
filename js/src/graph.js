@@ -850,13 +850,13 @@ class GraphicalModel {
     //        }
     //    }
 
-    createChart(chartConfig) {
+    createAdjacencyMatrix(chartConfig) {
         /* Create a _weightedAdjMat and bind to the graphic model */
 
         this.chartConfig = chartConfig;
 
         if (this.graphData.clusterMat.length < 2) {
-            throw new Error("pgm.createChart(): Can not create adjacency matrix for graphical model with layer number less than 2");
+            throw new Error("pgm.createAdjacencyMatrix(): Can not create adjacency matrix for graphical model with layer number less than 2");
             return;
         }
         var _rowLabel = this.graphData.clusterMat[0];

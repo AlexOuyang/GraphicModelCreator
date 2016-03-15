@@ -850,7 +850,7 @@ class ThoughtBubble {
         }
     }
 
-    createChart(chartConfig) {
+    createAdjacencyMatrix(chartConfig) {
         /* Create a _weightedAdjMat and bind to the graphic model */
 
         this.chartConfig = chartConfig;

@@ -115,7 +115,7 @@ var matConfig = {
 
 // Way 1 to create a chart
 
-myGraph.createChart(matConfig);
+myGraph.createAdjacencyMatrix(matConfig);
 myGraph.init();
 
 myGraph.setEdgeWeights(0, [{
@@ -127,8 +127,7 @@ myGraph.setEdgeWeights(0, [{
 }, {
     id: 5,
     weight: 0
-}]);
-myGraph.setEdgeWeights(1, [{
+}]).setEdgeWeights(1, [{
     id: 3,
     weight: 0.4
 }, {
@@ -137,8 +136,7 @@ myGraph.setEdgeWeights(1, [{
 }, {
     id: 5,
     weight: 0.4
-}]);
-myGraph.setEdgeWeights(2, [{
+}]).setEdgeWeights(2, [{
     id: 3,
     weight: 0.4
 }, {
@@ -147,10 +145,7 @@ myGraph.setEdgeWeights(2, [{
 }, {
     id: 5,
     weight: 0.4
-}]);
-
-// Layer 2
-myGraph.setEdgeWeights(3, [{
+}]).setEdgeWeights(3, [{
     id: 6,
     weight: 0.4
 }, {
@@ -159,8 +154,7 @@ myGraph.setEdgeWeights(3, [{
 }, {
     id: 8,
     weight: 0.4
-}]);
-myGraph.setEdgeWeights(4, [{
+}]).setEdgeWeights(4, [{
     id: 6,
     weight: 0.4
 }, {
@@ -169,8 +163,7 @@ myGraph.setEdgeWeights(4, [{
 }, {
     id: 8,
     weight: 0.4
-}]);
-myGraph.setEdgeWeights(5, [{
+}]).setEdgeWeights(5, [{
     id: 6,
     weight: 0.4
 }, {

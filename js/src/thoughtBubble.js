@@ -7,7 +7,7 @@
 
 class ThoughtBubble {
 
-    constructor(divID, listenerBeliefConfig, listenerConfig, adjacencyMatrixConfig, clusterMat, speakerLayerProbabilityDistribution, changeNodeRadiusBasedOnDistribution) {
+    constructor(divID, listenerBeliefConfig, listenerConfig, adjMatConfig, cMat, speakerLayerProbabilityDistribution, changeNodeRadiusBasedOnDistribution) {
 
         this.divID = divID;
         // parepare two id html elemnts for both listener and listener's belief pgms
@@ -25,19 +25,19 @@ class ThoughtBubble {
         $(this.divID).append($listener);
 
         // Creating ListenerBeliefPGM first
-        this.listenerBelif = new ListenerBeliefPGM(listenerBeliefConfig, listenerBeliefID);
-        this.listenerBelif.createCluster(clusterMat, speakerLayerProbabilityDistribution, true);
-
-        // Create adjacencyMatrix
-        this.listenerBelif.createChart(adjacencyMatrixConfig);
-        this.listenerBelif.init();
+        this.listenerBelif = new ListenerBeliefPGM(listenerBeliefConfig, listenerBeliefID)
+            .createCluster(cMat, speakerLayerProbabilityDistribution, true)
+            .createAdjacencyMatrix(adjMatConfig)
+            .init();
 
         // Then create ListenerPGM first based on the configuration
         // and bind the data to the graph for rendering
-        this.listener = new ListenerPGM(listenerConfig, listenerID);
-        this.listener.createCluster(clusterMat, speakerLayerProbabilityDistribution, true);
-        this.listener.bindToListenerBeliefPGM(this.listenerBelif);
-        this.listener.init();
+        let listenerClusterMatrix = [cMat[1], cMat[0]]; // mirror image of the belisef graph
+        this.listener = new ListenerPGM(listenerConfig, listenerID)
+            .createCluster(listenerClusterMatrix, [], true)
+            .init();
+
+        this.listener.bindToListenerBeliefPGM(this.listenerBelif)
     }
 
 
@@ -50,13 +50,9 @@ class ThoughtBubble {
 }
 
 
-
-
-
-
-
-
-
+/* 
+ListenerBeliefPGM is composed of ListenerPGM
+*/
 class ListenerBeliefPGM extends GraphicalModel {
 
     constructor(graphConfiguration, divID) {
@@ -68,11 +64,10 @@ class ListenerBeliefPGM extends GraphicalModel {
     //     super._dataScreening(data);
     // }
 
-    /*@Override*/
-    _updateChart() {
-        // After updating the chart updating the weight in ListenerPGM as well
-        super._updateChart();
-
+    _calculateWeights() {
+        /*
+            returns the normalized weights in a 1D array in the form of Wij, ex, [W_sub(1,1), W_sub(1,2), W_sub(2,1), W_sub(2,2)]
+        */
         let weight = [];
 
         let firstLayerLength = this.graphData.clusterMat[0].length;
@@ -100,9 +95,9 @@ class ListenerBeliefPGM extends GraphicalModel {
         let tempWeightSumForVertex = 0;
         for (let i = 0; i < weight.length; i++) {
             tempWeightSumForVertex += weight[i];
-            if (weightIdx % lastLayerLength == 0) {
-                // push vertex sum "lastLayerLength" many times so its easier to normalize weight
-                for (let j = 0; j < lastLayerLength; j++) {
+            if (weightIdx % firstLayerLength == 0) {
+                // push vertex sum "firstLayerLength" many times so its easier to normalize weight
+                for (let j = 0; j < firstLayerLength; j++) {
                     vertexWeightSumTemp.push(tempWeightSumForVertex);
                 }
                 tempWeightSumForVertex = 0;
@@ -120,7 +115,16 @@ class ListenerBeliefPGM extends GraphicalModel {
 
         log("normalized weight = " + normalizedWeight);
 
-        this.listenerPGM.updateWeight(normalizedWeight);
+        return normalizedWeight;
+    }
+
+    /*@Override*/
+    _updateChart() {
+        // After updating the chart updating the weight in ListenerPGM as well
+        super._updateChart();
+
+        let updatedWeights = this._calculateWeights()
+        this.listenerPGM.updateWeight(updatedWeights);
         this.listenerPGM.redraw();
     }
 
@@ -133,8 +137,8 @@ class ListenerBeliefPGM extends GraphicalModel {
 
     /*@Override*/
     _stopAutoPlay() {
-        // When stop button is clicked, reset the listenerPGM edgeweights as well
         super._stopAutoPlay();
+        // When stop button is clicked, reset the listenerPGM edgeweights as well
         // this.listenerPGM.resetEdgeWeightsToBeListenerBeliefPGMEdgeWeights();
         // this.listenerPGM.redraw();
     }
@@ -159,18 +163,20 @@ class ListenerBeliefPGM extends GraphicalModel {
     /* @Override */
     createCluster(cMat, probabilityDistribution, changeNodeRadiusBasedOnDistribution) {
 
-        this.listenerClusterMatrix = cMat; // mirror image of the belisef graph
-        this.listenerBeliefClusterMatrix = [cMat[1], cMat[0]];
+        this.listenerClusterMatrix = [cMat[1], cMat[0]]; // mirror image of the belisef graph
+        this.listenerBeliefClusterMatrix = cMat;
 
         if (cMat.length != 2)
             throw new Error("ListenerBeliefPGM.createCluster(): invalid cMat length. This graph only supports two layer graphs.");
         super.createCluster(this.listenerBeliefClusterMatrix, probabilityDistribution, changeNodeRadiusBasedOnDistribution);
+        return this;
     }
 
 
     bindToListenerPGM(listener) {
         // Used to bind listenerPGM to listenerBeliefPGM
         this.listenerPGM = listener;
+        return this;
     }
 }
 
@@ -194,57 +200,17 @@ class ListenerPGM extends GraphicalModel {
         }
     }
 
-    /*@Override*/
-    // _triggerSpeakerNode(id) {
-    // /* triggers a speaker node by id, traverse down and draw the visited path. */
-
-    // let speakerLayerLength = this.graphData.clusterMat[0].length;
-
-    // // Only allow the node to be clicked if it is in the speaker layer
-    // if (id < speakerLayerLength) {
-    //     let clickedVertexId = parseInt(id, 10);
-    //     this._traverseGraph(clickedVertexId, this.graphData.data);
-    //     log("visited path = [" + this.directedPath + "]");
-    //     this._drawGraph(this.graphData.data);
-    //     this._drawVisitedPath(this.graphData.data);
-
-    //     // testing 
-    //     $(this.divID + ' .path strong').text(this.directedPath);
-    // } else {
-    //     // Else clear the path
-    //     this._clearVisitedPath();
-    // }
-
-    // // Do not allow user to click
-    // this.canClick = false;
-    // setTimeout(() => this.canClick = true, this.config.edge.timeInterval * (this.directedPath.length - 1));
-
-    // super._triggerSpeakerNode(id);
-
-    // let speakerLayerLength = this.graphData.clusterMat[0].length;
-    // // Only allow the node to be clicked and starting autoplay only if it is in the speaker layer
-    // if (id < speakerLayerLength) {
-    //     this._startAutoPlay();
-    // }
-
-    // }
-
-    // bindChart(weightedAdjMat) {
-    //     /* Used to bind to an existing adjacency matrix _weightedAdjMatf to the graphical model */
-    //     if (!this._weightedAdjMat) {
-    //         this._weightedAdjMat = weightedAdjMat;
-    //     } else {
-    //         throw new Error("pgm.bindChart(): Graph already has a _weightedAdjMat object.")
-    //     }
-    // }
 
     resetEdgeWeightsToBeListenerBeliefPGMEdgeWeights() {
-        // Set listenerPGM's weights to be listenerBeliefPGM's edge weights
-        for (let i = 0; i < this.graphData.clusterMat[0].length; i++) {
-            let listenerBeliefAdjVtx = this.listenerBeliefPGM.getGraphData().data[i].edgeWeights;
-            let adjVtx = Utils.cloneDR(listenerBeliefAdjVtx);
-            this.setEdgeWeights(i, adjVtx);
+        // Set listenerPGM to be listenerBeliefPGM's mirror
+        let weights = [];
+        for (let i = 0; i < this.cMatDim[0]; i++) {
+            for (let vertexIdx = 0; vertexIdx < this.listenerBeliefPGM.cMatDim[0]; vertexIdx++) {
+                let listenerEdgeWeights = this.listenerBeliefPGM.getGraphData().data[vertexIdx].edgeWeights;
+                weights.push(listenerEdgeWeights[i].weight);
+            }
         }
+        this.updateWeight(weights);
     }
 
     bindToListenerBeliefPGM(belief) {
@@ -278,19 +244,27 @@ class ListenerPGM extends GraphicalModel {
             });
 
         this.resetEdgeWeightsToBeListenerBeliefPGMEdgeWeights();
+
+        return this;
     }
 
 
     updateWeight(weight) {
-        // Udate the pgm weigth
+        // Used by listenerBelief to update the pgm weigth
+        // takes in the weights as an 1D array and set the weights
         let weightIdx = 0;
-        for (let i = 0; i < this.graphData.clusterMat[0].length; i++) {
-            for (let j = 0; j < this.graphData.data[i].edgeWeights.length; j++) {
-                this.graphData.data[i].edgeWeights[j].weight = weight[weightIdx];
-                // log(this.graphData.data[i].edgeWeights[j].weight);
+        for (let vertexIdx = 0; vertexIdx < this.cMatDim[0]; vertexIdx++) {
+            let edgeWeights = [];
+            for (let i = 0; i < this.cMatDim[1]; i++) {
+                edgeWeights[i] = {
+                    id: this.getVertexId([1, i]),
+                    weight: weight[weightIdx]
+                };
                 weightIdx++;
             }
+            this.setEdgeWeights(vertexIdx, edgeWeights);
         }
     }
+
 
 }

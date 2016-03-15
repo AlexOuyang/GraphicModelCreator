@@ -145,7 +145,7 @@
 
 //     // Way 1 to create a chart
 
-//     myGraph2.createChart(matConfig2);
+//     myGraph2.createAdjacencyMatrix(matConfig2);
 //     myGraph2.display();
 
 //     // Way 2 to create a chart

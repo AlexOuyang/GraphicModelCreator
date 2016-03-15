@@ -728,6 +728,8 @@ class GraphicalModel {
         /* Use this to redraw the graph after reset edge weights */
         this._createEdgesInGraphData(this.graphData.data);
         this._drawGraph(this.graphData.data);
+
+        return this;
     }
 
 
@@ -747,6 +749,8 @@ class GraphicalModel {
         if (this.config.background.grid) this._drawGrid();
 
         this._drawGraph(this.graphData.data);
+
+        return this;
     }
 
     getWeightedAdjacencyMatrix() {
@@ -754,7 +758,9 @@ class GraphicalModel {
     }
 
     setEdgeWeights(id, weights) {
-        /* Set adjacent vertex for vertex with id */
+        /* Set adjacent vertex for vertex with id 
+            return this pgm to allow setEdgeWeights to be stacked
+        */
 
         if (id === undefined || weights === undefined) {
             throw new Error("pgm.setEdgeWeights(id, adjVtx) params are not defined.");
@@ -762,6 +768,8 @@ class GraphicalModel {
 
         this.graphData.data[id].edgeWeights = weights;
         this.redraw();
+
+        return this;
     }
 
     //    this.setLabel = function (id, label) {
@@ -888,6 +896,7 @@ class GraphicalModel {
         // Change speaker node radius based on distribution
         if (changeNodeRadiusBasedOnDistribution && probabilityDistribution.length > 0) this._changeNodeRadius(r);
 
+        return this;
     }
 
 
@@ -990,18 +999,20 @@ class GraphicalModel {
     //        }
     //    }
 
-    createChart(chartConfig) {
+    createAdjacencyMatrix(chartConfig) {
         /* Create a _weightedAdjMat and bind to the graphic model */
 
         this.chartConfig = chartConfig;
 
         if (this.graphData.clusterMat.length < 2) {
-            throw new Error("pgm.createChart(): Can not create adjacency matrix for graphical model with layer number less than 2");
+            throw new Error("pgm.createAdjacencyMatrix(): Can not create adjacency matrix for graphical model with layer number less than 2");
             return;
         }
         var _rowLabel = this.graphData.clusterMat[0];
         var _colLabel = this.graphData.clusterMat[this.graphData.clusterMat.length - 1];
         this._weightedAdjMat = new WeightedAdjacencyMatrix(this.divID, chartConfig);
         this._weightedAdjMat.createMatrix(_rowLabel, _colLabel);
+
+        return this;
     }
 }

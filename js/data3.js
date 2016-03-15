@@ -319,7 +319,7 @@
 
         let clusterMat = [
             ["▢", "◯", "△"],
-            ["Sqr", "Cir", "Tri"]
+            ["Sqr", "Cir"]
         ];
 
         let speakerLayerProbabilityDistribution = [0.1, 0.3, 0.6];
@@ -479,7 +479,7 @@
 
 //     // Way 1 to create a chart
 
-//     listenerObserver.createChart(adjacencyMatrixConfig);
+//     listenerObserver.createAdjacencyMatrix(adjacencyMatrixConfig);
 //     listenerObserver.display();
 
 
@@ -543,7 +543,7 @@
 //     listener.bindToListenerBeliefPGM(listenerObserver);
 
 
-//     //observed.createChart(matConfig);
+//     //observed.createAdjacencyMatrix(matConfig);
 //     listener.display();
 
 // }).call(this);
