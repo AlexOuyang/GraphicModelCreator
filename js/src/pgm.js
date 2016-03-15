@@ -723,16 +723,20 @@ class GraphicalModel {
     //        this._drawGraph(this.graphData.data);
     //    }
 
+
     redraw() {
         /* Use this to redraw the graph after reset edge weights */
         this._createEdgesInGraphData(this.graphData.data);
         this._drawGraph(this.graphData.data);
     }
 
+
     init() {
         /* Used to initialize and display the graph  after the set up is done*/
 
         this._dataScreening(this.graphData.data);
+
+        this.setUniformEdgeWeights();
 
         this._createEdgesInGraphData(this.graphData.data);
 
@@ -907,6 +911,18 @@ class GraphicalModel {
 
         return id_temp;
     }
+
+
+    // Set the graph edge weights to be uniform
+    setUniformEdgeWeights() {
+        for (let layerIdx = 0; layerIdx < this.cMatDim.length - 1; layerIdx++) {
+            for (let vertexIdx = 0; vertexIdx < this.cMatDim[layerIdx]; vertexIdx++) {
+                let vertexID = this.getVertexId([layerIdx, vertexIdx]);
+                let numOfNodesNextLayer = this.cMatDim[layerIdx + 1];
+            }
+        }
+    }
+
 
     /*=========== Graphical Model Autoplay ===========*/
 
