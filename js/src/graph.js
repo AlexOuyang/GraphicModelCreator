@@ -667,11 +667,11 @@ class GraphicalModel {
         return this._weightedAdjMat;
     }
 
-    setAdjacentVertex(id, adjVtx) {
+    setEdgeWeights(id, adjVtx) {
         /* Set adjacent vertex for vertex with id */
 
         if (id === undefined || adjVtx === undefined) {
-            throw new Error("pgm.setAdjacentVertex(id, adjVtx) params are not satisfied.");
+            throw new Error("pgm.setEdgeWeights(id, adjVtx) params are not satisfied.");
         }
 
         this.graphData.data[id].adjacentVertex = adjVtx;

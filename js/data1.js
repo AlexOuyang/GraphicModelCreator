@@ -87,19 +87,19 @@
 //     var dataTemp2 = myGraph2.createCluster(clusterMatPrototype2, [1], true);
 
 //     // Layer 1
-//     myGraph2.setAdjacentVertex(0, adjacentVertex = [{
+//     myGraph2.setEdgeWeights(0, adjacentVertex = [{
 //         id: 1,
 //         weight: 1
 //     }]);
-//     myGraph2.setAdjacentVertex(1, adjacentVertex = [{
+//     myGraph2.setEdgeWeights(1, adjacentVertex = [{
 //         id: 2,
 //         weight: 1
 //     }]);
-//     myGraph2.setAdjacentVertex(2, adjacentVertex = [{
+//     myGraph2.setEdgeWeights(2, adjacentVertex = [{
 //         id: 3,
 //         weight: 1
 //     }]);
-//     myGraph2.setAdjacentVertex(3, adjacentVertex = [{
+//     myGraph2.setEdgeWeights(3, adjacentVertex = [{
 //         id: 4,
 //         weight: 1
 //     }]);

@@ -25,57 +25,37 @@ class ThoughtBubble {
         $(this.divID).append($listener);
 
         // Creating ListenerBeliefPGM first
-        let listenerObserver = new ListenerBeliefPGM(listenerBeliefConfig, listenerBeliefID);
-        listenerObserver.createCluster(clusterMat, speakerLayerProbabilityDistribution, true);
-
-        // Layer 1
-        listenerObserver.setAdjacentVertex(0, [{
-            id: 3,
-            weight: 1.0 / 3.0
-        }, {
-            id: 4,
-            weight: 1.0 / 3.0
-        }, {
-            id: 5,
-            weight: 1.0 / 3.0
-        }]);
-        listenerObserver.setAdjacentVertex(1, [{
-            id: 3,
-            weight: 1.0 / 3.0
-        }, {
-            id: 4,
-            weight: 1.0 / 3.0
-        }, {
-            id: 5,
-            weight: 1.0 / 3.0
-        }]);
-        listenerObserver.setAdjacentVertex(2, [{
-            id: 3,
-            weight: 1.0 / 3.0
-        }, {
-            id: 4,
-            weight: 1.0 / 3.0
-        }, {
-            id: 5,
-            weight: 1.0 / 3.0
-        }]);
+        this.listenerBelif = new ListenerBeliefPGM(listenerBeliefConfig, listenerBeliefID);
+        this.listenerBelif.createCluster(clusterMat, speakerLayerProbabilityDistribution, true);
 
         // Create adjacencyMatrix
-        listenerObserver.createChart(adjacencyMatrixConfig);
-        listenerObserver.display();
-
+        this.listenerBelif.createChart(adjacencyMatrixConfig);
+        this.listenerBelif.init();
 
         // Then create ListenerPGM first based on the configuration
         // and bind the data to the graph for rendering
-        let listener = new ListenerPGM(listenerConfig, listenerID);
-        //observed.appendToDOM("#pgm4");
-        listener.createCluster(clusterMat, speakerLayerProbabilityDistribution, true);
-        // listener.bindChart(listenerObserver.getWeightedAdjacencyMatrix());
-        listener.bindToListenerBeliefPGM(listenerObserver);
-        listener.display();
-
+        this.listener = new ListenerPGM(listenerConfig, listenerID);
+        this.listener.createCluster(clusterMat, speakerLayerProbabilityDistribution, true);
+        this.listener.bindToListenerBeliefPGM(this.listenerBelif);
+        this.listener.init();
     }
+
+
+    setEdgeWeights(vertexId, adjacentEdgeWeights) {
+        this.listenerBelif.setEdgeWeights(vertexId, adjacentEdgeWeights);
+        this.listenerBelif.redraw();
+        this.listener.resetEdgeWeightsToBeListenerBeliefPGMEdgeWeights();
+        this.listener.redraw();
+        return this;
+    }
+
 }
+
+
+
+
+
+
 
 
 
@@ -143,7 +123,7 @@ class ListenerBeliefPGM extends GraphicalModel {
         log("normalized weight = " + normalizedWeight);
 
         this.listenerPGM.updateWeight(normalizedWeight);
-        this.listenerPGM.display();
+        this.listenerPGM.redraw();
     }
 
     /*@Override*/
@@ -158,7 +138,7 @@ class ListenerBeliefPGM extends GraphicalModel {
         // When stop button is clicked, reset the listenerPGM edgeweights as well
         super._stopAutoPlay();
         // this.listenerPGM.resetEdgeWeightsToBeListenerBeliefPGMEdgeWeights();
-        // this.listenerPGM.display();
+        // this.listenerPGM.redraw();
     }
 
     /*@Override*/
@@ -175,7 +155,7 @@ class ListenerBeliefPGM extends GraphicalModel {
 
         // reset the listenerPGM edge weights
         this.listenerPGM.resetEdgeWeightsToBeListenerBeliefPGMEdgeWeights();
-        this.listenerPGM.display();
+        this.listenerPGM.redraw();
     }
 
     /* @Override */

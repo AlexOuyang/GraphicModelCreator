@@ -73,7 +73,7 @@ myGraph.createCluster(clusterMat, speakerNodeProbabilityDistribution, false);
 //myGraph.config.playable = true;
 
 // Layer 1
-myGraph.setAdjacentVertex(0, adjacentVertex = [{
+myGraph.setEdgeWeights(0, adjacentVertex = [{
     id: 3,
     weight: 0
 }, {
@@ -83,7 +83,7 @@ myGraph.setAdjacentVertex(0, adjacentVertex = [{
     id: 5,
     weight: 0
 }]);
-myGraph.setAdjacentVertex(1, adjacentVertex = [{
+myGraph.setEdgeWeights(1, adjacentVertex = [{
     id: 3,
     weight: 0.4
 }, {
@@ -93,7 +93,7 @@ myGraph.setAdjacentVertex(1, adjacentVertex = [{
     id: 5,
     weight: 0.4
 }]);
-myGraph.setAdjacentVertex(2, adjacentVertex = [{
+myGraph.setEdgeWeights(2, adjacentVertex = [{
     id: 3,
     weight: 0.4
 }, {
@@ -105,7 +105,7 @@ myGraph.setAdjacentVertex(2, adjacentVertex = [{
 }]);
 
 // Layer 2
-myGraph.setAdjacentVertex(3, adjacentVertex = [{
+myGraph.setEdgeWeights(3, adjacentVertex = [{
     id: 6,
     weight: 0.4
 }, {
@@ -115,7 +115,7 @@ myGraph.setAdjacentVertex(3, adjacentVertex = [{
     id: 8,
     weight: 0.4
 }]);
-myGraph.setAdjacentVertex(4, adjacentVertex = [{
+myGraph.setEdgeWeights(4, adjacentVertex = [{
     id: 6,
     weight: 0.4
 }, {
@@ -125,7 +125,7 @@ myGraph.setAdjacentVertex(4, adjacentVertex = [{
     id: 8,
     weight: 0.4
 }]);
-myGraph.setAdjacentVertex(5, adjacentVertex = [{
+myGraph.setEdgeWeights(5, adjacentVertex = [{
     id: 6,
     weight: 0.4
 }, {
@@ -138,7 +138,7 @@ myGraph.setAdjacentVertex(5, adjacentVertex = [{
 
 
 // Layer 3
-//myGraph.setAdjacentVertex(6, adjacentVertex = [{
+//myGraph.setEdgeWeights(6, adjacentVertex = [{
 //    id: 9,
 //    weight: 0.4
 //}, {
@@ -148,7 +148,7 @@ myGraph.setAdjacentVertex(5, adjacentVertex = [{
 //    id: 11,
 //    weight: 0.4
 //}]);
-//myGraph.setAdjacentVertex(7, adjacentVertex = [{
+//myGraph.setEdgeWeights(7, adjacentVertex = [{
 //    id: 9,
 //    weight: 0.4
 //}, {
@@ -158,7 +158,7 @@ myGraph.setAdjacentVertex(5, adjacentVertex = [{
 //    id: 11,
 //    weight: 0.4
 //}]);
-//myGraph.setAdjacentVertex(8, adjacentVertex = [{
+//myGraph.setEdgeWeights(8, adjacentVertex = [{
 //    id: 9,
 //    weight: 0.4
 //}, {
@@ -210,7 +210,7 @@ var matConfig = {
 // Way 1 to create a chart
 
 myGraph.createChart(matConfig);
-myGraph.display();
+myGraph.init();
 
 
 

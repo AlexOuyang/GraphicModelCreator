@@ -723,9 +723,14 @@ class GraphicalModel {
     //        this._drawGraph(this.graphData.data);
     //    }
 
+    redraw() {
+        /* Use this to redraw the graph after reset edge weights */
+        this._createEdgesInGraphData(this.graphData.data);
+        this._drawGraph(this.graphData.data);
+    }
 
-    display() {
-        /* Used to display the graph */
+    init() {
+        /* Used to initialize and display the graph  after the set up is done*/
 
         this._dataScreening(this.graphData.data);
 
@@ -744,11 +749,11 @@ class GraphicalModel {
         return this._weightedAdjMat;
     }
 
-    setAdjacentVertex(id, adjVtx) {
+    setEdgeWeights(id, adjVtx) {
         /* Set adjacent vertex for vertex with id */
 
         if (id === undefined || adjVtx === undefined) {
-            throw new Error("pgm.setAdjacentVertex(id, adjVtx) params are not defined.");
+            throw new Error("pgm.setEdgeWeights(id, adjVtx) params are not defined.");
         }
 
         this.graphData.data[id].adjacentVertex = adjVtx;
