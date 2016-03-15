@@ -1,4 +1,7 @@
+/*==============================================================*/
 /*=============== Probability Graphic Model ====================*/
+/*==============================================================*/
+
 "use strict";
 
 class GraphicalModel {
@@ -136,13 +139,25 @@ class GraphicalModel {
 
     }
 
+    _backgroundOnClickToResetAdjMatrix() {
+        if (this._weightedAdjMat) {
+            this._weightedAdjMat.resetMatrixWeight();
+            this._weightedAdjMat.resetMatrixColorWeight();
+            this._weightedAdjMat.redrawMatrix();
+        }
+    }
 
     _backgroundOnClick() {
-        if (this.canClick) {
-            this._clearVisitedPath();
-            // Do not allow user to click until visited path highlighting is finished
-            this.canClick = false;
-            setTimeout(() => this.canClick = true, this.config.edge.timeInterval * (this.directedPath.length - 1));
+        if (!this.config.autoPlayable) {
+            if (this.canClick && !this.config.autoPlay.on) {
+                this._clearVisitedPath();
+                // Do not allow user to click until visited path highlighting is finished
+                this.canClick = false;
+                setTimeout(() => this.canClick = true, this.config.edge.timeInterval * (this.directedPath.length - 1));
+
+                // click on background to reset adjacency matrix
+                this._backgroundOnClickToResetAdjMatrix();
+            }
         }
     }
 
@@ -155,19 +170,22 @@ class GraphicalModel {
         }
 
         let weightSum = 0;
-
         for (let vertexIdx = 0; vertexIdx < data.length; vertexIdx++) {
             if (data[vertexIdx].id !== vertexIdx) {
                 throw new Error("Vertex's id must match its position index in the list of vertices. The " + vertexIdx + " th element in the list does not match its position index");
             }
-
-            let adjVertices = data[vertexIdx].adjacentVertex;
+            let allEdgeZero = true;
+            let adjVertices = data[vertexIdx].edgeWeights;
             if (adjVertices) {
+                // Check if all edges have weight 0
+
                 for (let i = 0; i < adjVertices.length; i++) {
                     weightSum += adjVertices[i].weight;
+                    if (adjVertices[i].weight !== 0) allEdgeZero = false;
                 }
-                if (weightSum !== 1.0) {
-                    throw new Error("The sum of a vertex's adjacent vertice's weight must be 1. " + "The " + vertexIdx + "th node's adjacent vertices's weights do not sum to 1");
+
+                if (weightSum !== 1.0 && allEdgeZero === false) {
+                    throw new Error("The sum of a vertex's adjacent edge's weight must be 1 or all edges have a weight of 0. " + "The " + vertexIdx + "th vertex is invalid.");
                 }
             }
             weightSum = 0;
@@ -184,13 +202,13 @@ class GraphicalModel {
         // Go through each vertex in data and add 'edges' attribute to each vertex
         for (let vertexIdx = 0; vertexIdx < data.length; vertexIdx++) {
             let currentVertex = data[vertexIdx];
-            if (!currentVertex.adjacentVertex) {
+            if (!currentVertex.edgeWeights) {
                 currentVertex.edges = null;
             } else {
                 currentVertex.edges = [];
-                for (let adjVertexIdx = 0; adjVertexIdx < currentVertex.adjacentVertex.length; adjVertexIdx++) {
-                    let targetVertexId = currentVertex.adjacentVertex[adjVertexIdx].id;
-                    let targetVertexWeight = currentVertex.adjacentVertex[adjVertexIdx].weight;
+                for (let adjVertexIdx = 0; adjVertexIdx < currentVertex.edgeWeights.length; adjVertexIdx++) {
+                    let targetVertexId = currentVertex.edgeWeights[adjVertexIdx].id;
+                    let targetVertexWeight = currentVertex.edgeWeights[adjVertexIdx].weight;
 
                     let edge = {
                         edgeWeight: targetVertexWeight,
@@ -229,19 +247,29 @@ class GraphicalModel {
         */
         let weightDistribution = [0]; // weightDistribution is a distribution from 0 to 1, ex: [0, 0.4, 1]
         let weight = 0;
-        for (let i = 0; i < vertex.adjacentVertex.length; i++) {
-            weight += vertex.adjacentVertex[i].weight;
+        for (let i = 0; i < vertex.edgeWeights.length; i++) {
+            weight += vertex.edgeWeights[i].weight;
             weightDistribution.push(weight);
         }
 
         let randomPick = Math.random();
         console.log("weight distribution corresponding to adjacent vertices in the next layer: (" + weightDistribution + ") random pick: " + randomPick);
+
+        // if the sum of distribution is 0 then return -1
+        let distributionSum = weightDistribution.reduce(function(a, b) {
+            return a + b;
+        }, 0);
+        if (distributionSum === 0) {
+            return -1;
+        }
+
         for (let i = 0; i < weightDistribution.length - 1; i++) {
             if (randomPick >= weightDistribution[i] && randomPick <= weightDistribution[i + 1]) {
-                return vertex.adjacentVertex[i].id;
+                return vertex.edgeWeights[i].id;
             }
         }
     }
+
     _traverseGraph(vertexId, data) {
         /* 
         Takes in the id of a node and traverse trough the graph to connect 
@@ -251,9 +279,10 @@ class GraphicalModel {
         let visitedNodes = [vertexId];
         let node = data[vertexId];
 
-        while (node.adjacentVertex !== undefined) {
+        while (node !== undefined && node.edgeWeights !== undefined) {
             console.log("Current Vertex: " + vertexId);
             vertexId = this._chooseRandomAdjVertex(node);
+            // if (vertexId < 0) break;
             console.log("Vextex chosen: " + vertexId);
             console.log("--------");
             node = data[vertexId];
@@ -353,116 +382,165 @@ class GraphicalModel {
 
     }
 
+    /* EdgeNodes contains a pair of nodes (e.g. [node1, node2]) which are two ends of an edge, lengthMultiplier is used to determine the magnitude of the edge
+
+    @returns a highlightedEdge objects that contains the nodes information and the length information
+     */
+    _drawHighlightedEdge(edgeNodes, lengthMultiplier) {
+        let x0 = edgeNodes[0].x,
+            y0 = edgeNodes[0].y,
+            r0 = edgeNodes[0].r,
+            x1 = edgeNodes[1].x,
+            y1 = edgeNodes[1].y,
+            r1 = edgeNodes[1].r,
+            distX = x1 - x0,
+            distY = y0 - y1,
+            dist = Math.sqrt(distX * distX + distY * distY),
+            ratio0 = r0 / (lengthMultiplier * dist),
+            ratio1 = r1 / (lengthMultiplier * dist),
+
+            // tempEdges for highlighting the visited edges
+            highlightedEdgeNodes = [{
+                x: x0 + distX * ratio0,
+                y: y0 - distY * ratio0
+            }, {
+                x: x1 - distX * ratio1,
+                y: y1 + distY * ratio1
+            }];
+
+
+        let highlightedEdge = {
+            nodes: highlightedEdgeNodes,
+            length: dist
+        };
+
+        return highlightedEdge;
+    }
+
     _drawVisitedPath(data) {
         /* Draw visited edges based on weight in highlighted color */
 
         for (let vertexIdx = 0; vertexIdx < this.directedPath.length; vertexIdx++) {
-            // Iterate through the list of ID in directedPath 
-            let currentVertex = data[this.directedPath[vertexIdx]];
-            if (currentVertex.edges) {
-                for (let edgeIdx = 0; edgeIdx < currentVertex.edges.length; edgeIdx++) {
-                    let edgeNodes = currentVertex.edges[edgeIdx].edgeNodes;
-                    let edgeWeight = currentVertex.edges[edgeIdx].edgeWeight * this.config.edge.width;
-                    // If the edge is in the directedPath then draw different color
-                    if (this.directedPath.indexOf(edgeNodes[0].id) > -1 && this.directedPath.indexOf(edgeNodes[1].id) > -1) {
 
-                        // Create two new points to draw a shorter edge so the new 
-                        // edge will not cover the id in the node
-                        let x0 = edgeNodes[0].x,
-                            y0 = edgeNodes[0].y,
-                            r0 = edgeNodes[0].r,
-                            x1 = edgeNodes[1].x,
-                            y1 = edgeNodes[1].y,
-                            r1 = edgeNodes[1].r,
-                            distX = x1 - x0,
-                            distY = y0 - y1,
-                            dist = Math.sqrt(distX * distX + distY * distY),
-                            ratio0 = r0 / (1.0 * dist),
-                            ratio1 = r1 / (1.0 * dist);
+            // check if there's -1 in directedPath, if yes, do not draw the path and trigger a new speaker
+            if (this.directedPath[vertexIdx] < 0) {
 
-                        // tempEdges for highlighting the visited edges
-                        let tempEdges = [{
-                            x: x0 + distX * ratio0,
-                            y: y0 - distY * ratio1
-                        }, {
-                            x: x1 - distX * ratio0,
-                            y: y1 + distY * ratio1
-                        }];
+                // Draw the first vertex when the path start highlighting
+                this.vertices.append("circle")
+                    .attr("class", d => {
+                        // if the node is in the path then draw it in a different color
+                        if (this.directedPath[0] === d.id) {
+                            return "visitedVertex";
+                        }
+                    })
+                    .attr("r", d => d.r);
 
-                        let lineLength = dist; // The line length
+                // Add a text element to the previously added g element.
+                this._drawText();
 
-                        // Wait for 0.8 second until the next node is highlighted
-                        // Draw the next visited path after time Interval
+                setTimeout(() => {
+
+                    // If autoplay is on, then restart the cycle after [timeIntervalBetweenCycle] milliseconds
+                    if (this.config.autoPlay.on) {
+                        console.log("Auto play is on!");
                         setTimeout(() => {
+                            this._triggerSpeakerNodeAutoPlay();
+                        }, this.config.autoPlay.timeIntervalBetweenCycle);
+                    }
 
-                            // Append a path that completes drawing wthin a time duration
-                            this.container.append("svg:path")
-                                .style("stroke-width", this.config.edge.baseWidth + edgeWeight)
-                                .style("stroke", this.config.edge.visitedColor)
-                                .style("fill", "none")
-                                .attr({
-                                    'd': this.line(tempEdges),
-                                    'stroke-dasharray': lineLength + " " + lineLength,
-                                    'stroke-dashoffset': lineLength
-                                })
-                                .transition()
-                                .duration(this.config.edge.timeInterval)
-                                .attr('stroke-dashoffset', 0);
+                }, this.config.edge.timeInterval);
+            } else {
 
-                        }, this.config.edge.timeInterval * vertexIdx);
+                // If there's no -1 in directed path
+                // Iterate through the list of ID in directedPath 
+                let currentVertex = data[this.directedPath[vertexIdx]];
+                if (currentVertex.edges) {
+                    for (let edgeIdx = 0; edgeIdx < currentVertex.edges.length; edgeIdx++) {
+                        let edgeNodes = currentVertex.edges[edgeIdx].edgeNodes;
+                        let edgeWeight = currentVertex.edges[edgeIdx].edgeWeight * this.config.edge.width;
+                        // If the edge is in the directedPath then draw different color
+                        if (this.directedPath.indexOf(edgeNodes[0].id) > -1 && this.directedPath.indexOf(edgeNodes[1].id) > -1) {
 
-                        // Draw the next visited vertex after time Interval
-                        setTimeout(() => {
-                            /* clear vertices then redraw all the vertices in the grpah */
-                            this.vertices.append("circle")
-                            //                                .attr("class", "node")
-                            .attr("class", d => {
-                                // if the node is in the path then draw it in a different color
-                                if (this.directedPath.indexOf(d.id) <= (vertexIdx + 1) &&
-                                    this.directedPath.indexOf(d.id) > -1) {
-                                    return "visitedVertex";
+                            // Create two new points to draw a shorter edge so the new 
+                            // edge will not cover the id in the node
+                            let highlightingEdgeLengthMultiplier = 1.1; // Used to increase the length of the highlighted edge on both ends;
+                            let highlightedEdge = this._drawHighlightedEdge(edgeNodes, highlightingEdgeLengthMultiplier);
+                            let tempEdges = highlightedEdge.nodes
+                            let lineLength = highlightedEdge.length;
+
+                            // Wait for 0.8 second until the next node is highlighted
+                            // Draw the next visited path after time Interval
+                            setTimeout(() => {
+
+                                // Append a path that completes drawing wthin a time duration
+                                this.container.append("svg:path")
+                                    .style("stroke-width", this.config.edge.baseWidth + edgeWeight)
+                                    .style("stroke", this.config.edge.visitedColor)
+                                    .style("fill", "none")
+                                    .attr({
+                                        'd': this.line(tempEdges),
+                                        'stroke-dasharray': lineLength + " " + lineLength,
+                                        'stroke-dashoffset': lineLength
+                                    })
+                                    .transition()
+                                    .duration(this.config.edge.timeInterval)
+                                    .attr('stroke-dashoffset', 0);
+
+                            }, this.config.edge.timeInterval * vertexIdx);
+
+                            // Draw the next visited vertex after time Interval
+                            setTimeout(() => {
+                                /* clear vertices then redraw all the vertices in the grpah */
+                                this.vertices
+                                    .append("circle")
+                                    .attr("class", d => {
+                                        // if the node is in the path then draw it in a different color
+                                        if (this.directedPath.indexOf(d.id) <= (vertexIdx + 1) &&
+                                            this.directedPath.indexOf(d.id) > -1) {
+                                            return "visitedVertex";
+                                        }
+                                    })
+                                    .attr("r", d => d.r);
+
+                                // Add a text element to the previously added g element.
+                                this._drawText();
+
+                                // Visited path ending condition
+                                let endingVertexIdx = this.directedPath.length - 2;
+                                if (vertexIdx === endingVertexIdx) {
+
+                                    // If _weightedAdjMat exists, update the _weightedAdjMat adjacency matrix after the visited path finish highlighting within [timeIntervalBetweenCycle/2] milliseconds
+                                    if (this._weightedAdjMat) {
+                                        setTimeout(() => {
+                                            this._updateChart();
+                                        }, this.config.autoPlay.timeIntervalBetweenCycle / 2.0);
+                                    }
+                                    // If autoplay is on, then restart the cycle after [timeIntervalBetweenCycle] milliseconds
+                                    if (this.config.autoPlay.on) {
+                                        console.log("Auto play is on!");
+                                        setTimeout(() => {
+                                            this._triggerSpeakerNodeAutoPlay();
+                                        }, this.config.autoPlay.timeIntervalBetweenCycle);
+                                    }
                                 }
-                            })
+
+                                // 0.95 is a time offset multiplier to make vertex colored faster since
+                                // there is an unknown lag
+                            }, this.config.edge.timeInterval * (vertexIdx + 1));
+
+                            // Draw the first vertex when the path start highlighting
+                            this.vertices.append("circle")
+                                .attr("class", d => {
+                                    // if the node is in the path then draw it in a different color
+                                    if (this.directedPath[0] === d.id) {
+                                        return "visitedVertex";
+                                    }
+                                })
                                 .attr("r", d => d.r);
 
                             // Add a text element to the previously added g element.
                             this._drawText();
-
-                            // Visited path ending condition
-                            let endingVertexIdx = this.directedPath.length - 2;
-                            if (vertexIdx === endingVertexIdx) {
-
-                                // If _weightedAdjMat exists, update the _weightedAdjMat adjacency matrix after the visited path finish highlighting within [timeIntervalBetweenCycle/2] milliseconds
-                                if (this._weightedAdjMat) {
-                                    setTimeout(() => {
-                                        this._updateChart();
-                                    }, this.config.autoPlay.timeIntervalBetweenCycle / 2.0);
-                                }
-                                // If autoplay is on, then restart the cycle after [timeIntervalBetweenCycle] milliseconds
-                                if (this.config.autoPlay.on) {
-                                    console.log("Auto play is on!");
-                                    setTimeout(() => {
-                                        this._triggerSpeakerNodeAutoPlay();
-                                    }, this.config.autoPlay.timeIntervalBetweenCycle);
-                                }
-                            }
-
-                            // 0.95 is a time offset multiplier to make vertex colored faster since
-                            // there is an unknown lag
-                        }, this.config.edge.timeInterval * (vertexIdx + 1));
-
-                        // Draw the first vertex when the path start highlighting
-                        this.vertices.append("circle")
-                            .attr("class", d => {
-                                // if the node is in the path then draw it in a different color
-                                if (this.directedPath[0] === d.id) {
-                                    return "visitedVertex";
-                                }
-                            })
-                            .attr("r", d => d.r);
-
-                        // Add a text element to the previously added g element.
-                        this._drawText();
+                        }
                     }
                 }
             }
@@ -507,19 +585,24 @@ class GraphicalModel {
         $(this.divID).prepend($DivSlider);
         $("#" + sliderID).slider({
             range: false, // two buttons caps a range
-            min: 10,
-            max: 2000,
-            value: 800,
+            min: 2,
+            max: 1000,
+            value: pgm.config.edge.timeInterval,
             slide: function(event, ui) {
-                console.log(ui.value);
-                let sphereRad = ui.value;
-                pgm.config.edge.timeInterval = ui.value;
-                pgm.config.autoPlay.timeIntervalBetweenCycle = ui.value;
+                pgm._cyclingSpeedControlButtonOnClick(ui);
             }
         });
 
         let sliderWidth = (this._weightedAdjMat === null) ? this.config.transform.width : this._weightedAdjMat.config.transform.width + this.config.transform.width;
         $("#" + sliderID).css("width", sliderWidth + "px");
+    }
+
+    // This function is called by jQuery slider function defined in _createCyclingSpeedControlButton
+    _cyclingSpeedControlButtonOnClick(ui) {
+        console.log("Slider Speed: " + ui.value);
+        let sphereRad = ui.value;
+        this.config.edge.timeInterval = ui.value;
+        this.config.autoPlay.timeIntervalBetweenCycle = ui.value;
     }
 
     _createPlayButton() {
@@ -579,6 +662,7 @@ class GraphicalModel {
     }
 
 
+
     _triggerSpeakerNodeAutoPlay() {
         /* Triggers a speaker node randomly following the specified distribution */
 
@@ -601,6 +685,7 @@ class GraphicalModel {
         if (id < speakerLayerLength) {
             let clickedVertexId = parseInt(id, 10);
             this._traverseGraph(clickedVertexId, this.graphData.data);
+            log("visited path = [" + this.directedPath + "]");
             this._drawGraph(this.graphData.data);
             this._drawVisitedPath(this.graphData.data);
 
@@ -647,10 +732,21 @@ class GraphicalModel {
     //    }
 
 
-    display() {
-        /* Used to display the graph */
+    redraw() {
+        /* Use this to redraw the graph after reset edge weights */
+        this._createEdgesInGraphData(this.graphData.data);
+        this._drawGraph(this.graphData.data);
+
+        return this;
+    }
+
+
+    init() {
+        /* Used to initialize and display the graph  after the set up is done*/
 
         this._dataScreening(this.graphData.data);
+
+        this.setUniformEdgeWeights();
 
         this._createEdgesInGraphData(this.graphData.data);
 
@@ -661,20 +757,27 @@ class GraphicalModel {
         if (this.config.background.grid) this._drawGrid();
 
         this._drawGraph(this.graphData.data);
+
+        return this;
     }
 
     getWeightedAdjacencyMatrix() {
         return this._weightedAdjMat;
     }
 
-    setEdgeWeights(id, adjVtx) {
-        /* Set adjacent vertex for vertex with id */
+    setEdgeWeights(id, weights) {
+        /* Set adjacent vertex for vertex with id 
+            return this pgm to allow setEdgeWeights to be stacked
+        */
 
-        if (id === undefined || adjVtx === undefined) {
-            throw new Error("pgm.setEdgeWeights(id, adjVtx) params are not satisfied.");
+        if (id === undefined || weights === undefined) {
+            throw new Error("pgm.setEdgeWeights(id, adjVtx) params are not defined.");
         }
 
-        this.graphData.data[id].adjacentVertex = adjVtx;
+        this.graphData.data[id].edgeWeights = weights;
+        this.redraw();
+
+        return this;
     }
 
     //    this.setLabel = function (id, label) {
@@ -697,17 +800,21 @@ class GraphicalModel {
     //    };
 
 
-
-    _changeNodeRadius() {
+    // Used by createCluster()
+    _changeNodeRadius(baseRadius) {
         /* 
         Change the speaker layer ndoe radius based on the probability distribution
         probabilityDistribution is the array of probability given to each node in the speaker layer
         set probabilityDistribution=[] for uniform distribution
         */
+
+        let normalizeBaseRadiusMultiplier = 0.4; // increase base radius size
+        let normalizeExtraRadiusBasedOnDistributionMultiplier = 0.7; // increase extra radius size
+
         for (let i = 0; i < this.speakerLayerProbabilityDistribution.length; i++) {
             // Normalize the radius
-            let normalizationFactor = 1.0 / this.speakerLayerProbabilityDistribution.length;
-            this.graphData.data[i].r *= (this.speakerLayerProbabilityDistribution[i] * 1.0) / normalizationFactor;
+            let normalizationFactor = 1.0 / this.speakerLayerProbabilityDistribution.length / normalizeExtraRadiusBasedOnDistributionMultiplier;
+            this.graphData.data[i].r = (baseRadius * normalizeBaseRadiusMultiplier) + this.graphData.data[i].r * (this.speakerLayerProbabilityDistribution[i] * 1.0) / normalizationFactor;
         }
     }
 
@@ -739,15 +846,15 @@ class GraphicalModel {
 
         this.speakerLayerProbabilityDistribution = probabilityDistribution;
 
+        this.cMatDim = []; //cMatDim is the dimension of the matrix, ex: [3,3,3]
 
-        // Populate cMatDim, cMatDim is the dimension of the matrix, ex: [3,3,3]
-        let cMatDim = [];
+        // Populate cMatDim
         for (let i = 0; i < cMat.length; i++) {
-            cMatDim[i] = cMat[i].length;
+            this.cMatDim[i] = cMat[i].length;
         }
 
-        let offsetPosX = this.config.transform.width / (cMatDim.length + 1); // get the x offset for first node
-        let minPosY = this.config.transform.height / (Array.max(cMatDim) + 1); // get the y offset for the layer with the most amount of nodes
+        let offsetPosX = this.config.transform.width / (this.cMatDim.length + 1); // get the x offset for first node
+        let minPosY = this.config.transform.height / (Array.max(this.cMatDim) + 1); // get the y offset for the layer with the most amount of nodes
 
         // Data properties: id, x, y, r 
         let data = [];
@@ -758,10 +865,10 @@ class GraphicalModel {
 
         this.config.vertex.radius = r;
 
-        for (let i = 0; i < cMatDim.length; i++) {
+        for (let i = 0; i < this.cMatDim.length; i++) {
             // Reset offset Y coordinate for each layer
-            let offSetPosY = this.config.transform.height / (cMatDim[i] + 1);
-            for (let j = 0; j < cMatDim[i]; j++) {
+            let offSetPosY = this.config.transform.height / (this.cMatDim[i] + 1);
+            for (let j = 0; j < this.cMatDim[i]; j++) {
                 x = offsetPosX * (i + 1);
                 y = offSetPosY * (j + 1);
                 data.push({
@@ -778,11 +885,10 @@ class GraphicalModel {
 
         // Label each vertex based on cMat labels
         let id_temp = 0;
-        for (let i = 0; i < cMat.length; i++) {
-            for (let j = 0; j < cMat[i].length; j++) {
+        for (let i = 0; i < cMat.length; i++)
+            for (let j = 0; j < cMat[i].length; j++)
                 data[id_temp++].label = cMat[i][j];
-            }
-        }
+
 
         // Update the this.config edge width and baseWidth
         this.config.edge.width = r * this.config.edge.width;
@@ -796,10 +902,53 @@ class GraphicalModel {
         };
 
         // Change speaker node radius based on distribution
-        if (changeNodeRadiusBasedOnDistribution && probabilityDistribution.length > 0) {
-            this._changeNodeRadius();
+        if (changeNodeRadiusBasedOnDistribution && probabilityDistribution.length > 0) this._changeNodeRadius(r);
+
+        return this;
+    }
+
+
+    getGraphData() {
+        return this.graphData;
+    }
+
+
+    getVertexId(vertexCoordinate) {
+        // get vertex id by coordinate
+        // vertexCoordinate is a coordiante pair = [layer index, vertex index at that layer]
+
+        let layerIdx = vertexCoordinate[0];
+        let vertexIdx = vertexCoordinate[1];
+
+        if (layerIdx >= this.cMatDim.length || vertexIdx >= this.cMatDim[layerIdx])
+            throw new Error("pgm.getVertexId(): invalid vertex coordinate input, the vertex being accessed does not exist in the graph. Your input vertex coordinate is [" + vertexCoordinate + "], but the dimention of the cluster matrix is [" + this.cMatDim + "].");
+
+        let id_temp = 0;
+        for (let i = 0; i < layerIdx; i++) id_temp += this.cMatDim[i];
+        id_temp += vertexIdx;
+
+        return id_temp;
+    }
+
+
+    // Set the graph edge weights to be uniform
+    setUniformEdgeWeights() {
+        for (let layerIdx = 0; layerIdx < this.cMatDim.length - 1; layerIdx++) {
+            for (let vertexIdx = 0; vertexIdx < this.cMatDim[layerIdx]; vertexIdx++) {
+                let vertexID = this.getVertexId([layerIdx, vertexIdx]);
+                let numOfNodesNextLayer = this.cMatDim[layerIdx + 1];
+                let edgeWeights = [];
+                for (let i = 0; i < numOfNodesNextLayer; i++) {
+                    edgeWeights[i] = {
+                        id: this.getVertexId([layerIdx + 1, i]),
+                        weight: 1.0 / numOfNodesNextLayer
+                    };
+                }
+                this.setEdgeWeights(vertexID, edgeWeights);
+            }
         }
     }
+
 
     /*=========== Graphical Model Autoplay ===========*/
 
@@ -814,7 +963,6 @@ class GraphicalModel {
         this.canClick = false;
         if (this._weightedAdjMat) this.resetChart();
         this.config.autoPlay.on = true;
-        let random_id = Math.floor(Math.random() * this.graphData.clusterMat[0].length);
         this._triggerSpeakerNodeAutoPlay();
     }
 
@@ -824,6 +972,12 @@ class GraphicalModel {
         this.config.autoPlay.on = false;
 
         this._clearVisitedPath();
+
+        if (this._weightedAdjMat) {
+            this._weightedAdjMat.resetMatrixWeight();
+            this._weightedAdjMat.resetMatrixColorWeight();
+            // this._weightedAdjMat.redrawMatrix();
+        }
     }
 
 
@@ -831,9 +985,12 @@ class GraphicalModel {
 
     _updateChart() {
         /* Used in _drawVisitedPath() to update the adjacency matrix _weightedAdjMat */
+        let _rowIdx = this.directedPath[0];
+        let _colIdx = this.directedPath[this.directedPath.length - 1];
+        if (_rowIdx < 0 || _colIdx < 0) return;
 
-        let _rowLabel = this.graphData.data[this.directedPath[0]].label;
-        let _colLabel = this.graphData.data[this.directedPath[this.directedPath.length - 1]].label;
+        let _rowLabel = this.graphData.data[_rowIdx].label;
+        let _colLabel = this.graphData.data[_colIdx].label;
         let cellToUpdate = [_rowLabel, _colLabel];
         log("Update Cell: [" + cellToUpdate + "]");
         this._weightedAdjMat.increaseCellWeight(cellToUpdate, 1);
@@ -863,5 +1020,7 @@ class GraphicalModel {
         var _colLabel = this.graphData.clusterMat[this.graphData.clusterMat.length - 1];
         this._weightedAdjMat = new WeightedAdjacencyMatrix(this.divID, chartConfig);
         this._weightedAdjMat.createMatrix(_rowLabel, _colLabel);
+
+        return this;
     }
 }

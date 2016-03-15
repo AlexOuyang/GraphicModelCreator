@@ -66,7 +66,7 @@ var speakerNodeProbabilityDistribution = [0.1, 0.2, 0.7];
 
 // Create a new Graph based on the configuration
 // and bind the data to the graph for rendering
-var myGraph = new GraphicalModel(pgmConfig, "#pgm2");
+var myGraph = new GraphicalModel(pgmConfig, "#pgm3");
 myGraph.createCluster(clusterMat, speakerNodeProbabilityDistribution, false);
 
 // Auto play
