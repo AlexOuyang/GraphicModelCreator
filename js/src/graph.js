@@ -497,7 +497,7 @@ class GraphicalModel {
     }
 
 
-    _createCyclingSpeedControllButton() {
+    _createCyclingSpeedControlButton() {
         let pgm = this;
 
         let sliderID = this.divID.substring(1) + "-slider-range";
@@ -656,7 +656,7 @@ class GraphicalModel {
 
         if (this.config.autoPlayable) this._createPlayButton();
 
-        if (this.config.cyclingSpeedControllable) this._createCyclingSpeedControllButton();
+        if (this.config.cyclingSpeedControllable) this._createCyclingSpeedControlButton();
 
         if (this.config.background.grid) this._drawGrid();
 

@@ -1,7 +1,7 @@
 /*=============== Probability Graphic Model ====================*/
 "use strict";
 
-class ThoughtBubble {
+class ListenerObserverPGM {
 
     constructor(graphConfiguration, divID) {
 
@@ -496,7 +496,7 @@ class ThoughtBubble {
     }
 
 
-    _createCyclingSpeedControllButton() {
+    _createCyclingSpeedControlButton() {
         let pgm = this;
 
         let sliderID = this.divID.substring(1) + "-slider-range";
@@ -655,7 +655,7 @@ class ThoughtBubble {
 
         if (this.config.autoPlayable) this._createPlayButton();
 
-        if (this.config.cyclingSpeedControllable) this._createCyclingSpeedControllButton();
+        if (this.config.cyclingSpeedControllable) this._createCyclingSpeedControlButton();
 
         if (this.config.background.grid) this._drawGrid();
 
@@ -884,7 +884,7 @@ class ThoughtBubble {
 
 
 
-class ObservedPGM extends ThoughtBubble {
+class ObservedPGM extends ListenerObserverPGM {
     constructor(graphConfiguration, divID) {
         super(graphConfiguration, divID);
     }

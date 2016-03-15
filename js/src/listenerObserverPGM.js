@@ -1,11 +1,12 @@
-/*=============== Listener Observer Probability Graphic Model ====================*/
+/*=============================================================*/
+/*=================== ListenerObserverPGM =====================*/
+/*=============================================================*/
+
 "use strict";
 
 
 // A wrapper that combines both listenerBeliefPGM and ListenerPGM
-
-
-class ThoughtBubble {
+class ListenerObserverPGM {
 
     constructor(divID, listenerBeliefConfig, listenerConfig, adjMatConfig, cMat, speakerLayerProbabilityDistribution, changeNodeRadiusBasedOnDistribution) {
 
@@ -116,6 +117,13 @@ class ListenerBeliefPGM extends GraphicalModel {
         log("normalized weight = " + normalizedWeight);
 
         return normalizedWeight;
+    }
+
+    _cyclingSpeedControlButtonOnClick(ui) {
+        super._cyclingSpeedControlButtonOnClick(ui);
+        // updating listenerPGM's speed on button click as well
+        this.listenerPGM.config.edge.timeInterval = ui.value;
+        this.listenerPGM.config.autoPlay.timeIntervalBetweenCycle = ui.value;
     }
 
     /*@Override*/
@@ -242,7 +250,6 @@ class ListenerPGM extends GraphicalModel {
                     }
                 }
             });
-
         this.resetEdgeWeightsToBeListenerBeliefPGMEdgeWeights();
 
         return this;

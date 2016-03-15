@@ -1,4 +1,7 @@
+/*==============================================================*/
 /*=============== Probability Graphic Model ====================*/
+/*==============================================================*/
+
 "use strict";
 
 class GraphicalModel {
@@ -572,7 +575,7 @@ class GraphicalModel {
     }
 
 
-    _createCyclingSpeedControllButton() {
+    _createCyclingSpeedControlButton() {
         let pgm = this;
 
         let sliderID = this.divID.substring(1) + "-slider-range";
@@ -582,19 +585,24 @@ class GraphicalModel {
         $(this.divID).prepend($DivSlider);
         $("#" + sliderID).slider({
             range: false, // two buttons caps a range
-            min: 10,
-            max: 2000,
-            value: 800,
+            min: 2,
+            max: 1000,
+            value: pgm.config.edge.timeInterval,
             slide: function(event, ui) {
-                console.log(ui.value);
-                let sphereRad = ui.value;
-                pgm.config.edge.timeInterval = ui.value;
-                pgm.config.autoPlay.timeIntervalBetweenCycle = ui.value;
+                pgm._cyclingSpeedControlButtonOnClick(ui);
             }
         });
 
         let sliderWidth = (this._weightedAdjMat === null) ? this.config.transform.width : this._weightedAdjMat.config.transform.width + this.config.transform.width;
         $("#" + sliderID).css("width", sliderWidth + "px");
+    }
+
+    // This function is called by jQuery slider function defined in _createCyclingSpeedControlButton
+    _cyclingSpeedControlButtonOnClick(ui) {
+        console.log("Slider Speed: " + ui.value);
+        let sphereRad = ui.value;
+        this.config.edge.timeInterval = ui.value;
+        this.config.autoPlay.timeIntervalBetweenCycle = ui.value;
     }
 
     _createPlayButton() {
@@ -744,7 +752,7 @@ class GraphicalModel {
 
         if (this.config.autoPlayable) this._createPlayButton();
 
-        if (this.config.cyclingSpeedControllable) this._createCyclingSpeedControllButton();
+        if (this.config.cyclingSpeedControllable) this._createCyclingSpeedControlButton();
 
         if (this.config.background.grid) this._drawGrid();
 
