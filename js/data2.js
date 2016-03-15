@@ -72,102 +72,8 @@ myGraph.createCluster(clusterMat, speakerNodeProbabilityDistribution, false);
 // Auto play
 //myGraph.config.playable = true;
 
-// Layer 1
-myGraph.setEdgeWeights(0, adjacentVertex = [{
-    id: 3,
-    weight: 0
-}, {
-    id: 4,
-    weight: 0
-}, {
-    id: 5,
-    weight: 0
-}]);
-myGraph.setEdgeWeights(1, adjacentVertex = [{
-    id: 3,
-    weight: 0.4
-}, {
-    id: 4,
-    weight: 0.2
-}, {
-    id: 5,
-    weight: 0.4
-}]);
-myGraph.setEdgeWeights(2, adjacentVertex = [{
-    id: 3,
-    weight: 0.4
-}, {
-    id: 4,
-    weight: 0.2
-}, {
-    id: 5,
-    weight: 0.4
-}]);
-
-// Layer 2
-myGraph.setEdgeWeights(3, adjacentVertex = [{
-    id: 6,
-    weight: 0.4
-}, {
-    id: 7,
-    weight: 0.2
-}, {
-    id: 8,
-    weight: 0.4
-}]);
-myGraph.setEdgeWeights(4, adjacentVertex = [{
-    id: 6,
-    weight: 0.4
-}, {
-    id: 7,
-    weight: 0.2
-}, {
-    id: 8,
-    weight: 0.4
-}]);
-myGraph.setEdgeWeights(5, adjacentVertex = [{
-    id: 6,
-    weight: 0.4
-}, {
-    id: 7,
-    weight: 0.2
-}, {
-    id: 8,
-    weight: 0.4
-}]);
 
 
-// Layer 3
-//myGraph.setEdgeWeights(6, adjacentVertex = [{
-//    id: 9,
-//    weight: 0.4
-//}, {
-//    id: 10,
-//    weight: 0.2
-//}, {
-//    id: 11,
-//    weight: 0.4
-//}]);
-//myGraph.setEdgeWeights(7, adjacentVertex = [{
-//    id: 9,
-//    weight: 0.4
-//}, {
-//    id: 10,
-//    weight: 0.2
-//}, {
-//    id: 11,
-//    weight: 0.4
-//}]);
-//myGraph.setEdgeWeights(8, adjacentVertex = [{
-//    id: 9,
-//    weight: 0.4
-//}, {
-//    id: 10,
-//    weight: 0.2
-//}, {
-//    id: 11,
-//    weight: 0.4
-//}]);
 
 
 //var data = myGraph.getGraphData();
@@ -212,7 +118,68 @@ var matConfig = {
 myGraph.createChart(matConfig);
 myGraph.init();
 
+myGraph.setEdgeWeights(0, [{
+    id: 3,
+    weight: 0
+}, {
+    id: 4,
+    weight: 0
+}, {
+    id: 5,
+    weight: 0
+}]);
+myGraph.setEdgeWeights(1, [{
+    id: 3,
+    weight: 0.4
+}, {
+    id: 4,
+    weight: 0.2
+}, {
+    id: 5,
+    weight: 0.4
+}]);
+myGraph.setEdgeWeights(2, [{
+    id: 3,
+    weight: 0.4
+}, {
+    id: 4,
+    weight: 0.2
+}, {
+    id: 5,
+    weight: 0.4
+}]);
 
+// Layer 2
+myGraph.setEdgeWeights(3, [{
+    id: 6,
+    weight: 0.4
+}, {
+    id: 7,
+    weight: 0.2
+}, {
+    id: 8,
+    weight: 0.4
+}]);
+myGraph.setEdgeWeights(4, [{
+    id: 6,
+    weight: 0.4
+}, {
+    id: 7,
+    weight: 0.2
+}, {
+    id: 8,
+    weight: 0.4
+}]);
+myGraph.setEdgeWeights(5, [{
+    id: 6,
+    weight: 0.4
+}, {
+    id: 7,
+    weight: 0.2
+}, {
+    id: 8,
+    weight: 0.4
+}]);
 
 
 

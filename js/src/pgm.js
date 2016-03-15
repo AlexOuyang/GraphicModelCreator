@@ -172,7 +172,7 @@ class GraphicalModel {
                 throw new Error("Vertex's id must match its position index in the list of vertices. The " + vertexIdx + " th element in the list does not match its position index");
             }
             let allEdgeZero = true;
-            let adjVertices = data[vertexIdx].adjacentVertex;
+            let adjVertices = data[vertexIdx].edgeWeights;
             if (adjVertices) {
                 // Check if all edges have weight 0
 
@@ -199,13 +199,13 @@ class GraphicalModel {
         // Go through each vertex in data and add 'edges' attribute to each vertex
         for (let vertexIdx = 0; vertexIdx < data.length; vertexIdx++) {
             let currentVertex = data[vertexIdx];
-            if (!currentVertex.adjacentVertex) {
+            if (!currentVertex.edgeWeights) {
                 currentVertex.edges = null;
             } else {
                 currentVertex.edges = [];
-                for (let adjVertexIdx = 0; adjVertexIdx < currentVertex.adjacentVertex.length; adjVertexIdx++) {
-                    let targetVertexId = currentVertex.adjacentVertex[adjVertexIdx].id;
-                    let targetVertexWeight = currentVertex.adjacentVertex[adjVertexIdx].weight;
+                for (let adjVertexIdx = 0; adjVertexIdx < currentVertex.edgeWeights.length; adjVertexIdx++) {
+                    let targetVertexId = currentVertex.edgeWeights[adjVertexIdx].id;
+                    let targetVertexWeight = currentVertex.edgeWeights[adjVertexIdx].weight;
 
                     let edge = {
                         edgeWeight: targetVertexWeight,
@@ -244,8 +244,8 @@ class GraphicalModel {
         */
         let weightDistribution = [0]; // weightDistribution is a distribution from 0 to 1, ex: [0, 0.4, 1]
         let weight = 0;
-        for (let i = 0; i < vertex.adjacentVertex.length; i++) {
-            weight += vertex.adjacentVertex[i].weight;
+        for (let i = 0; i < vertex.edgeWeights.length; i++) {
+            weight += vertex.edgeWeights[i].weight;
             weightDistribution.push(weight);
         }
 
@@ -262,7 +262,7 @@ class GraphicalModel {
 
         for (let i = 0; i < weightDistribution.length - 1; i++) {
             if (randomPick >= weightDistribution[i] && randomPick <= weightDistribution[i + 1]) {
-                return vertex.adjacentVertex[i].id;
+                return vertex.edgeWeights[i].id;
             }
         }
     }
@@ -276,7 +276,7 @@ class GraphicalModel {
         let visitedNodes = [vertexId];
         let node = data[vertexId];
 
-        while (node !== undefined && node.adjacentVertex !== undefined) {
+        while (node !== undefined && node.edgeWeights !== undefined) {
             console.log("Current Vertex: " + vertexId);
             vertexId = this._chooseRandomAdjVertex(node);
             // if (vertexId < 0) break;
@@ -753,14 +753,14 @@ class GraphicalModel {
         return this._weightedAdjMat;
     }
 
-    setEdgeWeights(id, adjVtx) {
+    setEdgeWeights(id, weights) {
         /* Set adjacent vertex for vertex with id */
 
-        if (id === undefined || adjVtx === undefined) {
+        if (id === undefined || weights === undefined) {
             throw new Error("pgm.setEdgeWeights(id, adjVtx) params are not defined.");
         }
 
-        this.graphData.data[id].adjacentVertex = adjVtx;
+        this.graphData.data[id].edgeWeights = weights;
         this.redraw();
     }
 

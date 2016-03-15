@@ -241,7 +241,7 @@ class ListenerPGM extends GraphicalModel {
     resetEdgeWeightsToBeListenerBeliefPGMEdgeWeights() {
         // Set listenerPGM's weights to be listenerBeliefPGM's edge weights
         for (let i = 0; i < this.graphData.clusterMat[0].length; i++) {
-            let listenerBeliefAdjVtx = this.listenerBeliefPGM.getGraphData().data[i].adjacentVertex;
+            let listenerBeliefAdjVtx = this.listenerBeliefPGM.getGraphData().data[i].edgeWeights;
             let adjVtx = Utils.cloneDR(listenerBeliefAdjVtx);
             this.setEdgeWeights(i, adjVtx);
         }
@@ -285,9 +285,9 @@ class ListenerPGM extends GraphicalModel {
         // Udate the pgm weigth
         let weightIdx = 0;
         for (let i = 0; i < this.graphData.clusterMat[0].length; i++) {
-            for (let j = 0; j < this.graphData.data[i].adjacentVertex.length; j++) {
-                this.graphData.data[i].adjacentVertex[j].weight = weight[weightIdx];
-                // log(this.graphData.data[i].adjacentVertex[j].weight);
+            for (let j = 0; j < this.graphData.data[i].edgeWeights.length; j++) {
+                this.graphData.data[i].edgeWeights[j].weight = weight[weightIdx];
+                // log(this.graphData.data[i].edgeWeights[j].weight);
                 weightIdx++;
             }
         }
