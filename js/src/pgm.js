@@ -919,6 +919,14 @@ class GraphicalModel {
             for (let vertexIdx = 0; vertexIdx < this.cMatDim[layerIdx]; vertexIdx++) {
                 let vertexID = this.getVertexId([layerIdx, vertexIdx]);
                 let numOfNodesNextLayer = this.cMatDim[layerIdx + 1];
+                let edgeWeights = [];
+                for (let i = 0; i < numOfNodesNextLayer; i++) {
+                    edgeWeights[i] = {
+                        id: this.getVertexId([layerIdx + 1, i]),
+                        weight: 1.0 / numOfNodesNextLayer
+                    };
+                }
+                this.setEdgeWeights(vertexID, edgeWeights);
             }
         }
     }

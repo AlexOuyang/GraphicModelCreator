@@ -158,31 +158,22 @@
             true                                    // Change speaker layer nodes radius based on the probability distribution
         ).setEdgeWeights(0, [{
             id: 3,
-            weight: 1.0 / 3.0
+            weight: 0.2
         }, {
             id: 4,
-            weight: 1.0 / 3.0
+            weight: 0.5
         }, {
             id: 5,
-            weight: 1.0 / 3.0
-        }]).setEdgeWeights(1, [{
-            id: 3,
-            weight: 1.0 / 3.0
-        }, {
-            id: 4,
-            weight: 1.0 / 3.0
-        }, {
-            id: 5,
-            weight: 1.0 / 3.0
+            weight: 0.3
         }]).setEdgeWeights(2, [{
             id: 3,
-            weight: 1.0 / 3.0
+            weight: 0.8
         }, {
             id: 4,
-            weight: 1.0 / 3.0
+            weight: 0.1
         }, {
             id: 5,
-            weight: 1.0 / 3.0
+            weight: 0.1
         }]);
 
     })();
