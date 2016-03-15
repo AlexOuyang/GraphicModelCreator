@@ -43,9 +43,7 @@ class ThoughtBubble {
 
     setEdgeWeights(vertexId, adjacentEdgeWeights) {
         this.listenerBelif.setEdgeWeights(vertexId, adjacentEdgeWeights);
-        this.listenerBelif.redraw();
         this.listener.resetEdgeWeightsToBeListenerBeliefPGMEdgeWeights();
-        this.listener.redraw();
         return this;
     }
 
@@ -245,7 +243,7 @@ class ListenerPGM extends GraphicalModel {
         for (let i = 0; i < this.graphData.clusterMat[0].length; i++) {
             let listenerBeliefAdjVtx = this.listenerBeliefPGM.getGraphData().data[i].adjacentVertex;
             let adjVtx = Utils.cloneDR(listenerBeliefAdjVtx);
-            this.graphData.data[i].adjacentVertex = adjVtx;
+            this.setEdgeWeights(i, adjVtx);
         }
     }
 

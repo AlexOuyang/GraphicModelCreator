@@ -761,6 +761,7 @@ class GraphicalModel {
         }
 
         this.graphData.data[id].adjacentVertex = adjVtx;
+        this.redraw();
     }
 
     //    this.setLabel = function (id, label) {
