@@ -31,6 +31,14 @@ class ListenerObserverPGM {
             .createAdjacencyMatrix(adjMatConfig)
             .init();
 
+        // Add image
+        // this.listenerBelif.svg.append("svg:image")
+        //     .attr('x', -9)
+        //     .attr('y', -12)
+        //     .attr('width', 200)
+        //     .attr('height', 200)
+        //     .attr("xlink:href", "img/1.png");
+
         // Then create ListenerPGM first based on the configuration
         // and bind the data to the graph for rendering
         let listenerClusterMatrix = [cMat[1], cMat[0]]; // mirror image of the belisef graph
@@ -57,7 +65,35 @@ ListenerBeliefPGM is composed of ListenerPGM
 class ListenerBeliefPGM extends GraphicalModel {
 
     constructor(graphConfiguration, divID) {
+
         super(graphConfiguration, divID);
+
+        let rectX = this.config.transform.width / 4,
+            rectY = this.config.transform.height * 3 / 20,
+            rectWidth = this.config.transform.width / 2,
+            rectHeight = this.config.transform.height * 3 / 4,
+            rectCornorRadius = 10;
+        this.rect
+            .attr("class", "background")
+            .attr("x", rectX)
+            .attr("y", rectY)
+            .attr("rx", rectCornorRadius)
+            .attr("ry", rectCornorRadius)
+            .attr("width", rectWidth)
+            .attr("height", rectHeight)
+            .style("fill", this.config.background.color)
+            .style("pointer-events", "all")
+            .on("click", d => {
+                pgm._backgroundOnClick();
+            });
+
+        let trianglePoint1 = [rectX + rectWidth / 3, rectY + rectHeight],
+            trianglePoint2 = [rectX + rectWidth / 2, this.config.transform.height],
+            trianglePoint3 = [rectX + rectWidth * 2 / 3, rectY + rectHeight];
+        let trianglePath = trianglePoint1[0] + "," + trianglePoint1[1] + ", " + trianglePoint2[0] + "," + trianglePoint2[1] + ", " + trianglePoint3[0] + "," + trianglePoint3[1];
+        this.svg.append("polygon") // attach a polygon
+        .style("fill", this.config.background.color)
+            .attr("points", trianglePath);
     }
 
     /*@Override*/

@@ -16,10 +16,10 @@
                 x: 0,
                 y: 0,
                 width: window.innerWidth * 2 / 3 - 20,
-                height: window.innerWidth / 3
+                height: window.innerWidth / 2.5
             },
             vertex: {
-                radius: 0.35,
+                radius: .35,
                 defaultStyle: {
                     backgroundColor: "#52bf90",
                     outlineColor: "#317256"
@@ -32,7 +32,7 @@
             edge: {
                 baseWidth: 0, // base width offset = baseWidth * circle radius
                 width: 1, // edge width = width * circle radius
-                defaultColor: "#b6ddcc",
+                defaultColor: "#74cba6",
                 visitedColor: "#1d4433",
                 timeInterval: 400 // timeInterval is in millisecond
             },
@@ -45,7 +45,7 @@
             },
             background: {
                 grid: false,
-                color: "white"
+                color: "#c7eadb"
             },
             autoPlay: {
                 on: false,
@@ -78,7 +78,7 @@
             },
             label: {
                 color: "#52bf90",
-                size: 0.5, // text size = size * circle radius
+                size: 0.35, // text size = size * circle radius
                 anchor: "middle",
                 alignment: "middle"
             },
@@ -89,7 +89,7 @@
                 alignment: "middle"
             },
             background: {
-                color: "white"
+                color: "rgba(255, 255, 255, 0)"
             }
         };
 
@@ -124,7 +124,7 @@
             },
             background: {
                 grid: false,
-                color: "white"
+                color: "rgba(255, 255, 255, 0)"
             },
             autoPlay: {
                 on: false,
@@ -143,10 +143,10 @@
 
         let clusterMat = [
             ["▢", "◯", "△"],
-            ["Sqr", "Cir", "Tri"]
+            ["Square", "Circle", "Triangle"]
         ];
 
-        let speakerLayerProbabilityDistribution = [0.1, 0.3, 0.6];
+        let speakerLayerProbabilityDistribution = [0.2, 0.3, 0.5];
 
 
         // By default, ListenerObserverPGM have uniform weight distribution,
@@ -439,8 +439,8 @@
 
         return new GraphicalModel(pgmConfig, "#pgm2")
             .createCluster(clusterMat, speakerNodeProbabilityDistribution, false)
-            .init() // if you init before creating adjacency matrix then the width of the speed bar would be different
             .createAdjacencyMatrix(matConfig)
+            .init() // if you init before creating adjacency matrix then the width of the speed bar would be differentƒ
             .setEdgeWeights(0, [{
                 id: 3,
                 weight: 0
