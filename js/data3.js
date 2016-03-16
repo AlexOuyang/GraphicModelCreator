@@ -45,7 +45,7 @@
             },
             background: {
                 grid: false,
-                color: "#c7eadb"
+                color: "#ccecde"
             },
             autoPlay: {
                 on: false,
@@ -195,10 +195,10 @@
                 x: 0,
                 y: 0,
                 width: window.innerWidth * 2 / 3 - 20,
-                height: window.innerWidth / 3
+                height: window.innerWidth / 2.5
             },
             vertex: {
-                radius: 0.35,
+                radius: .35,
                 defaultStyle: {
                     backgroundColor: "#52bf90",
                     outlineColor: "#317256"
@@ -211,7 +211,7 @@
             edge: {
                 baseWidth: 0, // base width offset = baseWidth * circle radius
                 width: 1, // edge width = width * circle radius
-                defaultColor: "#b6ddcc",
+                defaultColor: "#74cba6",
                 visitedColor: "#1d4433",
                 timeInterval: 400 // timeInterval is in millisecond
             },
@@ -224,7 +224,7 @@
             },
             background: {
                 grid: false,
-                color: "white"
+                color: "#ccecde"
             },
             autoPlay: {
                 on: false,
@@ -337,7 +337,7 @@
             adjacencyMatrixConfig, // Weighted adjacency matrix configuration
             clusterMat, // Cluster matrix specifies 
             speakerLayerProbabilityDistribution, // The probability distribution of the speaker layer nodes. They add up to 1
-            true // Change speaker layer nodes radius based on the probability distribution
+            false // Change speaker layer nodes radius based on the probability distribution
         );
 
     })();

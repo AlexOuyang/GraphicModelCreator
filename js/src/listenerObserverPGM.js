@@ -27,7 +27,7 @@ class ListenerObserverPGM {
 
         // Creating ListenerBeliefPGM first
         this.listenerBelif = new ListenerBeliefPGM(listenerBeliefConfig, listenerBeliefID)
-            .createCluster(cMat, speakerLayerProbabilityDistribution, true)
+            .createCluster(cMat, speakerLayerProbabilityDistribution, changeNodeRadiusBasedOnDistribution)
             .createAdjacencyMatrix(adjMatConfig)
             .init();
 
@@ -68,11 +68,23 @@ class ListenerBeliefPGM extends GraphicalModel {
 
         super(graphConfiguration, divID);
 
+        // Creates the dialgue box here
+        this._createDialogueBox();
+    }
+
+    /*@Override*/
+    // _dataScreening(data) {
+    //     super._dataScreening(data);
+    // }
+
+    _createDialogueBox() {
+        /* This method creates the dialogue box for listener's belief to achieve thought bubble effect */
+
         let rectX = this.config.transform.width / 4,
-            rectY = this.config.transform.height * 3 / 20,
+            rectY = this.config.transform.height * 2 / 15,
             rectWidth = this.config.transform.width / 2,
             rectHeight = this.config.transform.height * 3 / 4,
-            rectCornorRadius = 10;
+            rectCornorRadius = this.config.transform.width / 15;
         this.rect
             .attr("class", "background")
             .attr("x", rectX)
@@ -95,11 +107,6 @@ class ListenerBeliefPGM extends GraphicalModel {
         .style("fill", this.config.background.color)
             .attr("points", trianglePath);
     }
-
-    /*@Override*/
-    // _dataScreening(data) {
-    //     super._dataScreening(data);
-    // }
 
     _calculateWeights() {
         /*
