@@ -67,7 +67,7 @@ h1 {
     
     border-right-width: 40px;
     border-right-style: solid;
-    border-right-color: #ecf6f2;
+    border-right-color: white; /* this is the button background color */
 
     border-top-width: 20px;
     border-top-style: solid;

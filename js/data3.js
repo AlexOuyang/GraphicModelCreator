@@ -51,7 +51,7 @@
                 on: false,
                 button: {
                     dim: 1,
-                    color: "#74cba6"
+                    color: "#52bf90"
                 },
                 timeIntervalBetweenCycle: 400
             },
@@ -230,7 +230,7 @@
                 on: false,
                 button: {
                     dim: 1,
-                    color: "#74cba6"
+                    color: "#52bf90"
                 },
                 timeIntervalBetweenCycle: 400
             },
@@ -387,11 +387,11 @@
                 on: false,
                 button: {
                     dim: 1,
-                    color: "#74cba6"
+                    color: "#52bf90"
                 },
                 timeIntervalBetweenCycle: 400
             },
-            autoPlayable: false, // If autoPlayable, creates the autoplay button
+            autoPlayable: true, // If autoPlayable, creates the autoplay button
             cyclingSpeedControllable: true, // if cyclingSpeedControllable, create speed button
             zoomable: false,
         };
