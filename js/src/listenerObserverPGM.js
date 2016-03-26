@@ -72,13 +72,11 @@ class ListenerBeliefPGM extends GraphicalModel {
         this._createDialogueBox();
     }
 
-    /*@Override*/
-    // _dataScreening(data) {
-    //     super._dataScreening(data);
-    // }
 
     _createDialogueBox() {
-        /* This method creates the dialogue box for listener's belief to achieve thought bubble effect */
+        /* This method creates the dialogue box for listener's belief to achieve thought bubble effect.
+        The dialogue box is consisited of resized background rect from the listener's belief PGM and 
+        a small upsidedown triangle, which is used to give the feeling of a dialgoue bubble */
 
         let rectX = this.config.transform.width / 4,
             rectY = this.config.transform.height * 2 / 15,
@@ -99,9 +97,10 @@ class ListenerBeliefPGM extends GraphicalModel {
                 pgm._backgroundOnClick();
             });
 
-        let trianglePoint1 = [rectX + rectWidth / 3, rectY + rectHeight],
+        let offSet = -1,
+            trianglePoint1 = [rectX + rectWidth / 3, rectY + rectHeight + offSet],
             trianglePoint2 = [rectX + rectWidth / 2, this.config.transform.height],
-            trianglePoint3 = [rectX + rectWidth * 2 / 3, rectY + rectHeight];
+            trianglePoint3 = [rectX + rectWidth * 2 / 3, rectY + rectHeight + offSet];
         let trianglePath = trianglePoint1[0] + "," + trianglePoint1[1] + ", " + trianglePoint2[0] + "," + trianglePoint2[1] + ", " + trianglePoint3[0] + "," + trianglePoint3[1];
         this.svg.append("polygon") // attach a polygon
         .style("fill", this.config.background.color)
