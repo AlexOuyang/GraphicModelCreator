@@ -3,20 +3,32 @@
 "use strict";
 
 /**
- * This is the regulra probability Graphical Model that supports auto play loops and zoom in ability. It is the basis of ListenerObserver_pgm.
+ * This is the regular probability Graphical that supports auto play loops and zoom in capability.
  */
 
 class GraphicalModel {
 
     /**
-     * This is GraphicalModel constructor description.
-     * @param {object} - graphConfiguration is a configuration object for configuring the properties of this _pgm, it can be obtained via Config.getPGMConfig().
-     * @param {string} - divID is the id of the html tag that contains this pgm, it is of the form '#id_name'.
+     * Create a defiend space for the graphical model.
+     * @param {object} graphConfiguration - A configuration object for configuring the properties of this _pgm, it can be obtained via Config.getPGMConfig().
+     * @param {string} divID - The id of the html tag that contains this pgm, it is of the form '#id_name'.
      */
     constructor(graphConfiguration, divID) {
 
+        /**
+         * This graph's configuration.
+         * @memberof GraphicalModel
+         * @type {object}
+         */
         this.config = graphConfiguration;
 
+        /**
+         * Graph data includes labels, vertex and edge data.
+         * @memberof GraphicalModel
+         * @type {object}
+         * @property {object} clusterMat - A matrix of vertex labels in every layer.
+         * @property {object} data - An arry of vertex data where each vertex specifies its adjacency edges.
+         */
         this.graphData = {
             clusterMat: [], // data specifies the nodes in each layer
             data: [] // data binds to the graph
@@ -97,6 +109,10 @@ class GraphicalModel {
 
     }
 
+    /**
+     * Reset the adjacency matrix attached to this graphical model when the background is clicked. It is called in the on click listener function defined within this graphical model.
+     * @private
+     */
     _backgroundOnClickToResetAdjMatrix() {
         if (this._weightedAdjMat) {
             this._weightedAdjMat.resetMatrixWeight();
@@ -105,6 +121,10 @@ class GraphicalModel {
         }
     }
 
+    /**
+     * Reset the graph after visited path highlighting is finished. It is called in the on click listener function defined within this graphical model.
+     * @private
+     */
     _backgroundOnClick() {
         if (!this.config.autoPlayable) {
             if (this._canClick && !this.config.autoPlay.on) {
@@ -119,9 +139,11 @@ class GraphicalModel {
         }
     }
 
+    /**
+     * Verifies if each vertex's id matches its position in the data array and if the weights of all edges comin from each vertex sum up to 1.
+     * @private
+     */
     _dataScreening(data) {
-        /* Verifies if each vertex's id matches its position in the array 
-        and the weights of all adjacent vertices sum to 1; */
 
         if (data.length <= 1) {
             throw new Error("input graph data is empty");
@@ -151,10 +173,14 @@ class GraphicalModel {
     }
 
 
+    /**
+     * Modifies the data in graphData by adding a list of edges into each vertex.
+     * @private
+     */
     _createEdgesInGraphData(data) {
-        // Takes in the graph data, modifies the data by adding a list of edges into the data and add to self   
+
         if (data.length <= 1) {
-            throw new Error("input graph data is empty");
+            throw new Error("GraphicalModel._createEdgesInGraphData(): Input graph data is empty");
         }
 
         // Go through each vertex in data and add 'edges' attribute to each vertex
@@ -179,10 +205,12 @@ class GraphicalModel {
         }
     }
 
+    /**
+     * Choose a random adjacent vertex in the speaker layer based on the edge weights.
+     * @private
+     */
     _chooseRandomAdjVertexFromSpeakerLayer() {
-        /*
-        Choose a random adjacent vertex in the speaker layer based on the edge weights 
-        */
+
         let weightDistribution = [0]; // weightDistribution is a distribution from 0 to 1, ex: [0, 0.4, 1]
         let weight = 0;
         for (let i = 0; i < this._speakerLayerProbabilityDistribution.length; i++) {
@@ -199,10 +227,12 @@ class GraphicalModel {
         }
     }
 
+    /**
+     * Takes in a vertex data object from the array of data in graphData and chooses a random adjacent vertex in the next layer based on the edge weights.
+     * @private
+     */
     _chooseRandomAdjVertex(vertex) {
-        /*
-        Takes in a vertex and choose a random adjacent vertex in the next layer based on the edge weights 
-        */
+
         let weightDistribution = [0]; // weightDistribution is a distribution from 0 to 1, ex: [0, 0.4, 1]
         let weight = 0;
         for (let i = 0; i < vertex.edgeWeights.length; i++) {
@@ -228,11 +258,11 @@ class GraphicalModel {
         }
     }
 
+    /**
+     * Takes in the id of a node and traverse trough the graph to connect. impacted nodes and returns the id of the visited node.
+     * @private
+     */
     _traverseGraph(vertexId, data) {
-        /* 
-        Takes in the id of a node and traverse trough the graph to connect 
-        impacted nodes and returns the id of the visited node
-        */
 
         let visitedNodes = [vertexId];
         let node = data[vertexId];
@@ -251,9 +281,11 @@ class GraphicalModel {
     }
 
 
-
+    /**
+     * Draws the grid in the background.
+     * @private
+     */
     _drawGrid() {
-        /* Draws the axis in the background */
 
         this.container.append("g")
             .attr("class", "x axis")
@@ -276,7 +308,10 @@ class GraphicalModel {
             .attr("y2", d => d);
     }
 
-
+    /**
+     * Draws the text labels in each vertex.
+     * @private
+     */
     _drawText() {
         /* Add a text element to the previously added g element. */
         this.vertices.append("text")
@@ -293,6 +328,10 @@ class GraphicalModel {
             });
     }
 
+    /**
+     * Draws the grpah vertices.
+     * @private
+     */
     _drawVertices(data) {
         /* clear vertices then redraw all the vertices in the grpah */
 
@@ -314,8 +353,11 @@ class GraphicalModel {
         this._drawText();
     }
 
+    /**
+     * Draws the grpah edges highlight the clicked vertex.
+     * @private
+     */
     _drawEdges(data) {
-        /* Draw all edges and high light visited color */
 
         // clear edges then redraw all the edges in the graph 
         d3.selectAll(this._divID + " path").remove();
@@ -340,9 +382,13 @@ class GraphicalModel {
 
     }
 
-    /* EdgeNodes contains a pair of nodes (e.g. [node1, node2]) which are two ends of an edge, lengthMultiplier is used to determine the magnitude of the edge
-
-    @returns a highlightedEdge objects that contains the nodes information and the length information
+    /**
+     * Draw an highlighted edge between two vertices.
+     * @private
+     * @param {object} graphConfiguration - A configuration object for configuring the properties of this _pgm, it can be obtained via Config.getPGMConfig().
+     * @param {object} EdgeNodes - A pair of nodes (e.g. [node1, node2]) which are two ends of an edge, lengthMultiplier is used to determine the magnitude of the edge.
+     * @param {number} lengthMultiplier - Used to increase the length of the highlighted edge on both ends.
+     * @return {object} highlightedEdge - A highlightedEdge objects that contains the nodes information and the length information
      */
     _drawHighlightedEdge(edgeNodes, lengthMultiplier) {
         let x0 = edgeNodes[0].x,
@@ -505,16 +551,20 @@ class GraphicalModel {
         }
     }
 
+    /**
+     * Used to redraw the graph on start and when moving.
+     * @private
+     */
     _drawGraph(data) {
-        /* Used to redraw the graph on start and when moving */
-
         this._drawEdges(data);
         this._drawVertices(data);
     }
 
-
+    /**
+     * Kill all setTimeOut used to draw the visited path.
+     * @private
+     */
     _killAllSetTimeOut() {
-        // Kill all setTimeOut used to draw the visited path
         for (var i = 1; i < 99999; i++) {
             window.clearInterval(i);
             window.clearTimeout(i);
@@ -522,8 +572,11 @@ class GraphicalModel {
         }
     }
 
+    /**
+     * Clear the highlighted path and redraw the graph.
+     * @private
+     */
     _clearVisitedPath() {
-        /* empty the _directedPath array and redraw the graph */
 
         this._killAllSetTimeOut();
 
@@ -532,7 +585,10 @@ class GraphicalModel {
         this._drawGraph(this.graphData.data);
     }
 
-
+    /**
+     * Create the cycling speed control button on the top of the graph.
+     * @private
+     */
     _createCyclingSpeedControlButton() {
         let _pgm = this;
 
@@ -555,7 +611,10 @@ class GraphicalModel {
         $("#" + sliderID).css("width", sliderWidth + "px");
     }
 
-    // This function is called by jQuery slider function defined in _createCyclingSpeedControlButton
+    /**
+     * Called by jQuery slider function defined in _createCyclingSpeedControlButton to update the graph cycling speed based on the position of the UI button.
+     * @private
+     */
     _cyclingSpeedControlButtonOnClick(ui) {
         console.log("Slider Speed: " + ui.value);
         let sphereRad = ui.value;
@@ -563,6 +622,10 @@ class GraphicalModel {
         this.config.autoPlay.timeIntervalBetweenCycle = ui.value;
     }
 
+    /**
+     * Create the auto play button.
+     * @private
+     */
     _createPlayButton() {
         /* Used to create a play button, it modifies the default button property in button.css */
 
@@ -620,9 +683,11 @@ class GraphicalModel {
     }
 
 
-
+    /**
+     * Triggers a speaker node randomly following the specified speaker ndoe probability distribution.
+     * @private
+     */
     _triggerSpeakerNodeAutoPlay() {
-        /* Triggers a speaker node randomly following the specified distribution */
 
         let chosen_id;
         // If speaker node is of uniform distribution
@@ -634,8 +699,11 @@ class GraphicalModel {
         this._triggerSpeakerNode(chosen_id);
     }
 
+    /**
+     * Triggers a speaker node by id, traverse down and draw the visited path.
+     * @private
+     */
     _triggerSpeakerNode(id) {
-        /* triggers a speaker node by id, traverse down and draw the visited path. */
 
         let speakerLayerLength = this.graphData.clusterMat[0].length;
 
@@ -660,18 +728,21 @@ class GraphicalModel {
 
     }
 
-
+    /**
+     * Use this to redraw the graph after reset edge weights.
+     * @return {object} This graphicalModel object.
+     */
     redraw() {
-        /* Use this to redraw the graph after reset edge weights */
         this._createEdgesInGraphData(this.graphData.data);
         this._drawGraph(this.graphData.data);
-
         return this;
     }
 
-
+    /**
+     * Used to create and display the graph. Normally called after createCluster().
+     * @return {object} this graphicalModel object.
+     */
     init() {
-        /* Used to initialize and display the graph  after the set up is done*/
 
         this._dataScreening(this.graphData.data);
 
@@ -690,20 +761,31 @@ class GraphicalModel {
         return this;
     }
 
+    /**
+     * Used to get the weighted adjacency matrix object attached to this graph.
+     * @return {object} The weighted adjacency matrix object.
+     */
     getWeightedAdjacencyMatrix() {
         return this._weightedAdjMat;
     }
 
-    setEdgeWeights(id, weights) {
+    /**
+     * Set the adjacency edges for a vertex by id.
+     * @param {number} id - The id or the index of the vertex in the data array of the graphData.
+     * @param {object} edges - The object contains the adjacency edges of a vertex and their weights.
+       return this pgm to allow setEdgeWeights to be stacked.
+     * @return {object} This grpahicalModel object.
+     */
+    setEdgeWeights(id, edges) {
         /* Set adjacent vertex for vertex with id 
             return this pgm to allow setEdgeWeights to be stacked
         */
 
-        if (id === undefined || weights === undefined) {
+        if (id === undefined || edges === undefined) {
             throw new Error("graphicalModel.setEdgeWeights(id, adjVtx) params are not defined.");
         }
 
-        this.graphData.data[id].edgeWeights = weights;
+        this.graphData.data[id].edgeWeights = edges;
         this.redraw();
 
         return this;
@@ -729,10 +811,12 @@ class GraphicalModel {
     //    };
 
 
-    // Used by createCluster()
+    /** 
+     * A helper method used by createCluster() to change the speaker layer ndoe radius based on the probability distribution.
+     * @private
+     */
     _changeNodeRadius(baseRadius) {
         /* 
-        Change the speaker layer ndoe radius based on the probability distribution
         probabilityDistribution is the array of probability given to each node in the speaker layer
         set probabilityDistribution=[] for uniform distribution
         */
@@ -747,17 +831,14 @@ class GraphicalModel {
         }
     }
 
+    /**
+     * Used to create an array of vertix data in graphData based on the label cluster matrix (cMat). The graph edge weights are set to be uniform by defaut.
+     * @param {array} cMat - The label cluster matrix holds the labels. Ex of cluster mat [layer1_label_array, layer2_label_array, layer3_label_array] where each layer_label_array holds an array of labelrs in one layer.
+     * @param {array} probabilityDistribution - The array of probability given to each node in the speaker layer to be triggered. For uniform distribution, set probabilityDistribution = [].
+     * @param {boolean} changeNodeRadiusBasedOnDistribution - Governs whether vertex radius are affected by its distribution.
+     * @return {object} This graphicalModel object.
+     */
     createCluster(cMat, probabilityDistribution, changeNodeRadiusBasedOnDistribution) {
-        /* 
-        Used to create a clusters of nodes (Graphdata) based on the cMat(cluster matrix).
-        Also set the speaker layer probabilility distribution and have the option to
-        chagne the spekaer nodes radius based on probability
-        
-        cMat is the cluster matrix. Ex of cluster mat [layer1_label_array, layer2_label_array, layer3_label_array] 
-        probabilityDistribution is the array of probability given to each node in the speaker layer
-        set probabilityDistribution=[] for uniform distribution
-        changeNodeRadiusBasedOnDistribution is the boolean that governs whether nodes radius are affected by its distribution
-        */
 
         // Error checking
         if (probabilityDistribution.length != 0) {
@@ -836,15 +917,12 @@ class GraphicalModel {
         return this;
     }
 
-
-    getGraphData() {
-        return this.graphData;
-    }
-
-
+    /**
+     * Get the vertex id by vertexCoordinate.
+     * @param {array} vertexCoordinate - A coordiante pair, e.g [layer index, vertex index at that layer]
+     * @return {number} id_temp - The id of the vertex in the data array of the graphData.
+     */
     getVertexId(vertexCoordinate) {
-        // get vertex id by coordinate
-        // vertexCoordinate is a coordiante pair = [layer index, vertex index at that layer]
 
         let layerIdx = vertexCoordinate[0];
         let vertexIdx = vertexCoordinate[1];
@@ -860,7 +938,9 @@ class GraphicalModel {
     }
 
 
-    // Set the graph edge weights to be uniform
+    /**
+     * Set the graph edge weights to be uniform.
+     */
     setUniformEdgeWeights() {
         for (let layerIdx = 0; layerIdx < this.cMatDim.length - 1; layerIdx++) {
             for (let vertexIdx = 0; vertexIdx < this.cMatDim[layerIdx]; vertexIdx++) {
@@ -881,12 +961,18 @@ class GraphicalModel {
 
     /*=========== Graphical Model Autoplay ===========*/
 
+    /**
+     * Reset the weighted adjacency matrix weights.
+     */
     resetChart() {
-        /* reset the _weightedAdjMat */
         this._weightedAdjMat.resetMatrixWeight();
         this._weightedAdjMat.redrawMatrix();
     }
 
+    /**
+     * Start the autoPlay cycle. Called in on click listener function defiend in the vertex.
+     * @private
+     */
     _startAutoPlay() {
         /* called by the play button to start autoplay */
         this._canClick = false;
@@ -895,6 +981,10 @@ class GraphicalModel {
         this._triggerSpeakerNodeAutoPlay();
     }
 
+    /**
+     * Stop the autoPlay cycle. Called in on click listener function defiend in the vertex.
+     * @private
+     */
     _stopAutoPlay() {
         /* called by the stop button to stop autoplay */
         this._canClick = true;
@@ -912,8 +1002,11 @@ class GraphicalModel {
 
     /*======== Binding Adjacency Matrix To The Graphical Model =======*/
 
+    /**
+     * Used in _drawVisitedPath() to update the adjacency matrix cell weights and color.
+     * @private
+     */
     _updateChart() {
-        /* Used in _drawVisitedPath() to update the adjacency matrix _weightedAdjMat */
         let _rowIdx = this._directedPath[0];
         let _colIdx = this._directedPath[this._directedPath.length - 1];
         if (_rowIdx < 0 || _colIdx < 0) return;
@@ -928,6 +1021,11 @@ class GraphicalModel {
     }
 
 
+    /**
+     * Used create a weighted adjacency matrix for this graph based on the matrix config object.
+     * @param {object} chartConfig - The matrix configuration object. It can be obtained via Config.getAdjacencyMatrixConfig().
+     * @return {object} This graphicalModel object.
+     */
     createAdjacencyMatrix(chartConfig) {
         /* Create a _weightedAdjMat and bind to the graphic model */
 

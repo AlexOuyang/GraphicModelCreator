@@ -1,15 +1,27 @@
 /*=============== Utilities ==================*/
 
-// Used to replace console.log,  EX: log('hello'); // hello 
+/** 
+ * The replacement of console.log().
+ * @function log
+ */
 const log = mesg => console.log(mesg);
 
-// Implement max and min function for array
+/** 
+ * An extension of the Array object, it finds the max element in an array.
+ * @function Array.max
+ */
 Array.max = array => Math.max.apply(Math, array);
+
+/** 
+ * An extension of the Array object, it finds the min element in an array.
+ * @function Array.min
+ */
 Array.min = array => Math.min.apply(Math, array);
+
 
 var Utils = {};
 
-(function () {
+(function() {
     "use strict";
 
     Utils.cloneDR = function cloneDR(o) {
@@ -21,8 +33,8 @@ var Utils = {};
         }
 
         let set = gdcc in o,
-            cache = o[gdcc],
-            result;
+        cache = o[gdcc],
+        result;
         if (set && typeof cache == "function") {
             return cache();
         }
@@ -61,7 +73,7 @@ var Utils = {};
         return (typeof _obj !== 'object' || _obj === null ?
             false :
             (
-                (function () {
+                (function() {
                     while (!false) {
                         if (Object.getPrototypeOf(_test = Object.getPrototypeOf(_test)) === null) {
                             break;

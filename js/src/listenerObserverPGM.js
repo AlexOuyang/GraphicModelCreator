@@ -256,7 +256,7 @@ class ListenerPGM extends GraphicalModel {
         let weights = [];
         for (let i = 0; i < this.cMatDim[0]; i++) {
             for (let vertexIdx = 0; vertexIdx < this.listenerBeliefPGM.cMatDim[0]; vertexIdx++) {
-                let listenerEdgeWeights = this.listenerBeliefPGM.getGraphData().data[vertexIdx].edgeWeights;
+                let listenerEdgeWeights = this.listenerBeliefPGM.graphData.data[vertexIdx].edgeWeights;
                 weights.push(listenerEdgeWeights[i].weight);
             }
         }
