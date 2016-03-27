@@ -740,6 +740,8 @@ class GraphicalModel {
     /**
      * Used to create and display the graph. Normally called after createCluster().
      * @return {object} this graphicalModel object.
+     * @example
+     * graphicalModel.init();
      */
     init() {
 
@@ -773,6 +775,18 @@ class GraphicalModel {
      * @param {number} id - The id or the index of the vertex in the data array of the graphData.
      * @param {object} edges - The object contains the adjacency edges of a vertex and their weights.
        return this pgm to allow setEdgeWeights to be stacked.
+     * @example
+     * // Create three directed edges 0->3, 0->4, 0->5 with edge weiths 0.8, 0.1 and 0.1
+     * graphicalModel.setEdgeWeights(0, [{
+            id: 3,
+            weight: 0.8
+        }, {
+            id: 4,
+            weight: 0.1
+        }, {
+            id: 5,
+            weight: 0.1
+        }]);
      * @return {object} This grpahicalModel object.
      */
     setEdgeWeights(id, edges) {
@@ -836,6 +850,8 @@ class GraphicalModel {
      * @param {array} probabilityDistribution - The array of probability given to each node in the speaker layer to be triggered. For uniform distribution, set probabilityDistribution = [].
      * @param {boolean} changeNodeRadiusBasedOnDistribution - Governs whether vertex radius are affected by its distribution.
      * @return {object} This graphicalModel object.
+     * @example
+     * graphicalModel.createCluster(clusterMat, speakerNodeProbabilityDistribution, true);
      */
     createCluster(cMat, probabilityDistribution, changeNodeRadiusBasedOnDistribution) {
 

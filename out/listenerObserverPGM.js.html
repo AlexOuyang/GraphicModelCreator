@@ -1,4 +1,32 @@
-/*=============================================================*/
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: listenerObserverPGM.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: listenerObserverPGM.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*=============================================================*/
 /*=================== ListenerObserverPGM =====================*/
 /*=============================================================*/
 
@@ -26,10 +54,10 @@ class ListenerObserverPGM {
         let listenerBeliefID = divID + "ListenerBeliefPGM";
         let listenerID = divID + "ListenerPGM";
 
-        let $listenerBelief = $("<div>", {
+        let $listenerBelief = $("&lt;div>", {
             id: listenerBeliefID.substring(1)
         });
-        let $listener = $("<div>", {
+        let $listener = $("&lt;div>", {
             id: listenerID.substring(1)
         });
 
@@ -157,11 +185,11 @@ class ListenerBeliefPGM extends GraphicalModel {
         let firstLayerLength = this.graphData.clusterMat[0].length;
         let lastLayerLength = this.graphData.clusterMat[this.graphData.clusterMat.length - 1].length;
         // Calculate the new edge weights based on adj matrix
-        for (let i = 0; i < firstLayerLength; i++) {
-            for (let j = 0; j < lastLayerLength; j++) {
+        for (let i = 0; i &lt; firstLayerLength; i++) {
+            for (let j = 0; j &lt; lastLayerLength; j++) {
                 let M_ij = this.getWeightedAdjacencyMatrix().getCellWeight([i, j]);
                 let Mij_summation_over_j = 0;
-                for (let sigma_sub_j = 0; sigma_sub_j <= j; sigma_sub_j++) {
+                for (let sigma_sub_j = 0; sigma_sub_j &lt;= j; sigma_sub_j++) {
                     Mij_summation_over_j += this.getWeightedAdjacencyMatrix().getCellWeight([i, sigma_sub_j]);
                 }
                 // log([M_ij, Mij_summation_over_j])
@@ -177,11 +205,11 @@ class ListenerBeliefPGM extends GraphicalModel {
         let vertexWeightSumTemp = []; // each element is the weight sum for a vertex
         let weightIdx = 1;
         let tempWeightSumForVertex = 0;
-        for (let i = 0; i < weight.length; i++) {
+        for (let i = 0; i &lt; weight.length; i++) {
             tempWeightSumForVertex += weight[i];
             if (weightIdx % firstLayerLength == 0) {
                 // push vertex sum "firstLayerLength" many times so its easier to normalize weight
-                for (let j = 0; j < firstLayerLength; j++) {
+                for (let j = 0; j &lt; firstLayerLength; j++) {
                     vertexWeightSumTemp.push(tempWeightSumForVertex);
                 }
                 tempWeightSumForVertex = 0;
@@ -193,7 +221,7 @@ class ListenerBeliefPGM extends GraphicalModel {
 
         // Normalize
         let normalizedWeight = [];
-        for (let i = 0; i < weight.length; i++) {
+        for (let i = 0; i &lt; weight.length; i++) {
             normalizedWeight[i] = (vertexWeightSumTemp[i] === 0) ? 0 : weight[i] / vertexWeightSumTemp[i];
         }
 
@@ -310,7 +338,7 @@ class ListenerPGM extends GraphicalModel {
      */
     _backgroundOnClick() {
         // Prevent adjMatrix gets reset when click on background
-        if (this._canClick && !this.listenerBeliefPGM.config.autoPlay.on) {
+        if (this._canClick &amp;&amp; !this.listenerBeliefPGM.config.autoPlay.on) {
             super._backgroundOnClick();
         }
     }
@@ -321,8 +349,8 @@ class ListenerPGM extends GraphicalModel {
     resetEdgeWeightsToBeListenerBeliefPGMEdgeWeights() {
         // Set listenerPGM to be listenerBeliefPGM's mirror
         let weights = [];
-        for (let i = 0; i < this.cMatDim[0]; i++) {
-            for (let vertexIdx = 0; vertexIdx < this.listenerBeliefPGM.cMatDim[0]; vertexIdx++) {
+        for (let i = 0; i &lt; this.cMatDim[0]; i++) {
+            for (let vertexIdx = 0; vertexIdx &lt; this.listenerBeliefPGM.cMatDim[0]; vertexIdx++) {
                 let listenerEdgeWeights = this.listenerBeliefPGM.graphData.data[vertexIdx].edgeWeights;
                 weights.push(listenerEdgeWeights[i].weight);
             }
@@ -374,9 +402,9 @@ class ListenerPGM extends GraphicalModel {
     updateWeight(weight) {
 
         let weightIdx = 0;
-        for (let vertexIdx = 0; vertexIdx < this.cMatDim[0]; vertexIdx++) {
+        for (let vertexIdx = 0; vertexIdx &lt; this.cMatDim[0]; vertexIdx++) {
             let edgeWeights = [];
-            for (let i = 0; i < this.cMatDim[1]; i++) {
+            for (let i = 0; i &lt; this.cMatDim[1]; i++) {
                 edgeWeights[i] = {
                     id: this.getVertexId([1, i]),
                     weight: weight[weightIdx]
@@ -388,4 +416,26 @@ class ListenerPGM extends GraphicalModel {
     }
 
 
-}
+}</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Configuration.html">Configuration</a></li><li><a href="GraphicalModel.html">GraphicalModel</a></li><li><a href="ListenerBeliefPGM.html">ListenerBeliefPGM</a></li><li><a href="ListenerObserverPGM.html">ListenerObserverPGM</a></li><li><a href="ListenerPGM.html">ListenerPGM</a></li><li><a href="WeightedAdjacencyMatrix.html">WeightedAdjacencyMatrix</a></li></ul><h3>Global</h3><ul><li><a href="global.html#log">log</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sun Mar 27 2016 15:24:27 GMT-0700 (PDT)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

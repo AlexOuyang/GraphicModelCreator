@@ -173,7 +173,7 @@
             listenerBeliefConfig, // Listener's belief pgm configuration
             listenerConfig, // Listener pgm configuration
             adjacencyMatrixConfig, // Weighted adjacency matrix configuration
-            clusterMat, // Cluster matrix specifies 
+            clusterMat, // Cluster matrix specifies the vertex labels
             speakerLayerProbabilityDistribution, // The probability distribution of the speaker layer nodes. They add up to 1
             true // Change speaker layer nodes radius based on the probability distribution
         ).setEdgeWeights(0, [{

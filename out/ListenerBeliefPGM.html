@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Class: GraphicalModel</title>
+    <title>JSDoc: Class: ListenerBeliefPGM</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Class: GraphicalModel</h1>
+    <h1 class="page-title">Class: ListenerBeliefPGM</h1>
 
     
 
@@ -28,9 +28,9 @@
 
 <header>
     
-        <h2>GraphicalModel</h2>
+        <h2>ListenerBeliefPGM</h2>
         
-            <div class="class-description">The regular probability Graphical that supports auto play loops and zoom in capability.</div>
+            <div class="class-description">The graphical model represents the listener's belief.</div>
         
     
 </header>
@@ -44,14 +44,14 @@
     <h2>Constructor</h2>
     
 
-    <h4 class="name" id="GraphicalModel"><span class="type-signature"></span>new GraphicalModel<span class="signature">(graphConfiguration, divID)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="ListenerBeliefPGM"><span class="type-signature"></span>new ListenerBeliefPGM<span class="signature">(graphConfiguration, divID)</span><span class="type-signature"></span></h4>
 
     
 
 
 
 <div class="description">
-    Create a defiend space for the graphical model.
+    Create a defiend space for the listener's belief graphical model in the form of a dialogue box.
 </div>
 
 
@@ -167,7 +167,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="graphicalModel.js.html">graphicalModel.js</a>, <a href="graphicalModel.js.html#line8">line 8</a>
+        <a href="listenerObserverPGM.js.html">listenerObserverPGM.js</a>, <a href="listenerObserverPGM.js.html#line97">line 97</a>
     </li></ul></dd>
     
 
@@ -197,6 +197,17 @@
     </div>
 
     
+        <h3 class="subsection-title">Extends</h3>
+
+        
+
+
+    <ul>
+        <li><a href="GraphicalModel.html">GraphicalModel</a></li>
+    </ul>
+
+
+    
 
     
 
@@ -207,112 +218,37 @@
     
 
     
-        <h3 class="subsection-title">Members</h3>
+
+    
+        <h3 class="subsection-title">Methods</h3>
 
         
             
-<h4 class="name" id=".this.config"><span class="type-signature">(static) </span>this.config<span class="type-signature"> :object</span></h4>
 
+    
+
+    <h4 class="name" id="bindToListenerPGM"><span class="type-signature"></span>bindToListenerPGM<span class="signature">(listener)</span><span class="type-signature"> &rarr; {object}</span></h4>
+
+    
 
 
 
 <div class="description">
-    This graph's configuration.
+    Bind the listenerBeliefPGM to the ListenerPGM.
 </div>
 
 
 
-    <h5>Type:</h5>
-    <ul>
-        <li>
-            
-<span class="param-type">object</span>
-
-
-        </li>
-    </ul>
 
 
 
 
 
-<dl class="details">
 
+    <h5>Parameters:</h5>
     
 
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="graphicalModel.js.html">graphicalModel.js</a>, <a href="graphicalModel.js.html#line22">line 22</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-        
-            
-<h4 class="name" id=".this.graphData"><span class="type-signature">(static) </span>this.graphData<span class="type-signature"> :object</span></h4>
-
-
-
-
-<div class="description">
-    Graph data includes labels, vertex and edge data.
-</div>
-
-
-
-    <h5>Type:</h5>
-    <ul>
-        <li>
-            
-<span class="param-type">object</span>
-
-
-        </li>
-    </ul>
-
-
-
-
-
-    <h5 class="subsection-title">Properties:</h5>
-
-    
-
-<table class="props">
+<table class="params">
     <thead>
     <tr>
         
@@ -334,7 +270,7 @@
 
         <tr>
             
-                <td class="name"><code>clusterMat</code></td>
+                <td class="name"><code>listener</code></td>
             
 
             <td class="type">
@@ -350,35 +286,14 @@
 
             
 
-            <td class="description last">A matrix of vertex labels in every layer.</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>data</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">object</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">An arry of vertex data where each vertex specifies its adjacency edges.</td>
+            <td class="description last">The listenerBeliefPGM.</td>
         </tr>
 
     
     </tbody>
 </table>
+
+
 
 
 
@@ -412,7 +327,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="graphicalModel.js.html">graphicalModel.js</a>, <a href="graphicalModel.js.html#line31">line 31</a>
+        <a href="listenerObserverPGM.js.html">listenerObserverPGM.js</a>, <a href="listenerObserverPGM.js.html#line282">line 282</a>
     </li></ul></dd>
     
 
@@ -428,11 +343,37 @@
 
 
 
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
         
-    
+<div class="param-desc">
+    this listenerBeliefPGM object.
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">object</span>
+
+
+    </dd>
+</dl>
 
     
-        <h3 class="subsection-title">Methods</h3>
+
+
 
         
             
@@ -516,6 +457,11 @@
 
     
 
+    
+    <dt class="inherited-from">Inherited From:</dt>
+    <dd class="inherited-from"><ul class="dummy"><li>
+        <a href="GraphicalModel.html#createAdjacencyMatrix">GraphicalModel#createAdjacencyMatrix</a>
+    </li></ul></dd>
     
 
     
@@ -718,6 +664,11 @@
     
 
     
+    <dt class="tag-overrides">Overrides:</dt>
+    <dd class="tag-overrides"><ul class="dummy"><li>
+        <a href="GraphicalModel.html#createCluster">GraphicalModel#createCluster</a>
+    </li></ul></dd>
+    
 
     
 
@@ -874,6 +825,11 @@
     
 
     
+    <dt class="inherited-from">Inherited From:</dt>
+    <dd class="inherited-from"><ul class="dummy"><li>
+        <a href="GraphicalModel.html#getVertexId">GraphicalModel#getVertexId</a>
+    </li></ul></dd>
+    
 
     
 
@@ -978,6 +934,11 @@
     
 
     
+    <dt class="inherited-from">Inherited From:</dt>
+    <dd class="inherited-from"><ul class="dummy"><li>
+        <a href="GraphicalModel.html#getWeightedAdjacencyMatrix">GraphicalModel#getWeightedAdjacencyMatrix</a>
+    </li></ul></dd>
+    
 
     
 
@@ -1081,6 +1042,11 @@
 
     
 
+    
+    <dt class="inherited-from">Inherited From:</dt>
+    <dd class="inherited-from"><ul class="dummy"><li>
+        <a href="GraphicalModel.html#init">GraphicalModel#init</a>
+    </li></ul></dd>
     
 
     
@@ -1191,6 +1157,11 @@
     
 
     
+    <dt class="inherited-from">Inherited From:</dt>
+    <dd class="inherited-from"><ul class="dummy"><li>
+        <a href="GraphicalModel.html#redraw">GraphicalModel#redraw</a>
+    </li></ul></dd>
+    
 
     
 
@@ -1294,6 +1265,11 @@
 
     
 
+    
+    <dt class="inherited-from">Inherited From:</dt>
+    <dd class="inherited-from"><ul class="dummy"><li>
+        <a href="GraphicalModel.html#resetChart">GraphicalModel#resetChart</a>
+    </li></ul></dd>
     
 
     
@@ -1450,6 +1426,11 @@
     
 
     
+    <dt class="inherited-from">Inherited From:</dt>
+    <dd class="inherited-from"><ul class="dummy"><li>
+        <a href="GraphicalModel.html#setEdgeWeights">GraphicalModel#setEdgeWeights</a>
+    </li></ul></dd>
+    
 
     
 
@@ -1568,6 +1549,11 @@ graphicalModel.setEdgeWeights(0, [{
 
     
 
+    
+    <dt class="inherited-from">Inherited From:</dt>
+    <dd class="inherited-from"><ul class="dummy"><li>
+        <a href="GraphicalModel.html#setUniformEdgeWeights">GraphicalModel#setUniformEdgeWeights</a>
+    </li></ul></dd>
     
 
     
