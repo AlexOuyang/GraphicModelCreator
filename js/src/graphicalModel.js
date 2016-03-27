@@ -2,6 +2,7 @@
 
 "use strict";
 
+
 /**
  * The regular probability Graphical that supports auto play loops and zoom in capability.
  */

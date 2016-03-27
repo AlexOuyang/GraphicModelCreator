@@ -2,22 +2,14 @@
 
 
 /**
- * Created by Alex Chenxing Ouyang
  * This is used to obtain the default configurations for PGMs
  */
-
 class Configuration {
 
+    /**
+     * Create a new object for obtaining configuration objects.
+     */
     constructor() {
-        /**
-         * @memberof WeightedAdjMat
-         * @type {Object}
-         * @property {Object} transform - The transform property can be used to position and scale the WeightedAdjMat object
-         * @property {Object} matrix - The matix property can be used to position, scale and color the matrix
-         * @property {Object} label - The label property can be used to color and scale the matrix labels
-         * @property {Object} text - The text property can be used to color and scale the matrix cell weight
-         * @property {Object} background - The background property can be used to change the color of the background
-         */
 
         // Handles the configuration of listener's belief
         this._listenerBeliefConfig = {
@@ -200,21 +192,41 @@ class Configuration {
         };
     }
 
+    /**
+     * Used to obtain the listenerBeliefConfig.
+     * @return {object} listenerBeliefConfig - The configuration for the listener's belief graphical model.
+     */
     getListenerBeliefConfig() {
         return Utils.cloneDR(this._listenerBeliefConfig);
     }
 
+    /**
+     * Used to obtain the listenerBeliefConfig.
+     * @return {object} listenerBeliefConfig - The configuration for the listener graphical model.
+     */
     getListenerConfig() {
         return Utils.cloneDR(this._listenerConfig);
     }
 
+    /**
+     * Used to obtain the adjacencyMatrixConfig.
+     * @return {object} adjacencyMatrixConfig - The configuration for the adjacency matrix attached to the specified graphical model.
+     */
     getAdjacencyMatrixConfig() {
         return Utils.cloneDR(this._adjacencyMatrixConfig);
     }
 
+    /**
+     * Used to obtain the pgmConfig.
+     * @return {object} pgmConfig - The regular graphical model config.
+     */
     getPgmConfig() {
         return Utils.cloneDR(this._pgmConfig);
     }
 }
 
+/**
+ * Create a singleton for obtaining configuration objects.
+ * See {@link Configuration} to obtain configuration objects for graphical models.
+ */
 let Config = new Configuration();

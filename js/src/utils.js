@@ -1,5 +1,8 @@
 /*=============== Utilities ==================*/
 
+'use strict';
+
+
 /** 
  * The replacement of console.log().
  * @function log
@@ -19,12 +22,22 @@ Array.max = array => Math.max.apply(Math, array);
 Array.min = array => Math.min.apply(Math, array);
 
 
-var Utils = {};
+/** 
+ * Utility functions
+ */
+class Utilities {
 
-(function() {
-    "use strict";
+    /**
+     * Create an instance of the Utilities class.
+     */
+    constructor() {}
 
-    Utils.cloneDR = function cloneDR(o) {
+    /**
+     * Deep clone an object.
+     * @param {object} o - The object to be cloned.
+     * @return {object} result - A deep clone of an object.
+     */
+    cloneDR(o) {
         /* Clone an object deeply and recursively */
 
         const gdcc = "__getDeepCircularCopy__";
@@ -44,15 +57,15 @@ var Utils = {};
         if (o instanceof Array) {
             result = [];
             for (let i = 0; i < o.length; i++) {
-                result[i] = cloneDR(o[i]);
+                result[i] = this.cloneDR(o[i]);
             }
         } else {
             result = {};
             for (let prop in o) {
                 if (prop != gdcc) {
-                    result[prop] = cloneDR(o[prop]);
+                    result[prop] = this.cloneDR(o[prop]);
                 } else if (set) {
-                    result[prop] = cloneDR(cache);
+                    result[prop] = this.cloneDR(cache);
                 }
             }
         }
@@ -62,11 +75,15 @@ var Utils = {};
             delete o[gdcc]; // unset again
         }
         return result;
-    };
+    }
 
 
-
-    Utils.isObjLiteral = function isObjLiteral(_obj) {
+    /**
+     * Check if an object is an object literal.
+     * @param {object} _obj - The object to be inspected.
+     * @return {boolea} True if the object is a literal, false otherwise.
+     */
+    isObjLiteral(_obj) {
         /* verify if an object is an object literal */
 
         let _test = _obj;
@@ -83,13 +100,15 @@ var Utils = {};
                 })()
             )
         );
-    };
+    }
 
     /**
-     * Darkens or lightens hex color value
-     * percentage ranges form -100(dark) to +100(light)
+     * Darkens or lightens hex color value.
+     * @param {string} colorHex - The hex color string.
+     * @param {number} percent - The percentage ranges form -100(dark) to +100(light).
+     * @return {string} The new color hex.
      */
-    Utils.shadeColor = function Utils(colorHex, percent) {
+    shadeColor(colorHex, percent) {
 
         var R = parseInt(colorHex.substring(1, 3), 16);
         var G = parseInt(colorHex.substring(3, 5), 16);
@@ -108,6 +127,13 @@ var Utils = {};
         var BB = ((B.toString(16).length === 1) ? "0" + B.toString(16) : B.toString(16));
 
         return "#" + RR + GG + BB;
-    };
+    }
 
-}());
+}
+
+
+/**
+ * Create a singleton for using utility functions.
+ * See {@link Utilities}.
+ */
+let Utils = new Utilities();
