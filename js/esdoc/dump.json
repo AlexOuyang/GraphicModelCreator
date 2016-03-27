@@ -1,0 +1,3429 @@
+[
+  {
+    "__docId__": 0,
+    "kind": "file",
+    "static": true,
+    "variation": null,
+    "name": "src/graphicalModel.js",
+    "memberof": null,
+    "longname": "src/graphicalModel.js",
+    "access": null,
+    "description": null,
+    "lineNumber": 3,
+    "content": "/*=============== Probability Graphic Model ====================*/\n\n\"use strict\";\n\n/**\n * This is the regulra probability Graphical Model that supports auto play loops and zoom in ability. It is the basis of ListenerObserverPGM.\n */\n\nclass GraphicalModel {\n\n    /**\n     * This is GraphicalModel constructor description.\n     * @param {object} - graphConfiguration is a configuration object for configuring the properties of this pgm, it can be obtained via Config.getPgmConfig().\n     * @param {string} - divID is the id of the html tag that contains this pgm, it is of the form '#id_name'.\n     */\n    constructor(graphConfiguration, divID) {\n\n        this._weightedAdjMat = null; // holds the adjacency matrix chart \n\n        let defaultConfig = {\n            transform: {\n                x: 0,\n                y: 0,\n                width: window.innerWidth,\n                height: window.innerHeight - 80\n            },\n            vertex: {\n                radius: 0.35,\n                defaultStyle: {\n                    backgroundColor: \"#52bf90\",\n                    outlineColor: \"#317256\"\n                },\n                visited: {\n                    visitedColor: \"#1d4433\",\n                    outlineColor: \"#1d4433\"\n                }\n            },\n            edge: {\n                baseWidth: 0, // base width offset = baseWidth * circle radius\n                width: 0.5, // edge width = width * circle radius\n                defaultColor: \"#b6ddcc\",\n                visitedColor: \"#1d4433\",\n                timeInterval: 600 // timeInterval to complete highlighting on edge is in millisecond\n            },\n            text: {\n                color: \"white\",\n                size: 0.5, // text size = size * circle radius\n                anchor: \"middle\",\n                alignment: \"middle\"\n\n            },\n            background: {\n                grid: true,\n                color: \"#ecf6f2\"\n            },\n            autoPlay: {\n                on: false, // true when user clicks on the play button and the graph cycles, else false\n                button: {\n                    dim: 1, // size of the play button\n                    color: \"#74cba6\"\n                },\n                timeIntervalBetweenCycle: 800\n            },\n            autoPlayable: true, // If autoPlayable, creates the autoplay button    \n            cyclingSpeedControllable: true, // if cyclingSpeedControllable, create speed button\n            zoomable: true,\n        };\n\n        this.config = graphConfiguration || defaultConfig;\n\n        this.graphData = {\n            clusterMat: [], // data specifies the nodes in each layer\n            data: [] // data binds to the graph\n        };\n\n        this._directedPath = []; // _directedPath is a list of visited nodes' ID\n\n        this._canClick = true; // Used to keep user from clicking when the graph is traversing\n\n        this.speakerLayerProbabilityDistribution = []; //  an array of probability given to each node in the speaker layer, probabilityDistribution=[] if uniform distribution\n\n\n        let pgm = this;\n\n        this.divID = divID;\n\n        // Click on the node in the speaker layer to draw visited path\n        this.onClick = d3.behavior.drag()\n            .origin(d => d)\n            .on(\"dragstart\", function(d) {\n                // Check if the clicked node is in the first layer\n                // which are the num of nodes in first layer of clusterMat\n                // Only allow user to click the node if autoplay is off\n                if (pgm._canClick && !pgm.config.autoPlayable) {\n                    d3.event.sourceEvent.stopPropagation();\n                    d3.select(this).classed(\"dragging\", true);\n                    pgm._triggerSpeakerNode(this.id);\n                }\n            });\n\n        this.svg = d3.select(divID).append(\"svg\")\n            .attr(\"class\", \"graph\")\n            .attr(\"width\", this.config.transform.width)\n            .attr(\"height\", this.config.transform.height)\n            .append(\"g\")\n            .attr(\"transform\", \"translate(\" + this.config.transform.x + \",\" + this.config.transform.y + \")\");\n\n        // Set up the background rect wrapper\n        this.rect = this.svg.append(\"rect\")\n            .attr(\"class\", \"background\")\n            .attr(\"width\", this.config.transform.width)\n            .attr(\"height\", this.config.transform.height)\n            .style(\"fill\", this.config.background.color)\n            .style(\"pointer-events\", \"all\")\n            .on(\"click\", d => {\n                pgm._backgroundOnClick();\n            });\n\n        this.container = this.svg.append(\"g\");\n\n        // Specify the function for generating path data   \n        // \"linear\" for piecewise linear segments\n        // Creating path using data in pathinfo and path data generator\n        // Used in _drawEdges() and _drawVisitedPath();\n        this.line = d3.svg.line()\n            .x(d => d.x)\n            .y(d => d.y)\n            .interpolate(\"linear\");\n\n        this.vertices = null; // D3 object, initiated in drawVertices()\n\n\n        // Zoom behavior\n        this.zoom = d3.behavior.zoom().scaleExtent([1, 10])\n            .on(\"zoom\", () => {\n                this.container.attr(\n                    \"transform\",\n                    \"translate(\" + d3.event.translate + \")scale(\" + d3.event.scale + \")\"\n                );\n            });\n\n        // Zoom behavior\n        if (this.config.zoomable) {\n            this.svg.call(this.zoom);\n        }\n\n    }\n\n    _backgroundOnClickToResetAdjMatrix() {\n        if (this._weightedAdjMat) {\n            this._weightedAdjMat.resetMatrixWeight();\n            this._weightedAdjMat.resetMatrixColorWeight();\n            this._weightedAdjMat.redrawMatrix();\n        }\n    }\n\n    _backgroundOnClick() {\n        if (!this.config.autoPlayable) {\n            if (this._canClick && !this.config.autoPlay.on) {\n                this._clearVisitedPath();\n                // Do not allow user to click until visited path highlighting is finished\n                this._canClick = false;\n                setTimeout(() => this._canClick = true, this.config.edge.timeInterval * (this._directedPath.length - 1));\n\n                // click on background to reset adjacency matrix\n                this._backgroundOnClickToResetAdjMatrix();\n            }\n        }\n    }\n\n    _dataScreening(data) {\n        /* Verifies if each vertex's id matches its position in the array \n        and the weights of all adjacent vertices sum to 1; */\n\n        if (data.length <= 1) {\n            throw new Error(\"input graph data is empty\");\n        }\n\n        let weightSum = 0;\n        for (let vertexIdx = 0; vertexIdx < data.length; vertexIdx++) {\n            if (data[vertexIdx].id !== vertexIdx) {\n                throw new Error(\"Vertex's id must match its position index in the list of vertices. The \" + vertexIdx + \" th element in the list does not match its position index\");\n            }\n            let allEdgeZero = true;\n            let adjVertices = data[vertexIdx].edgeWeights;\n            if (adjVertices) {\n                // Check if all edges have weight 0\n\n                for (let i = 0; i < adjVertices.length; i++) {\n                    weightSum += adjVertices[i].weight;\n                    if (adjVertices[i].weight !== 0) allEdgeZero = false;\n                }\n\n                if (weightSum !== 1.0 && allEdgeZero === false) {\n                    throw new Error(\"The sum of a vertex's adjacent edge's weight must be 1 or all edges have a weight of 0. \" + \"The \" + vertexIdx + \"th vertex is invalid.\");\n                }\n            }\n            weightSum = 0;\n        }\n    }\n\n\n    _createEdgesInGraphData(data) {\n        // Takes in the graph data, modifies the data by adding a list of edges into the data and add to self   \n        if (data.length <= 1) {\n            throw new Error(\"input graph data is empty\");\n        }\n\n        // Go through each vertex in data and add 'edges' attribute to each vertex\n        for (let vertexIdx = 0; vertexIdx < data.length; vertexIdx++) {\n            let currentVertex = data[vertexIdx];\n            if (!currentVertex.edgeWeights) {\n                currentVertex.edges = null;\n            } else {\n                currentVertex.edges = [];\n                for (let adjVertexIdx = 0; adjVertexIdx < currentVertex.edgeWeights.length; adjVertexIdx++) {\n                    let targetVertexId = currentVertex.edgeWeights[adjVertexIdx].id;\n                    let targetVertexWeight = currentVertex.edgeWeights[adjVertexIdx].weight;\n\n                    let edge = {\n                        edgeWeight: targetVertexWeight,\n                        edgeNodes: [currentVertex, data[targetVertexId]]\n                    };\n\n                    currentVertex.edges.push(edge);\n                }\n            }\n        }\n    }\n\n    _chooseRandomAdjVertexFromSpeakerLayer() {\n        /*\n        Choose a random adjacent vertex in the speaker layer based on the edge weights \n        */\n        let weightDistribution = [0]; // weightDistribution is a distribution from 0 to 1, ex: [0, 0.4, 1]\n        let weight = 0;\n        for (let i = 0; i < this.speakerLayerProbabilityDistribution.length; i++) {\n            weight += this.speakerLayerProbabilityDistribution[i];\n            weightDistribution.push(weight);\n        }\n\n        let randomPick = Math.random();\n        console.log(\"weight distribution corresponding to the speaker layer: (\" + weightDistribution + \") random pick: \" + randomPick);\n        for (let i = 0; i < weightDistribution.length - 1; i++) {\n            if (randomPick >= weightDistribution[i] && randomPick <= weightDistribution[i + 1]) {\n                return this.graphData.data[i].id;\n            }\n        }\n    }\n\n    _chooseRandomAdjVertex(vertex) {\n        /*\n        Takes in a vertex and choose a random adjacent vertex in the next layer based on the edge weights \n        */\n        let weightDistribution = [0]; // weightDistribution is a distribution from 0 to 1, ex: [0, 0.4, 1]\n        let weight = 0;\n        for (let i = 0; i < vertex.edgeWeights.length; i++) {\n            weight += vertex.edgeWeights[i].weight;\n            weightDistribution.push(weight);\n        }\n\n        let randomPick = Math.random();\n        console.log(\"weight distribution corresponding to adjacent vertices in the next layer: (\" + weightDistribution + \") random pick: \" + randomPick);\n\n        // if the sum of distribution is 0 then return -1\n        let distributionSum = weightDistribution.reduce(function(a, b) {\n            return a + b;\n        }, 0);\n        if (distributionSum === 0) {\n            return -1;\n        }\n\n        for (let i = 0; i < weightDistribution.length - 1; i++) {\n            if (randomPick >= weightDistribution[i] && randomPick <= weightDistribution[i + 1]) {\n                return vertex.edgeWeights[i].id;\n            }\n        }\n    }\n\n    _traverseGraph(vertexId, data) {\n        /* \n        Takes in the id of a node and traverse trough the graph to connect \n        impacted nodes and returns the id of the visited node\n        */\n\n        let visitedNodes = [vertexId];\n        let node = data[vertexId];\n\n        while (node !== undefined && node.edgeWeights !== undefined) {\n            console.log(\"Current Vertex: \" + vertexId);\n            vertexId = this._chooseRandomAdjVertex(node);\n            // if (vertexId < 0) break;\n            console.log(\"Vextex chosen: \" + vertexId);\n            console.log(\"--------\");\n            node = data[vertexId];\n            visitedNodes.push(vertexId);\n        }\n\n        this._directedPath = visitedNodes;\n    }\n\n\n\n    _drawGrid() {\n        /* Draws the axis in the background */\n\n        this.container.append(\"g\")\n            .attr(\"class\", \"x axis\")\n            .selectAll(\"line\")\n            .data(d3.range(0, this.config.transform.width, 10))\n            .enter().append(\"line\")\n            .attr(\"x1\", d => d)\n            .attr(\"y1\", 0)\n            .attr(\"x2\", d => d)\n            .attr(\"y2\", this.config.transform.height);\n\n        this.container.append(\"g\")\n            .attr(\"class\", \"y axis\")\n            .selectAll(\"line\")\n            .data(d3.range(0, this.config.transform.height, 10))\n            .enter().append(\"line\")\n            .attr(\"x1\", 0)\n            .attr(\"y1\", d => d)\n            .attr(\"x2\", this.config.transform.width)\n            .attr(\"y2\", d => d);\n    }\n\n\n    _drawText() {\n        /* Add a text element to the previously added g element. */\n        this.vertices.append(\"text\")\n            .attr(\"font-size\", d => d.r * this.config.text.size)\n            .attr(\"text-anchor\", this.config.text.anchor)\n            .attr(\"alignment-baseline\", this.config.text.alignment)\n            .attr(\"fill\", this.config.text.color)\n            .text(d => {\n                if (d.label) {\n                    return d.label;\n                } else {\n                    return d.id;\n                }\n            });\n    }\n\n    _drawVertices(data) {\n        /* clear vertices then redraw all the vertices in the grpah */\n\n        d3.selectAll(this.divID + \" g .vertex\").remove();\n\n        // Create vertex groups, each group contains a cicle and a text\n        this.vertices = this.container.append(\"g\")\n            .attr(\"class\", \"vertex\")\n            .selectAll(\"circle\")\n            .data(data).enter()\n            .append(\"g\")\n            .attr(\"id\", d => d.id)\n            .attr(\"transform\", d => \"translate(\" + d.x + \",\" + d.y + \")\")\n            .call(this.onClick);\n\n        this.vertices.append(\"circle\")\n            .attr(\"r\", d => d.r);\n\n        this._drawText();\n    }\n\n    _drawEdges(data) {\n        /* Draw all edges and high light visited color */\n\n        // clear edges then redraw all the edges in the graph \n        d3.selectAll(this.divID + \" path\").remove();\n\n        // Draw all edges based on weight in default color\n        for (let vertexIdx = 0; vertexIdx < data.length; vertexIdx++) {\n            // Iterate through each nodes in data\n            let currentVertex = data[vertexIdx];\n            if (currentVertex.edges) {\n                for (let edgeIdx = 0; edgeIdx < currentVertex.edges.length; edgeIdx++) {\n                    // Iterate through each edge in the current node\n                    let edgeNodes = currentVertex.edges[edgeIdx].edgeNodes;\n                    let edgeWeight = currentVertex.edges[edgeIdx].edgeWeight * this.config.edge.width;\n                    this.container.append(\"svg:path\")\n                        .attr(\"d\", this.line(edgeNodes))\n                        .attr(\"stroke-width\", edgeWeight + this.config.edge.baseWidth)\n                        .style(\"stroke\", this.config.edge.defaultColor)\n                        .style(\"fill\", \"none\");\n                }\n            }\n        }\n\n    }\n\n    /* EdgeNodes contains a pair of nodes (e.g. [node1, node2]) which are two ends of an edge, lengthMultiplier is used to determine the magnitude of the edge\n\n    @returns a highlightedEdge objects that contains the nodes information and the length information\n     */\n    _drawHighlightedEdge(edgeNodes, lengthMultiplier) {\n        let x0 = edgeNodes[0].x,\n            y0 = edgeNodes[0].y,\n            r0 = edgeNodes[0].r,\n            x1 = edgeNodes[1].x,\n            y1 = edgeNodes[1].y,\n            r1 = edgeNodes[1].r,\n            distX = x1 - x0,\n            distY = y0 - y1,\n            dist = Math.sqrt(distX * distX + distY * distY),\n            ratio0 = r0 / (lengthMultiplier * dist),\n            ratio1 = r1 / (lengthMultiplier * dist),\n\n            // tempEdges for highlighting the visited edges\n            highlightedEdgeNodes = [{\n                x: x0 + distX * ratio0,\n                y: y0 - distY * ratio0\n            }, {\n                x: x1 - distX * ratio1,\n                y: y1 + distY * ratio1\n            }];\n\n\n        let highlightedEdge = {\n            nodes: highlightedEdgeNodes,\n            length: dist\n        };\n\n        return highlightedEdge;\n    }\n\n    _drawVisitedPath(data) {\n        /* Draw visited edges based on weight in highlighted color */\n\n        for (let vertexIdx = 0; vertexIdx < this._directedPath.length; vertexIdx++) {\n\n            // check if there's -1 in _directedPath, if yes, do not draw the path and trigger a new speaker\n            if (this._directedPath[vertexIdx] < 0) {\n\n                // Draw the first vertex when the path start highlighting\n                this.vertices.append(\"circle\")\n                    .attr(\"class\", d => {\n                        // if the node is in the path then draw it in a different color\n                        if (this._directedPath[0] === d.id) {\n                            return \"visitedVertex\";\n                        }\n                    })\n                    .attr(\"r\", d => d.r);\n\n                // Add a text element to the previously added g element.\n                this._drawText();\n\n                setTimeout(() => {\n\n                    // If autoplay is on, then restart the cycle after [timeIntervalBetweenCycle] milliseconds\n                    if (this.config.autoPlay.on) {\n                        console.log(\"Auto play is on!\");\n                        setTimeout(() => {\n                            this._triggerSpeakerNodeAutoPlay();\n                        }, this.config.autoPlay.timeIntervalBetweenCycle);\n                    }\n\n                }, this.config.edge.timeInterval);\n            } else {\n\n                // If there's no -1 in directed path\n                // Iterate through the list of ID in _directedPath \n                let currentVertex = data[this._directedPath[vertexIdx]];\n                if (currentVertex.edges) {\n                    for (let edgeIdx = 0; edgeIdx < currentVertex.edges.length; edgeIdx++) {\n                        let edgeNodes = currentVertex.edges[edgeIdx].edgeNodes;\n                        let edgeWeight = currentVertex.edges[edgeIdx].edgeWeight * this.config.edge.width;\n                        // If the edge is in the _directedPath then draw different color\n                        if (this._directedPath.indexOf(edgeNodes[0].id) > -1 && this._directedPath.indexOf(edgeNodes[1].id) > -1) {\n\n                            // Create two new points to draw a shorter edge so the new \n                            // edge will not cover the id in the node\n                            let highlightingEdgeLengthMultiplier = 1.1; // Used to increase the length of the highlighted edge on both ends;\n                            let highlightedEdge = this._drawHighlightedEdge(edgeNodes, highlightingEdgeLengthMultiplier);\n                            let tempEdges = highlightedEdge.nodes\n                            let lineLength = highlightedEdge.length;\n\n                            // Wait for 0.8 second until the next node is highlighted\n                            // Draw the next visited path after time Interval\n                            setTimeout(() => {\n\n                                // Append a path that completes drawing wthin a time duration\n                                this.container.append(\"svg:path\")\n                                    .style(\"stroke-width\", this.config.edge.baseWidth + edgeWeight)\n                                    .style(\"stroke\", this.config.edge.visitedColor)\n                                    .style(\"fill\", \"none\")\n                                    .attr({\n                                        'd': this.line(tempEdges),\n                                        'stroke-dasharray': lineLength + \" \" + lineLength,\n                                        'stroke-dashoffset': lineLength\n                                    })\n                                    .transition()\n                                    .duration(this.config.edge.timeInterval)\n                                    .attr('stroke-dashoffset', 0);\n\n                            }, this.config.edge.timeInterval * vertexIdx);\n\n                            // Draw the next visited vertex after time Interval\n                            setTimeout(() => {\n                                /* clear vertices then redraw all the vertices in the grpah */\n                                this.vertices\n                                    .append(\"circle\")\n                                    .attr(\"class\", d => {\n                                        // if the node is in the path then draw it in a different color\n                                        if (this._directedPath.indexOf(d.id) <= (vertexIdx + 1) &&\n                                            this._directedPath.indexOf(d.id) > -1) {\n                                            return \"visitedVertex\";\n                                        }\n                                    })\n                                    .attr(\"r\", d => d.r);\n\n                                // Add a text element to the previously added g element.\n                                this._drawText();\n\n                                // Visited path ending condition\n                                let endingVertexIdx = this._directedPath.length - 2;\n                                if (vertexIdx === endingVertexIdx) {\n\n                                    // If _weightedAdjMat exists, update the _weightedAdjMat adjacency matrix after the visited path finish highlighting within [timeIntervalBetweenCycle/2] milliseconds\n                                    if (this._weightedAdjMat) {\n                                        setTimeout(() => {\n                                            this._updateChart();\n                                        }, this.config.autoPlay.timeIntervalBetweenCycle / 2.0);\n                                    }\n                                    // If autoplay is on, then restart the cycle after [timeIntervalBetweenCycle] milliseconds\n                                    if (this.config.autoPlay.on) {\n                                        console.log(\"Auto play is on!\");\n                                        setTimeout(() => {\n                                            this._triggerSpeakerNodeAutoPlay();\n                                        }, this.config.autoPlay.timeIntervalBetweenCycle);\n                                    }\n                                }\n\n                                // 0.95 is a time offset multiplier to make vertex colored faster since\n                                // there is an unknown lag\n                            }, this.config.edge.timeInterval * (vertexIdx + 1));\n\n                            // Draw the first vertex when the path start highlighting\n                            this.vertices.append(\"circle\")\n                                .attr(\"class\", d => {\n                                    // if the node is in the path then draw it in a different color\n                                    if (this._directedPath[0] === d.id) {\n                                        return \"visitedVertex\";\n                                    }\n                                })\n                                .attr(\"r\", d => d.r);\n\n                            // Add a text element to the previously added g element.\n                            this._drawText();\n                        }\n                    }\n                }\n            }\n        }\n    }\n\n    _drawGraph(data) {\n        /* Used to redraw the graph on start and when moving */\n\n        this._drawEdges(data);\n        this._drawVertices(data);\n    }\n\n\n    _killAllSetTimeOut() {\n        // Kill all setTimeOut used to draw the visited path\n        for (var i = 1; i < 99999; i++) {\n            window.clearInterval(i);\n            window.clearTimeout(i);\n            if (window.mozCancelAnimationFrame) window.mozCancelAnimationFrame(i); // Firefox\n        }\n    }\n\n    _clearVisitedPath() {\n        /* empty the _directedPath array and redraw the graph */\n\n        this._killAllSetTimeOut();\n\n        // Then clear the path storage\n        this._directedPath = [];\n        this._drawGraph(this.graphData.data);\n    }\n\n\n    _createCyclingSpeedControlButton() {\n        let pgm = this;\n\n        let sliderID = this.divID.substring(1) + \"-slider-range\";\n        let $DivSlider = $(\"<div>\", {\n            id: sliderID\n        });\n        $(this.divID).prepend($DivSlider);\n        $(\"#\" + sliderID).slider({\n            range: false, // two buttons caps a range\n            min: 2,\n            max: 1000,\n            value: pgm.config.edge.timeInterval,\n            slide: function(event, ui) {\n                pgm._cyclingSpeedControlButtonOnClick(ui);\n            }\n        });\n\n        let sliderWidth = (this._weightedAdjMat === null) ? this.config.transform.width : this._weightedAdjMat.config.transform.width + this.config.transform.width;\n        $(\"#\" + sliderID).css(\"width\", sliderWidth + \"px\");\n    }\n\n    // This function is called by jQuery slider function defined in _createCyclingSpeedControlButton\n    _cyclingSpeedControlButtonOnClick(ui) {\n        console.log(\"Slider Speed: \" + ui.value);\n        let sphereRad = ui.value;\n        this.config.edge.timeInterval = ui.value;\n        this.config.autoPlay.timeIntervalBetweenCycle = ui.value;\n    }\n\n    _createPlayButton() {\n        /* Used to create a play button, it modifies the default button property in button.css */\n\n        var $Button = $(\"<div>\", {\n            class: \"play-button paused\"\n        });\n        var $left = $(\"<div>\", {\n            class: \"left\"\n        });\n        var $right = $(\"<div>\", {\n            class: \"right\"\n        });\n        var $triangle1 = $(\"<div>\", {\n            class: \"triangle-1\"\n        });\n        var $triangle2 = $(\"<div>\", {\n            class: \"triangle-2\"\n        });\n\n        $(this.divID).prepend($Button);\n\n        $Button.append($left);\n        $Button.append($right);\n        $Button.append($triangle1);\n        $Button.append($triangle2);\n\n        // Update button dimension first\n        let resizedButton = Array.min([this.config.transform.height, this.config.transform.width]) / 10.0 * this.config.autoPlay.button.dim;\n        let maxButtonSize = 35.0; // The max button size is 40px so that buttons won't get too big\n        this.config.autoPlay.button.dim = (resizedButton > maxButtonSize) ? maxButtonSize : resizedButton;\n\n        $(this.divID + \" .play-button\").css(\"height\", this.config.autoPlay.button.dim + \"px\")\n            .css(\"width\", this.config.autoPlay.button.dim + \"px\");\n\n        $(this.divID + \" .triangle-1\").css(\"border-right-width\", this.config.autoPlay.button.dim + \"px\")\n            .css(\"border-top-width\", this.config.autoPlay.button.dim / 2.0 + \"px\")\n            .css(\"border-bottom-width\", this.config.autoPlay.button.dim / 2.0 + \"px\");\n\n        $(this.divID + \" .triangle-2\").css(\"border-right-width\", this.config.autoPlay.button.dim + \"px\")\n            .css(\"border-top-width\", this.config.autoPlay.button.dim / 1.9 + \"px\")\n            .css(\"border-bottom-width\", this.config.autoPlay.button.dim / 2.0 + \"px\");\n\n        $(this.divID + \" .left\").css(\"background-color\", this.config.autoPlay.button.color);\n        $(this.divID + \" .right\").css(\"background-color\", this.config.autoPlay.button.color);\n\n        let pgm = this;\n        $(this.divID + \" .play-button\").click(function() {\n            $(this).toggleClass(\"paused\");\n            if (pgm.config.autoPlay.on) {\n                pgm._stopAutoPlay();\n            } else {\n                pgm._startAutoPlay();\n            }\n        });\n    }\n\n\n\n    _triggerSpeakerNodeAutoPlay() {\n        /* Triggers a speaker node randomly following the specified distribution */\n\n        let chosen_id;\n        // If speaker node is of uniform distribution\n        if (this.speakerLayerProbabilityDistribution.length == 0) {\n            chosen_id = Math.floor(Math.random() * this.graphData.clusterMat[0].length);\n        } else {\n            chosen_id = this._chooseRandomAdjVertexFromSpeakerLayer();\n        }\n        this._triggerSpeakerNode(chosen_id);\n    }\n\n    _triggerSpeakerNode(id) {\n        /* triggers a speaker node by id, traverse down and draw the visited path. */\n\n        let speakerLayerLength = this.graphData.clusterMat[0].length;\n\n        // Only allow the node to be clicked if it is in the speaker layer\n        if (id < speakerLayerLength) {\n            let clickedVertexId = parseInt(id, 10);\n            this._traverseGraph(clickedVertexId, this.graphData.data);\n            log(\"visited path = [\" + this._directedPath + \"]\");\n            this._drawGraph(this.graphData.data);\n            this._drawVisitedPath(this.graphData.data);\n\n            // testing \n            $(this.divID + ' .path strong').text(this._directedPath);\n        } else {\n            // Else clear the path\n            this._clearVisitedPath();\n        }\n\n        // Do not allow user to click\n        this._canClick = false;\n        setTimeout(() => this._canClick = true, this.config.edge.timeInterval * (this._directedPath.length - 1));\n\n    }\n\n\n    //    bindData(gd) {\n    //        /* \n    //        Used to bind an existing JSON object or an object literal to \n    //        the graph and render the graph.\n    //        */\n    //        if (!Utils.isObjLiteral(gd)) {\n    //            // If not an object literal must be a JSON, we parse it\n    //            gd = JSON.parse(gd);\n    //        }\n    //\n    //        if (!gd || !gd.data) {\n    //            throw new Error(\"pgm.bindData(gd): Input graph data is invalid input graph data is empty\");\n    //        }\n    //\n    //        if (gd.data.length <= 1) {\n    //            throw new Error(\"pgm.bindData(gd): Input graph data is empty\");\n    //        }\n    //\n    //        // Add the this.graphData as a class attribute\n    //        this.graphData = gd;\n    //        this._dataScreening(this.graphData.data);\n    //        this._createEdgesInGraphData(this.graphData.data);\n    //        if (this.config.background.grid) {\n    //            this_drawGrid();\n    //        }\n    //        this._drawGraph(this.graphData.data);\n    //    }\n\n\n    redraw() {\n        /* Use this to redraw the graph after reset edge weights */\n        this._createEdgesInGraphData(this.graphData.data);\n        this._drawGraph(this.graphData.data);\n\n        return this;\n    }\n\n\n    init() {\n        /* Used to initialize and display the graph  after the set up is done*/\n\n        this._dataScreening(this.graphData.data);\n\n        this.setUniformEdgeWeights();\n\n        this._createEdgesInGraphData(this.graphData.data);\n\n        if (this.config.autoPlayable) this._createPlayButton();\n\n        if (this.config.cyclingSpeedControllable) this._createCyclingSpeedControlButton();\n\n        if (this.config.background.grid) this._drawGrid();\n\n        this._drawGraph(this.graphData.data);\n\n        return this;\n    }\n\n    getWeightedAdjacencyMatrix() {\n        return this._weightedAdjMat;\n    }\n\n    setEdgeWeights(id, weights) {\n        /* Set adjacent vertex for vertex with id \n            return this pgm to allow setEdgeWeights to be stacked\n        */\n\n        if (id === undefined || weights === undefined) {\n            throw new Error(\"pgm.setEdgeWeights(id, adjVtx) params are not defined.\");\n        }\n\n        this.graphData.data[id].edgeWeights = weights;\n        this.redraw();\n\n        return this;\n    }\n\n    //    this.setLabel = function (id, label) {\n    //        /* Set label for vertex */\n    //        this.graphData.data[id].label = label;\n    //    };\n\n    //    this.getGraphData = function () {\n    //        /* Returns the graphData as  JSON object */\n    //        let jsonGraphData = Utils.cloneDR(this.graphData);\n    //\n    //        console.log(jsonGraphData);\n    //\n    //        // Delete all the edge circular structures in the object\n    //        for (let i = 0; i < jsonGraphData.data.length; i++) {\n    //            delete(jsonGraphData.data[i].edges);\n    //        }\n    //\n    //        return JSON.stringify(jsonGraphData);\n    //    };\n\n\n    // Used by createCluster()\n    _changeNodeRadius(baseRadius) {\n        /* \n        Change the speaker layer ndoe radius based on the probability distribution\n        probabilityDistribution is the array of probability given to each node in the speaker layer\n        set probabilityDistribution=[] for uniform distribution\n        */\n\n        let normalizeBaseRadiusMultiplier = 0.4; // increase base radius size\n        let normalizeExtraRadiusBasedOnDistributionMultiplier = 0.7; // increase extra radius size\n\n        for (let i = 0; i < this.speakerLayerProbabilityDistribution.length; i++) {\n            // Normalize the radius\n            let normalizationFactor = 1.0 / this.speakerLayerProbabilityDistribution.length / normalizeExtraRadiusBasedOnDistributionMultiplier;\n            this.graphData.data[i].r = (baseRadius * normalizeBaseRadiusMultiplier) + this.graphData.data[i].r * (this.speakerLayerProbabilityDistribution[i] * 1.0) / normalizationFactor;\n        }\n    }\n\n    createCluster(cMat, probabilityDistribution, changeNodeRadiusBasedOnDistribution) {\n        /* \n        Used to create a clusters of nodes (Graphdata) based on the cMat(cluster matrix).\n        Also set the speaker layer probabilility distribution and have the option to\n        chagne the spekaer nodes radius based on probability\n        \n        cMat is the cluster matrix. Ex of cluster mat [layer1_label_array, layer2_label_array, layer3_label_array] \n        probabilityDistribution is the array of probability given to each node in the speaker layer\n        set probabilityDistribution=[] for uniform distribution\n        changeNodeRadiusBasedOnDistribution is the boolean that governs whether nodes radius are affected by its distribution\n        */\n\n        // Error checking\n        if (probabilityDistribution.length != 0) {\n            if (cMat[0].length != probabilityDistribution.length) {\n                throw new Error(\"pgm.createCluster(): the number of the nodes in the first layer in cMat does not match the length of the probabilityDistribution array\");\n            }\n            let tempDistTotal = 0;\n            for (let i = 0; i < probabilityDistribution.length; i++) {\n                tempDistTotal += probabilityDistribution[i];\n            }\n            if (tempDistTotal != 1.0) {\n                throw new Error(\"pgm.createCluster(): the probability of each node in the speaker layer does not add up to 1.0 in probabilityDistribution array\");\n            }\n        }\n\n        this.speakerLayerProbabilityDistribution = probabilityDistribution;\n\n        this.cMatDim = []; //cMatDim is the dimension of the matrix, ex: [3,3,3]\n\n        // Populate cMatDim\n        for (let i = 0; i < cMat.length; i++) {\n            this.cMatDim[i] = cMat[i].length;\n        }\n\n        let offsetPosX = this.config.transform.width / (this.cMatDim.length + 1); // get the x offset for first node\n        let minPosY = this.config.transform.height / (Array.max(this.cMatDim) + 1); // get the y offset for the layer with the most amount of nodes\n\n        // Data properties: id, x, y, r \n        let data = [];\n        let id = 0;\n        let x;\n        let y;\n        let r = Array.min([offsetPosX, minPosY]) * this.config.vertex.radius;\n\n        this.config.vertex.radius = r;\n\n        for (let i = 0; i < this.cMatDim.length; i++) {\n            // Reset offset Y coordinate for each layer\n            let offSetPosY = this.config.transform.height / (this.cMatDim[i] + 1);\n            for (let j = 0; j < this.cMatDim[i]; j++) {\n                x = offsetPosX * (i + 1);\n                y = offSetPosY * (j + 1);\n                data.push({\n                    id: id,\n                    x: x,\n                    y: y,\n                    r: r\n                });\n                id++;\n            }\n\n        }\n\n\n        // Label each vertex based on cMat labels\n        let id_temp = 0;\n        for (let i = 0; i < cMat.length; i++)\n            for (let j = 0; j < cMat[i].length; j++)\n                data[id_temp++].label = cMat[i][j];\n\n\n        // Update the this.config edge width and baseWidth\n        this.config.edge.width = r * this.config.edge.width;\n        this.config.edge.baseWidth = r * this.config.edge.baseWidth;\n\n\n        // Create the graphData member variable in pgm\n        this.graphData = {\n            clusterMat: cMat,\n            data: data\n        };\n\n        // Change speaker node radius based on distribution\n        if (changeNodeRadiusBasedOnDistribution && probabilityDistribution.length > 0) this._changeNodeRadius(r);\n\n        return this;\n    }\n\n\n    getGraphData() {\n        return this.graphData;\n    }\n\n\n    getVertexId(vertexCoordinate) {\n        // get vertex id by coordinate\n        // vertexCoordinate is a coordiante pair = [layer index, vertex index at that layer]\n\n        let layerIdx = vertexCoordinate[0];\n        let vertexIdx = vertexCoordinate[1];\n\n        if (layerIdx >= this.cMatDim.length || vertexIdx >= this.cMatDim[layerIdx])\n            throw new Error(\"pgm.getVertexId(): invalid vertex coordinate input, the vertex being accessed does not exist in the graph. Your input vertex coordinate is [\" + vertexCoordinate + \"], but the dimention of the cluster matrix is [\" + this.cMatDim + \"].\");\n\n        let id_temp = 0;\n        for (let i = 0; i < layerIdx; i++) id_temp += this.cMatDim[i];\n        id_temp += vertexIdx;\n\n        return id_temp;\n    }\n\n\n    // Set the graph edge weights to be uniform\n    setUniformEdgeWeights() {\n        for (let layerIdx = 0; layerIdx < this.cMatDim.length - 1; layerIdx++) {\n            for (let vertexIdx = 0; vertexIdx < this.cMatDim[layerIdx]; vertexIdx++) {\n                let vertexID = this.getVertexId([layerIdx, vertexIdx]);\n                let numOfNodesNextLayer = this.cMatDim[layerIdx + 1];\n                let edgeWeights = [];\n                for (let i = 0; i < numOfNodesNextLayer; i++) {\n                    edgeWeights[i] = {\n                        id: this.getVertexId([layerIdx + 1, i]),\n                        weight: 1.0 / numOfNodesNextLayer\n                    };\n                }\n                this.setEdgeWeights(vertexID, edgeWeights);\n            }\n        }\n    }\n\n\n    /*=========== Graphical Model Autoplay ===========*/\n\n    resetChart() {\n        /* reset the _weightedAdjMat */\n        this._weightedAdjMat.resetMatrixWeight();\n        this._weightedAdjMat.redrawMatrix();\n    }\n\n    _startAutoPlay() {\n        /* called by the play button to start autoplay */\n        this._canClick = false;\n        if (this._weightedAdjMat) this.resetChart();\n        this.config.autoPlay.on = true;\n        this._triggerSpeakerNodeAutoPlay();\n    }\n\n    _stopAutoPlay() {\n        /* called by the stop button to stop autoplay */\n        this._canClick = true;\n        this.config.autoPlay.on = false;\n\n        this._clearVisitedPath();\n\n        if (this._weightedAdjMat) {\n            this._weightedAdjMat.resetMatrixWeight();\n            this._weightedAdjMat.resetMatrixColorWeight();\n            // this._weightedAdjMat.redrawMatrix();\n        }\n    }\n\n\n    /*======== Binding Adjacency Matrix To The Graphical Model =======*/\n\n    _updateChart() {\n        /* Used in _drawVisitedPath() to update the adjacency matrix _weightedAdjMat */\n        let _rowIdx = this._directedPath[0];\n        let _colIdx = this._directedPath[this._directedPath.length - 1];\n        if (_rowIdx < 0 || _colIdx < 0) return;\n\n        let _rowLabel = this.graphData.data[_rowIdx].label;\n        let _colLabel = this.graphData.data[_colIdx].label;\n        let cellToUpdate = [_rowLabel, _colLabel];\n        log(\"Update Cell: [\" + cellToUpdate + \"]\");\n        this._weightedAdjMat.increaseCellWeight(cellToUpdate, 1);\n        this._weightedAdjMat.increaseCellColor(cellToUpdate, 1);\n        this._weightedAdjMat.redrawMatrix();\n    }\n\n    //    bindChart (_weightedAdjMat) {\n    //        /* Used to bind to an existing adjacency matrix _weightedAdjMatf to the graphical model */\n    //        if (this._weightedAdjMat != null) {\n    //            this._weightedAdjMat = _weightedAdjMat;\n    //        } else {\n    //            throw new Error(\"pgm.bindChart(): Graph already has a _weightedAdjMat object.\")\n    //        }\n    //    }\n\n    createAdjacencyMatrix(chartConfig) {\n        /* Create a _weightedAdjMat and bind to the graphic model */\n\n        this.chartConfig = chartConfig;\n\n        if (this.graphData.clusterMat.length < 2) {\n            throw new Error(\"pgm.createAdjacencyMatrix(): Can not create adjacency matrix for graphical model with layer number less than 2\");\n            return;\n        }\n        var _rowLabel = this.graphData.clusterMat[0];\n        var _colLabel = this.graphData.clusterMat[this.graphData.clusterMat.length - 1];\n        this._weightedAdjMat = new WeightedAdjacencyMatrix(this.divID, chartConfig);\n        this._weightedAdjMat.createMatrix(_rowLabel, _colLabel);\n\n        return this;\n    }\n}"
+  },
+  {
+    "__docId__": 1,
+    "kind": "class",
+    "static": true,
+    "variation": null,
+    "name": "GraphicalModel",
+    "memberof": "src/graphicalModel.js",
+    "longname": "src/graphicalModel.js~GraphicalModel",
+    "access": null,
+    "export": false,
+    "importPath": "./src/graphicalModel.js",
+    "importStyle": null,
+    "description": "This is the regulra probability Graphical Model that supports auto play loops and zoom in ability. It is the basis of ListenerObserverPGM.",
+    "lineNumber": 9,
+    "interface": false
+  },
+  {
+    "__docId__": 2,
+    "kind": "constructor",
+    "static": false,
+    "variation": null,
+    "name": "constructor",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#constructor",
+    "access": null,
+    "description": "This is GraphicalModel constructor description.",
+    "lineNumber": 16,
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "object"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "-",
+        "description": "graphConfiguration is a configuration object for configuring the properties of this pgm, it can be obtained via Config.getPgmConfig()."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "string"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "-",
+        "description": "divID is the id of the html tag that contains this pgm, it is of the form '#id_name'."
+      }
+    ],
+    "generator": false
+  },
+  {
+    "__docId__": 3,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_weightedAdjMat",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#_weightedAdjMat",
+    "access": null,
+    "description": null,
+    "lineNumber": 18,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 4,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "config",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#config",
+    "access": null,
+    "description": null,
+    "lineNumber": 69,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 5,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "graphData",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#graphData",
+    "access": null,
+    "description": null,
+    "lineNumber": 71,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 6,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_directedPath",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#_directedPath",
+    "access": null,
+    "description": null,
+    "lineNumber": 76,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 7,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_canClick",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#_canClick",
+    "access": null,
+    "description": null,
+    "lineNumber": 78,
+    "undocument": true,
+    "type": {
+      "types": [
+        "boolean"
+      ]
+    }
+  },
+  {
+    "__docId__": 8,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "speakerLayerProbabilityDistribution",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#speakerLayerProbabilityDistribution",
+    "access": null,
+    "description": null,
+    "lineNumber": 80,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 9,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "divID",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#divID",
+    "access": null,
+    "description": null,
+    "lineNumber": 85,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 10,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "onClick",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#onClick",
+    "access": null,
+    "description": null,
+    "lineNumber": 88,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 11,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "svg",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#svg",
+    "access": null,
+    "description": null,
+    "lineNumber": 101,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 12,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "rect",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#rect",
+    "access": null,
+    "description": null,
+    "lineNumber": 109,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 13,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "container",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#container",
+    "access": null,
+    "description": null,
+    "lineNumber": 119,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 14,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "line",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#line",
+    "access": null,
+    "description": null,
+    "lineNumber": 125,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 15,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "vertices",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#vertices",
+    "access": null,
+    "description": null,
+    "lineNumber": 130,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 16,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "zoom",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#zoom",
+    "access": null,
+    "description": null,
+    "lineNumber": 134,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 17,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "_backgroundOnClickToResetAdjMatrix",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#_backgroundOnClickToResetAdjMatrix",
+    "access": null,
+    "description": null,
+    "lineNumber": 149,
+    "undocument": true,
+    "params": [],
+    "generator": false
+  },
+  {
+    "__docId__": 18,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "_backgroundOnClick",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#_backgroundOnClick",
+    "access": null,
+    "description": null,
+    "lineNumber": 157,
+    "undocument": true,
+    "params": [],
+    "generator": false
+  },
+  {
+    "__docId__": 19,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_canClick",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#_canClick",
+    "access": null,
+    "description": null,
+    "lineNumber": 162,
+    "undocument": true,
+    "type": {
+      "types": [
+        "boolean"
+      ]
+    }
+  },
+  {
+    "__docId__": 20,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "_dataScreening",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#_dataScreening",
+    "access": null,
+    "description": null,
+    "lineNumber": 171,
+    "undocument": true,
+    "params": [
+      {
+        "name": "data",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "generator": false
+  },
+  {
+    "__docId__": 21,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "_createEdgesInGraphData",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#_createEdgesInGraphData",
+    "access": null,
+    "description": null,
+    "lineNumber": 203,
+    "undocument": true,
+    "params": [
+      {
+        "name": "data",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "generator": false
+  },
+  {
+    "__docId__": 22,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "_chooseRandomAdjVertexFromSpeakerLayer",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#_chooseRandomAdjVertexFromSpeakerLayer",
+    "access": null,
+    "description": null,
+    "lineNumber": 231,
+    "undocument": true,
+    "params": [],
+    "return": {
+      "types": [
+        "*"
+      ]
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 23,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "_chooseRandomAdjVertex",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#_chooseRandomAdjVertex",
+    "access": null,
+    "description": null,
+    "lineNumber": 251,
+    "undocument": true,
+    "params": [
+      {
+        "name": "vertex",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "return": {
+      "types": [
+        "*"
+      ]
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 24,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "_traverseGraph",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#_traverseGraph",
+    "access": null,
+    "description": null,
+    "lineNumber": 280,
+    "undocument": true,
+    "params": [
+      {
+        "name": "vertexId",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "data",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "generator": false
+  },
+  {
+    "__docId__": 25,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_directedPath",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#_directedPath",
+    "access": null,
+    "description": null,
+    "lineNumber": 299,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 26,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "_drawGrid",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#_drawGrid",
+    "access": null,
+    "description": null,
+    "lineNumber": 304,
+    "undocument": true,
+    "params": [],
+    "generator": false
+  },
+  {
+    "__docId__": 27,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "_drawText",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#_drawText",
+    "access": null,
+    "description": null,
+    "lineNumber": 329,
+    "undocument": true,
+    "params": [],
+    "generator": false
+  },
+  {
+    "__docId__": 28,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "_drawVertices",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#_drawVertices",
+    "access": null,
+    "description": null,
+    "lineNumber": 345,
+    "undocument": true,
+    "params": [
+      {
+        "name": "data",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "generator": false
+  },
+  {
+    "__docId__": 29,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "vertices",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#vertices",
+    "access": null,
+    "description": null,
+    "lineNumber": 351,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 30,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "_drawEdges",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#_drawEdges",
+    "access": null,
+    "description": null,
+    "lineNumber": 366,
+    "undocument": true,
+    "params": [
+      {
+        "name": "data",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "generator": false
+  },
+  {
+    "__docId__": 31,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "_drawHighlightedEdge",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#_drawHighlightedEdge",
+    "access": null,
+    "description": null,
+    "lineNumber": 396,
+    "undocument": true,
+    "params": [
+      {
+        "name": "edgeNodes",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "lengthMultiplier",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "return": {
+      "types": [
+        "*"
+      ]
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 32,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "_drawVisitedPath",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#_drawVisitedPath",
+    "access": null,
+    "description": null,
+    "lineNumber": 427,
+    "undocument": true,
+    "params": [
+      {
+        "name": "data",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "generator": false
+  },
+  {
+    "__docId__": 33,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "_drawGraph",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#_drawGraph",
+    "access": null,
+    "description": null,
+    "lineNumber": 557,
+    "undocument": true,
+    "params": [
+      {
+        "name": "data",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "generator": false
+  },
+  {
+    "__docId__": 34,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "_killAllSetTimeOut",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#_killAllSetTimeOut",
+    "access": null,
+    "description": null,
+    "lineNumber": 565,
+    "undocument": true,
+    "params": [],
+    "generator": false
+  },
+  {
+    "__docId__": 35,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "_clearVisitedPath",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#_clearVisitedPath",
+    "access": null,
+    "description": null,
+    "lineNumber": 574,
+    "undocument": true,
+    "params": [],
+    "generator": false
+  },
+  {
+    "__docId__": 36,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_directedPath",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#_directedPath",
+    "access": null,
+    "description": null,
+    "lineNumber": 580,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 37,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "_createCyclingSpeedControlButton",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#_createCyclingSpeedControlButton",
+    "access": null,
+    "description": null,
+    "lineNumber": 585,
+    "undocument": true,
+    "params": [],
+    "generator": false
+  },
+  {
+    "__docId__": 38,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "_cyclingSpeedControlButtonOnClick",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#_cyclingSpeedControlButtonOnClick",
+    "access": null,
+    "description": null,
+    "lineNumber": 608,
+    "undocument": true,
+    "params": [
+      {
+        "name": "ui",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "generator": false
+  },
+  {
+    "__docId__": 39,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "_createPlayButton",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#_createPlayButton",
+    "access": null,
+    "description": null,
+    "lineNumber": 615,
+    "undocument": true,
+    "params": [],
+    "generator": false
+  },
+  {
+    "__docId__": 40,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "_triggerSpeakerNodeAutoPlay",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#_triggerSpeakerNodeAutoPlay",
+    "access": null,
+    "description": null,
+    "lineNumber": 673,
+    "undocument": true,
+    "params": [],
+    "generator": false
+  },
+  {
+    "__docId__": 41,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "_triggerSpeakerNode",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#_triggerSpeakerNode",
+    "access": null,
+    "description": null,
+    "lineNumber": 686,
+    "undocument": true,
+    "params": [
+      {
+        "name": "id",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "generator": false
+  },
+  {
+    "__docId__": 42,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_canClick",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#_canClick",
+    "access": null,
+    "description": null,
+    "lineNumber": 707,
+    "undocument": true,
+    "type": {
+      "types": [
+        "boolean"
+      ]
+    }
+  },
+  {
+    "__docId__": 43,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "redraw",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#redraw",
+    "access": null,
+    "description": null,
+    "lineNumber": 742,
+    "undocument": true,
+    "params": [],
+    "return": {
+      "types": [
+        "*"
+      ]
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 44,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "init",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#init",
+    "access": null,
+    "description": null,
+    "lineNumber": 751,
+    "undocument": true,
+    "params": [],
+    "return": {
+      "types": [
+        "*"
+      ]
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 45,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "getWeightedAdjacencyMatrix",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#getWeightedAdjacencyMatrix",
+    "access": null,
+    "description": null,
+    "lineNumber": 771,
+    "undocument": true,
+    "params": [],
+    "return": {
+      "types": [
+        "*"
+      ]
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 46,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "setEdgeWeights",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#setEdgeWeights",
+    "access": null,
+    "description": null,
+    "lineNumber": 775,
+    "undocument": true,
+    "params": [
+      {
+        "name": "id",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "weights",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "return": {
+      "types": [
+        "*"
+      ]
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 47,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "_changeNodeRadius",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#_changeNodeRadius",
+    "access": null,
+    "description": null,
+    "lineNumber": 811,
+    "undocument": true,
+    "params": [
+      {
+        "name": "baseRadius",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "generator": false
+  },
+  {
+    "__docId__": 48,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "createCluster",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#createCluster",
+    "access": null,
+    "description": null,
+    "lineNumber": 828,
+    "undocument": true,
+    "params": [
+      {
+        "name": "cMat",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "probabilityDistribution",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "changeNodeRadiusBasedOnDistribution",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "return": {
+      "types": [
+        "*"
+      ]
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 49,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "speakerLayerProbabilityDistribution",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#speakerLayerProbabilityDistribution",
+    "access": null,
+    "description": null,
+    "lineNumber": 854,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 50,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "cMatDim",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#cMatDim",
+    "access": null,
+    "description": null,
+    "lineNumber": 856,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 51,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "graphData",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#graphData",
+    "access": null,
+    "description": null,
+    "lineNumber": 906,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 52,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "getGraphData",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#getGraphData",
+    "access": null,
+    "description": null,
+    "lineNumber": 918,
+    "undocument": true,
+    "params": [],
+    "return": {
+      "types": [
+        "*"
+      ]
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 53,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "getVertexId",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#getVertexId",
+    "access": null,
+    "description": null,
+    "lineNumber": 923,
+    "undocument": true,
+    "params": [
+      {
+        "name": "vertexCoordinate",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "return": {
+      "types": [
+        "*"
+      ]
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 54,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "setUniformEdgeWeights",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#setUniformEdgeWeights",
+    "access": null,
+    "description": null,
+    "lineNumber": 942,
+    "undocument": true,
+    "params": [],
+    "generator": false
+  },
+  {
+    "__docId__": 55,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "resetChart",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#resetChart",
+    "access": null,
+    "description": null,
+    "lineNumber": 962,
+    "undocument": true,
+    "params": [],
+    "generator": false
+  },
+  {
+    "__docId__": 56,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "_startAutoPlay",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#_startAutoPlay",
+    "access": null,
+    "description": null,
+    "lineNumber": 968,
+    "undocument": true,
+    "params": [],
+    "generator": false
+  },
+  {
+    "__docId__": 57,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_canClick",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#_canClick",
+    "access": null,
+    "description": null,
+    "lineNumber": 970,
+    "undocument": true,
+    "type": {
+      "types": [
+        "boolean"
+      ]
+    }
+  },
+  {
+    "__docId__": 58,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "_stopAutoPlay",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#_stopAutoPlay",
+    "access": null,
+    "description": null,
+    "lineNumber": 976,
+    "undocument": true,
+    "params": [],
+    "generator": false
+  },
+  {
+    "__docId__": 59,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_canClick",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#_canClick",
+    "access": null,
+    "description": null,
+    "lineNumber": 978,
+    "undocument": true,
+    "type": {
+      "types": [
+        "boolean"
+      ]
+    }
+  },
+  {
+    "__docId__": 60,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "_updateChart",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#_updateChart",
+    "access": null,
+    "description": null,
+    "lineNumber": 993,
+    "undocument": true,
+    "params": [],
+    "generator": false
+  },
+  {
+    "__docId__": 61,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "createAdjacencyMatrix",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#createAdjacencyMatrix",
+    "access": null,
+    "description": null,
+    "lineNumber": 1017,
+    "undocument": true,
+    "params": [
+      {
+        "name": "chartConfig",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "return": {
+      "types": [
+        "*"
+      ]
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 62,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "chartConfig",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#chartConfig",
+    "access": null,
+    "description": null,
+    "lineNumber": 1020,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 63,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_weightedAdjMat",
+    "memberof": "src/graphicalModel.js~GraphicalModel",
+    "longname": "src/graphicalModel.js~GraphicalModel#_weightedAdjMat",
+    "access": null,
+    "description": null,
+    "lineNumber": 1028,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 64,
+    "kind": "file",
+    "static": true,
+    "variation": null,
+    "name": "src/listenerObserverPGM.js",
+    "memberof": null,
+    "longname": "src/listenerObserverPGM.js",
+    "access": null,
+    "description": null,
+    "lineNumber": 5,
+    "content": "/*=============================================================*/\n/*=================== ListenerObserverPGM =====================*/\n/*=============================================================*/\n\n\"use strict\";\n\n\n// A wrapper that combines both listenerBeliefPGM and ListenerPGM\nclass ListenerObserverPGM {\n\n    constructor(divID, listenerBeliefConfig, listenerConfig, adjMatConfig, cMat, speakerLayerProbabilityDistribution, changeNodeRadiusBasedOnDistribution) {\n\n        this.divID = divID;\n        // parepare two id html elemnts for both listener and listener's belief pgms\n        let listenerBeliefID = divID + \"ListenerBeliefPGM\";\n        let listenerID = divID + \"ListenerPGM\";\n\n        let $listenerBelief = $(\"<div>\", {\n            id: listenerBeliefID.substring(1)\n        });\n        let $listener = $(\"<div>\", {\n            id: listenerID.substring(1)\n        });\n\n        $(this.divID).append($listenerBelief);\n        $(this.divID).append($listener);\n\n        // Creating ListenerBeliefPGM first\n        this.listenerBelif = new ListenerBeliefPGM(listenerBeliefConfig, listenerBeliefID)\n            .createCluster(cMat, speakerLayerProbabilityDistribution, changeNodeRadiusBasedOnDistribution)\n            .createAdjacencyMatrix(adjMatConfig)\n            .init();\n\n        // Add image\n        // this.listenerBelif.svg.append(\"svg:image\")\n        //     .attr('x', -9)\n        //     .attr('y', -12)\n        //     .attr('width', 200)\n        //     .attr('height', 200)\n        //     .attr(\"xlink:href\", \"img/1.png\");\n\n        // Then create ListenerPGM first based on the configuration\n        // and bind the data to the graph for rendering\n        let listenerClusterMatrix = [cMat[1], cMat[0]]; // mirror image of the belisef graph\n        this.listener = new ListenerPGM(listenerConfig, listenerID)\n            .createCluster(listenerClusterMatrix, [], true)\n            .init();\n\n        this.listener.bindToListenerBeliefPGM(this.listenerBelif)\n    }\n\n\n    setEdgeWeights(vertexId, adjacentEdgeWeights) {\n        this.listenerBelif.setEdgeWeights(vertexId, adjacentEdgeWeights);\n        this.listener.resetEdgeWeightsToBeListenerBeliefPGMEdgeWeights();\n        return this;\n    }\n\n}\n\n\n/* \nListenerBeliefPGM is composed of ListenerPGM\n*/\nclass ListenerBeliefPGM extends GraphicalModel {\n\n    constructor(graphConfiguration, divID) {\n\n        super(graphConfiguration, divID);\n\n        // Creates the dialgue box here\n        this._createDialogueBox();\n    }\n\n\n    _createDialogueBox() {\n        /* This method creates the dialogue box for listener's belief to achieve thought bubble effect.\n        The dialogue box is consisited of resized background rect from the listener's belief PGM and \n        a small upsidedown triangle, which is used to give the feeling of a dialgoue bubble */\n\n        let rectX = this.config.transform.width / 4,\n            rectY = this.config.transform.height * 2 / 15,\n            rectWidth = this.config.transform.width / 2,\n            rectHeight = this.config.transform.height * 3 / 4,\n            rectCornorRadius = this.config.transform.width / 15;\n        this.rect\n            .attr(\"class\", \"background\")\n            .attr(\"x\", rectX)\n            .attr(\"y\", rectY)\n            .attr(\"rx\", rectCornorRadius)\n            .attr(\"ry\", rectCornorRadius)\n            .attr(\"width\", rectWidth)\n            .attr(\"height\", rectHeight)\n            .style(\"fill\", this.config.background.color)\n            .style(\"pointer-events\", \"all\")\n            .on(\"click\", d => {\n                pgm._backgroundOnClick();\n            });\n\n        let offSet = -1,\n            trianglePoint1 = [rectX + rectWidth / 3, rectY + rectHeight + offSet],\n            trianglePoint2 = [rectX + rectWidth / 2, this.config.transform.height],\n            trianglePoint3 = [rectX + rectWidth * 2 / 3, rectY + rectHeight + offSet];\n        let trianglePath = trianglePoint1[0] + \",\" + trianglePoint1[1] + \", \" + trianglePoint2[0] + \",\" + trianglePoint2[1] + \", \" + trianglePoint3[0] + \",\" + trianglePoint3[1];\n        this.svg.append(\"polygon\") // attach a polygon\n        .style(\"fill\", this.config.background.color)\n            .attr(\"points\", trianglePath);\n    }\n\n    _calculateWeights() {\n        /*\n            returns the normalized weights in a 1D array in the form of Wij, ex, [W_sub(1,1), W_sub(1,2), W_sub(2,1), W_sub(2,2)]\n        */\n        let weight = [];\n\n        let firstLayerLength = this.graphData.clusterMat[0].length;\n        let lastLayerLength = this.graphData.clusterMat[this.graphData.clusterMat.length - 1].length;\n        // Calculate the new edge weights based on adj matrix\n        for (let i = 0; i < firstLayerLength; i++) {\n            for (let j = 0; j < lastLayerLength; j++) {\n                let M_ij = this.getWeightedAdjacencyMatrix().getCellWeight([i, j]);\n                let Mij_summation_over_j = 0;\n                for (let sigma_sub_j = 0; sigma_sub_j <= j; sigma_sub_j++) {\n                    Mij_summation_over_j += this.getWeightedAdjacencyMatrix().getCellWeight([i, sigma_sub_j]);\n                }\n                // log([M_ij, Mij_summation_over_j])\n                let W_ij = (M_ij === 0) ? 0 : M_ij / Mij_summation_over_j;\n                weight.push(W_ij);\n            }\n        }\n\n        log(\"Weight = \" + weight);\n\n        // Noralize the weights so that all node's edge weights sum up to 1\n\n        let vertexWeightSumTemp = []; // each element is the weight sum for a vertex\n        let weightIdx = 1;\n        let tempWeightSumForVertex = 0;\n        for (let i = 0; i < weight.length; i++) {\n            tempWeightSumForVertex += weight[i];\n            if (weightIdx % firstLayerLength == 0) {\n                // push vertex sum \"firstLayerLength\" many times so its easier to normalize weight\n                for (let j = 0; j < firstLayerLength; j++) {\n                    vertexWeightSumTemp.push(tempWeightSumForVertex);\n                }\n                tempWeightSumForVertex = 0;\n            }\n            weightIdx++;\n        }\n\n        log(\"vertexWeightSumTemp = \" + vertexWeightSumTemp);\n\n        // Normalize\n        let normalizedWeight = [];\n        for (let i = 0; i < weight.length; i++) {\n            normalizedWeight[i] = (vertexWeightSumTemp[i] === 0) ? 0 : weight[i] / vertexWeightSumTemp[i];\n        }\n\n        log(\"normalized weight = \" + normalizedWeight);\n\n        return normalizedWeight;\n    }\n\n    _cyclingSpeedControlButtonOnClick(ui) {\n        super._cyclingSpeedControlButtonOnClick(ui);\n        // updating listenerPGM's speed on button click as well\n        this.listenerPGM.config.edge.timeInterval = ui.value;\n        this.listenerPGM.config.autoPlay.timeIntervalBetweenCycle = ui.value;\n    }\n\n    /*@Override*/\n    _updateChart() {\n        // After updating the chart updating the weight in ListenerPGM as well\n        super._updateChart();\n\n        let updatedWeights = this._calculateWeights()\n        this.listenerPGM.updateWeight(updatedWeights);\n        this.listenerPGM.redraw();\n    }\n\n    /*@Override*/\n    // _backgroundOnClickToResetAdjMatrix() {\n    //     // overrie original function so when background is clicked the matrix won't reset\n    //     return false;\n    // }\n    // _backgroundOnClick() {}\n\n    /*@Override*/\n    _stopAutoPlay() {\n        super._stopAutoPlay();\n        // When stop button is clicked, reset the listenerPGM edgeweights as well\n        // this.listenerPGM.resetEdgeWeightsToBeListenerBeliefPGMEdgeWeights();\n        // this.listenerPGM.redraw();\n    }\n\n    /*@Override*/\n    _startAutoPlay() {\n        /* When stop button is clicked, reset the listenerPGM edgeweights as well */\n\n\n        // Stop listenerPGM autoplay before calling super._startPlay() so that _clearVisitedPath() method won't destroy both listenerPGM's autoPlay and this graph's autoPlay\n        if (this.listenerPGM.config.autoPlay.on) {\n            this.listenerPGM._stopAutoPlay();\n        }\n\n        super._startAutoPlay();\n\n        // reset the listenerPGM edge weights\n        this.listenerPGM.resetEdgeWeightsToBeListenerBeliefPGMEdgeWeights();\n        this.listenerPGM.redraw();\n    }\n\n    /* @Override */\n    createCluster(cMat, probabilityDistribution, changeNodeRadiusBasedOnDistribution) {\n\n        this.listenerClusterMatrix = [cMat[1], cMat[0]]; // mirror image of the belisef graph\n        this.listenerBeliefClusterMatrix = cMat;\n\n        if (cMat.length != 2)\n            throw new Error(\"ListenerBeliefPGM.createCluster(): invalid cMat length. This graph only supports two layer graphs.\");\n        super.createCluster(this.listenerBeliefClusterMatrix, probabilityDistribution, changeNodeRadiusBasedOnDistribution);\n        return this;\n    }\n\n\n    bindToListenerPGM(listener) {\n        // Used to bind listenerPGM to listenerBeliefPGM\n        this.listenerPGM = listener;\n        return this;\n    }\n}\n\n\n\nclass ListenerPGM extends GraphicalModel {\n\n    constructor(graphConfiguration, divID) {\n        super(graphConfiguration, divID);\n    }\n\n\n    /*@Override*/\n    _updateChart() {}\n\n    /*@Override*/\n    _backgroundOnClick() {\n        // Prevent adjMatrix gets reset when click on background\n        if (this._canClick && !this.listenerBeliefPGM.config.autoPlay.on) {\n            super._backgroundOnClick();\n        }\n    }\n\n\n    resetEdgeWeightsToBeListenerBeliefPGMEdgeWeights() {\n        // Set listenerPGM to be listenerBeliefPGM's mirror\n        let weights = [];\n        for (let i = 0; i < this.cMatDim[0]; i++) {\n            for (let vertexIdx = 0; vertexIdx < this.listenerBeliefPGM.cMatDim[0]; vertexIdx++) {\n                let listenerEdgeWeights = this.listenerBeliefPGM.getGraphData().data[vertexIdx].edgeWeights;\n                weights.push(listenerEdgeWeights[i].weight);\n            }\n        }\n        this.updateWeight(weights);\n    }\n\n    bindToListenerBeliefPGM(belief) {\n        // This binds the listener and the listener's belief to each other and set listener's weight.\n        belief.bindToListenerPGM(this);\n        this.listenerBeliefPGM = belief;\n\n        let listenerPGM = this;\n        // Redefine onClick when bind to listenerBeliefPGM to prevent adjMatrix gets reset when click on background\n        this.onClick = d3.behavior.drag()\n            .origin(d => d)\n            .on(\"dragstart\", function(d) {\n                // Check if the clicked node is in the first layer\n                // which are the num of nodes in first layer of clusterMat\n                // Only allow user to click the node if autoplay is off\n                if (!listenerPGM.listenerBeliefPGM.config.autoPlay.on) {\n                    d3.event.sourceEvent.stopPropagation();\n                    d3.select(this).classed(\"dragging\", true);\n\n                    // Option 1: Only draw visited path once\n                    // listenerPGM._triggerSpeakerNode(this.id);\n\n                    // Option 2: AutoPlay when speaker node is clicked\n                    let speakerLayerLength = listenerPGM.graphData.clusterMat[0].length;\n                    if (listenerPGM.config.autoPlay.on) {\n                        listenerPGM._stopAutoPlay();\n                    } else {\n                        listenerPGM._startAutoPlay();\n                    }\n                }\n            });\n        this.resetEdgeWeightsToBeListenerBeliefPGMEdgeWeights();\n\n        return this;\n    }\n\n\n    updateWeight(weight) {\n        // Used by listenerBelief to update the pgm weigth\n        // takes in the weights as an 1D array and set the weights\n        let weightIdx = 0;\n        for (let vertexIdx = 0; vertexIdx < this.cMatDim[0]; vertexIdx++) {\n            let edgeWeights = [];\n            for (let i = 0; i < this.cMatDim[1]; i++) {\n                edgeWeights[i] = {\n                    id: this.getVertexId([1, i]),\n                    weight: weight[weightIdx]\n                };\n                weightIdx++;\n            }\n            this.setEdgeWeights(vertexIdx, edgeWeights);\n        }\n    }\n\n\n}"
+  },
+  {
+    "__docId__": 65,
+    "kind": "class",
+    "static": true,
+    "variation": null,
+    "name": "ListenerObserverPGM",
+    "memberof": "src/listenerObserverPGM.js",
+    "longname": "src/listenerObserverPGM.js~ListenerObserverPGM",
+    "access": null,
+    "export": false,
+    "importPath": "./src/listenerObserverPGM.js",
+    "importStyle": null,
+    "description": null,
+    "lineNumber": 9,
+    "undocument": true,
+    "interface": false
+  },
+  {
+    "__docId__": 66,
+    "kind": "constructor",
+    "static": false,
+    "variation": null,
+    "name": "constructor",
+    "memberof": "src/listenerObserverPGM.js~ListenerObserverPGM",
+    "longname": "src/listenerObserverPGM.js~ListenerObserverPGM#constructor",
+    "access": null,
+    "description": null,
+    "lineNumber": 11,
+    "undocument": true,
+    "params": [
+      {
+        "name": "divID",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "listenerBeliefConfig",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "listenerConfig",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "adjMatConfig",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "cMat",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "speakerLayerProbabilityDistribution",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "changeNodeRadiusBasedOnDistribution",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "generator": false
+  },
+  {
+    "__docId__": 67,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "divID",
+    "memberof": "src/listenerObserverPGM.js~ListenerObserverPGM",
+    "longname": "src/listenerObserverPGM.js~ListenerObserverPGM#divID",
+    "access": null,
+    "description": null,
+    "lineNumber": 13,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 68,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "listenerBelif",
+    "memberof": "src/listenerObserverPGM.js~ListenerObserverPGM",
+    "longname": "src/listenerObserverPGM.js~ListenerObserverPGM#listenerBelif",
+    "access": null,
+    "description": null,
+    "lineNumber": 29,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 69,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "listener",
+    "memberof": "src/listenerObserverPGM.js~ListenerObserverPGM",
+    "longname": "src/listenerObserverPGM.js~ListenerObserverPGM#listener",
+    "access": null,
+    "description": null,
+    "lineNumber": 45,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 70,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "setEdgeWeights",
+    "memberof": "src/listenerObserverPGM.js~ListenerObserverPGM",
+    "longname": "src/listenerObserverPGM.js~ListenerObserverPGM#setEdgeWeights",
+    "access": null,
+    "description": null,
+    "lineNumber": 53,
+    "undocument": true,
+    "params": [
+      {
+        "name": "vertexId",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "adjacentEdgeWeights",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "return": {
+      "types": [
+        "*"
+      ]
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 71,
+    "kind": "class",
+    "static": true,
+    "variation": null,
+    "name": "ListenerBeliefPGM",
+    "memberof": "src/listenerObserverPGM.js",
+    "longname": "src/listenerObserverPGM.js~ListenerBeliefPGM",
+    "access": null,
+    "export": false,
+    "importPath": "./src/listenerObserverPGM.js",
+    "importStyle": null,
+    "description": null,
+    "lineNumber": 65,
+    "undocument": true,
+    "interface": false,
+    "extends": [
+      "GraphicalModel"
+    ]
+  },
+  {
+    "__docId__": 72,
+    "kind": "constructor",
+    "static": false,
+    "variation": null,
+    "name": "constructor",
+    "memberof": "src/listenerObserverPGM.js~ListenerBeliefPGM",
+    "longname": "src/listenerObserverPGM.js~ListenerBeliefPGM#constructor",
+    "access": null,
+    "description": null,
+    "lineNumber": 67,
+    "undocument": true,
+    "params": [
+      {
+        "name": "graphConfiguration",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "divID",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "generator": false
+  },
+  {
+    "__docId__": 73,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "_createDialogueBox",
+    "memberof": "src/listenerObserverPGM.js~ListenerBeliefPGM",
+    "longname": "src/listenerObserverPGM.js~ListenerBeliefPGM#_createDialogueBox",
+    "access": null,
+    "description": null,
+    "lineNumber": 76,
+    "undocument": true,
+    "params": [],
+    "generator": false
+  },
+  {
+    "__docId__": 74,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "_calculateWeights",
+    "memberof": "src/listenerObserverPGM.js~ListenerBeliefPGM",
+    "longname": "src/listenerObserverPGM.js~ListenerBeliefPGM#_calculateWeights",
+    "access": null,
+    "description": null,
+    "lineNumber": 110,
+    "undocument": true,
+    "params": [],
+    "return": {
+      "types": [
+        "*"
+      ]
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 75,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "_cyclingSpeedControlButtonOnClick",
+    "memberof": "src/listenerObserverPGM.js~ListenerBeliefPGM",
+    "longname": "src/listenerObserverPGM.js~ListenerBeliefPGM#_cyclingSpeedControlButtonOnClick",
+    "access": null,
+    "description": null,
+    "lineNumber": 164,
+    "undocument": true,
+    "params": [
+      {
+        "name": "ui",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "generator": false
+  },
+  {
+    "__docId__": 76,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "_updateChart",
+    "memberof": "src/listenerObserverPGM.js~ListenerBeliefPGM",
+    "longname": "src/listenerObserverPGM.js~ListenerBeliefPGM#_updateChart",
+    "access": null,
+    "description": null,
+    "lineNumber": 172,
+    "undocument": true,
+    "params": [],
+    "generator": false
+  },
+  {
+    "__docId__": 77,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "_stopAutoPlay",
+    "memberof": "src/listenerObserverPGM.js~ListenerBeliefPGM",
+    "longname": "src/listenerObserverPGM.js~ListenerBeliefPGM#_stopAutoPlay",
+    "access": null,
+    "description": null,
+    "lineNumber": 189,
+    "undocument": true,
+    "params": [],
+    "generator": false
+  },
+  {
+    "__docId__": 78,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "_startAutoPlay",
+    "memberof": "src/listenerObserverPGM.js~ListenerBeliefPGM",
+    "longname": "src/listenerObserverPGM.js~ListenerBeliefPGM#_startAutoPlay",
+    "access": null,
+    "description": null,
+    "lineNumber": 197,
+    "undocument": true,
+    "params": [],
+    "generator": false
+  },
+  {
+    "__docId__": 79,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "createCluster",
+    "memberof": "src/listenerObserverPGM.js~ListenerBeliefPGM",
+    "longname": "src/listenerObserverPGM.js~ListenerBeliefPGM#createCluster",
+    "access": null,
+    "description": null,
+    "lineNumber": 214,
+    "undocument": true,
+    "params": [
+      {
+        "name": "cMat",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "probabilityDistribution",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "changeNodeRadiusBasedOnDistribution",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "return": {
+      "types": [
+        "*"
+      ]
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 80,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "listenerClusterMatrix",
+    "memberof": "src/listenerObserverPGM.js~ListenerBeliefPGM",
+    "longname": "src/listenerObserverPGM.js~ListenerBeliefPGM#listenerClusterMatrix",
+    "access": null,
+    "description": null,
+    "lineNumber": 216,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 81,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "listenerBeliefClusterMatrix",
+    "memberof": "src/listenerObserverPGM.js~ListenerBeliefPGM",
+    "longname": "src/listenerObserverPGM.js~ListenerBeliefPGM#listenerBeliefClusterMatrix",
+    "access": null,
+    "description": null,
+    "lineNumber": 217,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 82,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "bindToListenerPGM",
+    "memberof": "src/listenerObserverPGM.js~ListenerBeliefPGM",
+    "longname": "src/listenerObserverPGM.js~ListenerBeliefPGM#bindToListenerPGM",
+    "access": null,
+    "description": null,
+    "lineNumber": 226,
+    "undocument": true,
+    "params": [
+      {
+        "name": "listener",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "return": {
+      "types": [
+        "*"
+      ]
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 83,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "listenerPGM",
+    "memberof": "src/listenerObserverPGM.js~ListenerBeliefPGM",
+    "longname": "src/listenerObserverPGM.js~ListenerBeliefPGM#listenerPGM",
+    "access": null,
+    "description": null,
+    "lineNumber": 228,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 84,
+    "kind": "class",
+    "static": true,
+    "variation": null,
+    "name": "ListenerPGM",
+    "memberof": "src/listenerObserverPGM.js",
+    "longname": "src/listenerObserverPGM.js~ListenerPGM",
+    "access": null,
+    "export": false,
+    "importPath": "./src/listenerObserverPGM.js",
+    "importStyle": null,
+    "description": null,
+    "lineNumber": 235,
+    "undocument": true,
+    "interface": false,
+    "extends": [
+      "GraphicalModel"
+    ]
+  },
+  {
+    "__docId__": 85,
+    "kind": "constructor",
+    "static": false,
+    "variation": null,
+    "name": "constructor",
+    "memberof": "src/listenerObserverPGM.js~ListenerPGM",
+    "longname": "src/listenerObserverPGM.js~ListenerPGM#constructor",
+    "access": null,
+    "description": null,
+    "lineNumber": 237,
+    "undocument": true,
+    "params": [
+      {
+        "name": "graphConfiguration",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "divID",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "generator": false
+  },
+  {
+    "__docId__": 86,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "_updateChart",
+    "memberof": "src/listenerObserverPGM.js~ListenerPGM",
+    "longname": "src/listenerObserverPGM.js~ListenerPGM#_updateChart",
+    "access": null,
+    "description": null,
+    "lineNumber": 243,
+    "undocument": true,
+    "params": [],
+    "generator": false
+  },
+  {
+    "__docId__": 87,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "_backgroundOnClick",
+    "memberof": "src/listenerObserverPGM.js~ListenerPGM",
+    "longname": "src/listenerObserverPGM.js~ListenerPGM#_backgroundOnClick",
+    "access": null,
+    "description": null,
+    "lineNumber": 246,
+    "undocument": true,
+    "params": [],
+    "generator": false
+  },
+  {
+    "__docId__": 88,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "resetEdgeWeightsToBeListenerBeliefPGMEdgeWeights",
+    "memberof": "src/listenerObserverPGM.js~ListenerPGM",
+    "longname": "src/listenerObserverPGM.js~ListenerPGM#resetEdgeWeightsToBeListenerBeliefPGMEdgeWeights",
+    "access": null,
+    "description": null,
+    "lineNumber": 254,
+    "undocument": true,
+    "params": [],
+    "generator": false
+  },
+  {
+    "__docId__": 89,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "bindToListenerBeliefPGM",
+    "memberof": "src/listenerObserverPGM.js~ListenerPGM",
+    "longname": "src/listenerObserverPGM.js~ListenerPGM#bindToListenerBeliefPGM",
+    "access": null,
+    "description": null,
+    "lineNumber": 266,
+    "undocument": true,
+    "params": [
+      {
+        "name": "belief",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "return": {
+      "types": [
+        "*"
+      ]
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 90,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "listenerBeliefPGM",
+    "memberof": "src/listenerObserverPGM.js~ListenerPGM",
+    "longname": "src/listenerObserverPGM.js~ListenerPGM#listenerBeliefPGM",
+    "access": null,
+    "description": null,
+    "lineNumber": 269,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 91,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "onClick",
+    "memberof": "src/listenerObserverPGM.js~ListenerPGM",
+    "longname": "src/listenerObserverPGM.js~ListenerPGM#onClick",
+    "access": null,
+    "description": null,
+    "lineNumber": 273,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 92,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "updateWeight",
+    "memberof": "src/listenerObserverPGM.js~ListenerPGM",
+    "longname": "src/listenerObserverPGM.js~ListenerPGM#updateWeight",
+    "access": null,
+    "description": null,
+    "lineNumber": 301,
+    "undocument": true,
+    "params": [
+      {
+        "name": "weight",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "generator": false
+  },
+  {
+    "__docId__": 93,
+    "kind": "file",
+    "static": true,
+    "variation": null,
+    "name": "src/pgmConfig.js",
+    "memberof": null,
+    "longname": "src/pgmConfig.js",
+    "access": null,
+    "description": null,
+    "lineNumber": 1,
+    "content": "'use strict';\n\n\n/**\n * Created by Alex Chenxing Ouyang\n * This is used to obtain the default configurations for PGMs\n */\n\nclass Configuration {\n\n    constructor() {\n        // Handles the configuration of listener's belief\n        this.listenerBeliefConfig = {\n            transform: {\n                x: 0,\n                y: 0,\n                width: window.innerWidth * 2 / 3 - 20,\n                height: window.innerWidth / 2.5\n            },\n            vertex: {\n                radius: .35,\n                defaultStyle: {\n                    backgroundColor: \"#52bf90\",\n                    outlineColor: \"#317256\"\n                },\n                visited: {\n                    visitedColor: \"#1d4433\",\n                    outlineColor: \"#1d4433\"\n                }\n            },\n            edge: {\n                baseWidth: 0, // base width offset = baseWidth * circle radius\n                width: 1, // edge width = width * circle radius\n                defaultColor: \"#74cba6\",\n                visitedColor: \"#1d4433\",\n                timeInterval: 400 // timeInterval is in millisecond\n            },\n            text: {\n                color: \"white\",\n                size: 0.5, // text size = size * circle radius\n                anchor: \"middle\",\n                alignment: \"middle\"\n\n            },\n            background: {\n                grid: false,\n                color: \"#ccecde\"\n            },\n            autoPlay: {\n                on: false,\n                button: {\n                    dim: 1,\n                    color: \"#52bf90\"\n                },\n                timeIntervalBetweenCycle: 400\n            },\n            autoPlayable: true, // If autoPlayable, creates the autoplay button\n            cyclingSpeedControllable: true, // if cyclingSpeedControllable, create speed button\n            zoomable: false,\n        };\n\n\n        // Handles the configuration of listener\n        this.listenerConfig = {\n            transform: {\n                x: 0,\n                y: 0,\n                width: window.innerWidth * 2 / 3 - 20,\n                height: window.innerWidth / 3\n            },\n            vertex: {\n                radius: 0.35,\n                defaultColor: \"#52bf90\",\n                visitedColor: \"#1d4433\",\n                outlineColor: \"#317256\"\n            },\n            edge: {\n                baseWidth: 0, // base width offset = baseWidth * circle radius\n                width: 1, // edge width = width * circle radius\n                defaultColor: \"#b6ddcc\",\n                visitedColor: \"#1d4433\",\n                timeInterval: 400 // timeInterval is in millisecond\n            },\n            text: {\n                color: \"white\",\n                size: 0.5, // text size = size * circle radius\n                anchor: \"middle\",\n                alignment: \"middle\"\n\n            },\n            background: {\n                grid: false,\n                color: \"rgba(255, 255, 255, 0)\"\n            },\n            autoPlay: {\n                on: false,\n                button: {\n                    dim: 1,\n                    color: \"#74cba6\"\n                },\n                timeIntervalBetweenCycle: 400\n            },\n            autoPlayable: false, // If autoPlayable, creates the autoplay button\n            cyclingSpeedControllable: false, // if cyclingSpeedControllable, create speed button\n            zoomable: false,\n        };\n\n\n        // Adjacency matrix configuration\n        this.adjacencyMatrixConfig = {\n            transform: {\n                x: 0,\n                y: 0,\n                width: window.innerWidth / 3,\n                height: window.innerWidth / 3\n            },\n            matrix: {\n                x: 0.3,\n                y: 0.3,\n                cellDim: 0.5,\n                cellSpacing: 1,\n                color: \"#63c59b\"\n            },\n            label: {\n                color: \"#52bf90\",\n                size: 0.5, // text size = size * circle radius\n                anchor: \"middle\",\n                alignment: \"middle\"\n            },\n            weight: {\n                color: \"white\",\n                size: 0.6, // weight text size = size * circle radius\n                anchor: \"middle\",\n                alignment: \"middle\"\n            },\n            background: {\n                color: \"rgba(255, 255, 255, 0)\"\n            }\n        };\n\n\n        // This is the config for regular pgm\n        this.pgmConfig = {\n            transform: {\n                x: 0,\n                y: 0,\n                width: window.innerWidth * 2 / 3 - 20,\n                height: window.innerWidth / 3\n            },\n            vertex: {\n                radius: 0.35,\n                defaultStyle: {\n                    backgroundColor: \"#52bf90\",\n                    outlineColor: \"#317256\"\n                },\n                visited: {\n                    visitedColor: \"#1d4433\",\n                    outlineColor: \"#1d4433\"\n                }\n            },\n            edge: {\n                baseWidth: 0, // base width offset = baseWidth * circle radius\n                width: 1, // edge width = width * circle radius\n                defaultColor: \"#b6ddcc\",\n                visitedColor: \"#1d4433\",\n                timeInterval: 400 // timeInterval is in millisecond\n            },\n            text: {\n                color: \"white\",\n                size: 0.5, // text size = size * circle radius\n                anchor: \"middle\",\n                alignment: \"middle\"\n\n            },\n            background: {\n                grid: true,\n                color: \"#ecf6f2\"\n            },\n            autoPlay: {\n                on: false,\n                button: {\n                    dim: 1,\n                    color: \"#52bf90\"\n                },\n                timeIntervalBetweenCycle: 400\n            },\n            autoPlayable: true, // If autoPlayable, creates the autoplay button\n            cyclingSpeedControllable: true, // if cyclingSpeedControllable, create speed button\n            zoomable: false,\n        };\n    }\n\n    getListenerBeliefConfig() {\n        return Utils.cloneDR(this.listenerBeliefConfig);\n    }\n\n    getListenerConfig() {\n        return Utils.cloneDR(this.listenerConfig);\n    }\n\n    getAdjacencyMatrixConfig() {\n        return Utils.cloneDR(this.adjacencyMatrixConfig);\n    }\n\n    getPgmConfig() {\n        return Utils.cloneDR(this.pgmConfig);\n    }\n}\n\nlet Config = new Configuration();"
+  },
+  {
+    "__docId__": 94,
+    "kind": "class",
+    "static": true,
+    "variation": null,
+    "name": "Configuration",
+    "memberof": "src/pgmConfig.js",
+    "longname": "src/pgmConfig.js~Configuration",
+    "access": null,
+    "export": false,
+    "importPath": "./src/pgmConfig.js",
+    "importStyle": null,
+    "description": "Created by Alex Chenxing Ouyang\nThis is used to obtain the default configurations for PGMs",
+    "lineNumber": 9,
+    "interface": false
+  },
+  {
+    "__docId__": 95,
+    "kind": "constructor",
+    "static": false,
+    "variation": null,
+    "name": "constructor",
+    "memberof": "src/pgmConfig.js~Configuration",
+    "longname": "src/pgmConfig.js~Configuration#constructor",
+    "access": null,
+    "description": null,
+    "lineNumber": 11,
+    "undocument": true,
+    "params": [],
+    "generator": false
+  },
+  {
+    "__docId__": 96,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "listenerBeliefConfig",
+    "memberof": "src/pgmConfig.js~Configuration",
+    "longname": "src/pgmConfig.js~Configuration#listenerBeliefConfig",
+    "access": null,
+    "description": null,
+    "lineNumber": 13,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 97,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "listenerConfig",
+    "memberof": "src/pgmConfig.js~Configuration",
+    "longname": "src/pgmConfig.js~Configuration#listenerConfig",
+    "access": null,
+    "description": null,
+    "lineNumber": 64,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 98,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "adjacencyMatrixConfig",
+    "memberof": "src/pgmConfig.js~Configuration",
+    "longname": "src/pgmConfig.js~Configuration#adjacencyMatrixConfig",
+    "access": null,
+    "description": null,
+    "lineNumber": 110,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 99,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "pgmConfig",
+    "memberof": "src/pgmConfig.js~Configuration",
+    "longname": "src/pgmConfig.js~Configuration#pgmConfig",
+    "access": null,
+    "description": null,
+    "lineNumber": 143,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 100,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "getListenerBeliefConfig",
+    "memberof": "src/pgmConfig.js~Configuration",
+    "longname": "src/pgmConfig.js~Configuration#getListenerBeliefConfig",
+    "access": null,
+    "description": null,
+    "lineNumber": 193,
+    "undocument": true,
+    "params": [],
+    "return": {
+      "types": [
+        "*"
+      ]
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 101,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "getListenerConfig",
+    "memberof": "src/pgmConfig.js~Configuration",
+    "longname": "src/pgmConfig.js~Configuration#getListenerConfig",
+    "access": null,
+    "description": null,
+    "lineNumber": 197,
+    "undocument": true,
+    "params": [],
+    "return": {
+      "types": [
+        "*"
+      ]
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 102,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "getAdjacencyMatrixConfig",
+    "memberof": "src/pgmConfig.js~Configuration",
+    "longname": "src/pgmConfig.js~Configuration#getAdjacencyMatrixConfig",
+    "access": null,
+    "description": null,
+    "lineNumber": 201,
+    "undocument": true,
+    "params": [],
+    "return": {
+      "types": [
+        "*"
+      ]
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 103,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "getPgmConfig",
+    "memberof": "src/pgmConfig.js~Configuration",
+    "longname": "src/pgmConfig.js~Configuration#getPgmConfig",
+    "access": null,
+    "description": null,
+    "lineNumber": 205,
+    "undocument": true,
+    "params": [],
+    "return": {
+      "types": [
+        "*"
+      ]
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 104,
+    "kind": "variable",
+    "static": true,
+    "variation": null,
+    "name": "Config",
+    "memberof": "src/pgmConfig.js",
+    "longname": "src/pgmConfig.js~Config",
+    "access": null,
+    "export": false,
+    "importPath": "./src/pgmConfig.js",
+    "importStyle": null,
+    "description": null,
+    "lineNumber": 210,
+    "undocument": true,
+    "type": {
+      "types": [
+        "Configuration"
+      ]
+    }
+  },
+  {
+    "__docId__": 105,
+    "kind": "file",
+    "static": true,
+    "variation": null,
+    "name": "src/utils.js",
+    "memberof": null,
+    "longname": "src/utils.js",
+    "access": null,
+    "description": null,
+    "lineNumber": 4,
+    "content": "/*=============== Utilities ==================*/\n\n// Used to replace console.log,  EX: log('hello'); // hello \nconst log = mesg => console.log(mesg);\n\n// Implement max and min function for array\nArray.max = array => Math.max.apply(Math, array);\nArray.min = array => Math.min.apply(Math, array);\n\nvar Utils = {};\n\n(function () {\n    \"use strict\";\n\n    Utils.cloneDR = function cloneDR(o) {\n        /* Clone an object deeply and recursively */\n\n        const gdcc = \"__getDeepCircularCopy__\";\n        if (o !== Object(o)) {\n            return o; // primitive value\n        }\n\n        let set = gdcc in o,\n            cache = o[gdcc],\n            result;\n        if (set && typeof cache == \"function\") {\n            return cache();\n        }\n        // else\n        o[gdcc] = () => result;\n        // overwrite\n        if (o instanceof Array) {\n            result = [];\n            for (let i = 0; i < o.length; i++) {\n                result[i] = cloneDR(o[i]);\n            }\n        } else {\n            result = {};\n            for (let prop in o) {\n                if (prop != gdcc) {\n                    result[prop] = cloneDR(o[prop]);\n                } else if (set) {\n                    result[prop] = cloneDR(cache);\n                }\n            }\n        }\n        if (set) {\n            o[gdcc] = cache; // reset\n        } else {\n            delete o[gdcc]; // unset again\n        }\n        return result;\n    };\n\n\n\n    Utils.isObjLiteral = function isObjLiteral(_obj) {\n        /* verify if an object is an object literal */\n\n        let _test = _obj;\n        return (typeof _obj !== 'object' || _obj === null ?\n            false :\n            (\n                (function () {\n                    while (!false) {\n                        if (Object.getPrototypeOf(_test = Object.getPrototypeOf(_test)) === null) {\n                            break;\n                        }\n                    }\n                    return Object.getPrototypeOf(_obj) === _test;\n                })()\n            )\n        );\n    };\n\n    /**\n     * Darkens or lightens hex color value\n     * percentage ranges form -100(dark) to +100(light)\n     */\n    Utils.shadeColor = function Utils(colorHex, percent) {\n\n        var R = parseInt(colorHex.substring(1, 3), 16);\n        var G = parseInt(colorHex.substring(3, 5), 16);\n        var B = parseInt(colorHex.substring(5, 7), 16);\n\n        R = parseInt(R * (100 + percent) / 100);\n        G = parseInt(G * (100 + percent) / 100);\n        B = parseInt(B * (100 + percent) / 100);\n\n        R = (R < 255) ? R : 255;\n        G = (G < 255) ? G : 255;\n        B = (B < 255) ? B : 255;\n\n        var RR = ((R.toString(16).length === 1) ? \"0\" + R.toString(16) : R.toString(16));\n        var GG = ((G.toString(16).length === 1) ? \"0\" + G.toString(16) : G.toString(16));\n        var BB = ((B.toString(16).length === 1) ? \"0\" + B.toString(16) : B.toString(16));\n\n        return \"#\" + RR + GG + BB;\n    };\n\n}());"
+  },
+  {
+    "__docId__": 106,
+    "kind": "variable",
+    "static": true,
+    "variation": null,
+    "name": "log",
+    "memberof": "src/utils.js",
+    "longname": "src/utils.js~log",
+    "access": null,
+    "export": false,
+    "importPath": "./src/utils.js",
+    "importStyle": null,
+    "description": null,
+    "lineNumber": 4,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 107,
+    "kind": "variable",
+    "static": true,
+    "variation": null,
+    "name": "Utils",
+    "memberof": "src/utils.js",
+    "longname": "src/utils.js~Utils",
+    "access": null,
+    "export": false,
+    "importPath": "./src/utils.js",
+    "importStyle": null,
+    "description": null,
+    "lineNumber": 10,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 108,
+    "kind": "file",
+    "static": true,
+    "variation": null,
+    "name": "src/weightedAdjacencyMatrix.js",
+    "memberof": null,
+    "longname": "src/weightedAdjacencyMatrix.js",
+    "access": null,
+    "description": null,
+    "lineNumber": 4,
+    "content": "/*=============== Weighted Adjacency Matrix Graph ====================*/\n\n\n\"use strict\";\n\nclass WeightedAdjacencyMatrix {\n\n    /**\n     * Creates a color coded adjacency matrix contained in a WeightedAdjMat object\n     * @class\n     * @constructor\n     * @param {String} divID - the id of the div that contains the graph, e.g \"#id\"\n     * @param {Object} matrixConfiguration - The configurations of the adjacency matrix\n     */\n    constructor(divID, matrixConfiguration) {\n        /**\n         * @memberof WeightedAdjMat\n         * @type {Object}\n         * @property {Object} transform - The transform property can be used to position and scale the WeightedAdjMat object\n         * @property {Object} matrix - The matix property can be used to position, scale and color the matrix\n         * @property {Object} label - The label property can be used to color and scale the matrix labels\n         * @property {Object} text - The text property can be used to color and scale the matrix cell weight\n         * @property {Object} background - The background property can be used to change the color of the background\n         */\n        let defaultConfig = {\n            transform: {\n                x: 0,\n                y: 0,\n                width: window.innerWidth,\n                height: window.innerHeight\n            },\n            matrix: {\n                x: 0.2,\n                y: 0.2,\n                dim: 0.6, // dimenion relative to the WeightedAdjMat that contains the matrix\n                spacing: 1, // spacing between each cell\n                color: \"#63c59b\"\n            },\n            label: {\n                color: \"#52bf90\",\n                size: 0.3, // text size = size * circle radius\n                anchor: \"middle\",\n                alignment: \"middle\"\n            },\n            weight: {\n                color: \"white\",\n                size: 0.6, // text size = size * circle radius\n                anchor: \"middle\",\n                alignment: \"middle\"\n            },\n            background: {\n                color: \"#ecf6f2\"\n            }\n        };\n\n        this.config = matrixConfiguration || defaultConfig;\n\n        this._divID = divID;\n\n        this._adjMatData = []; // Contains the matrix cell data and cell label data\n\n        this._rowLabel = []; // Contains the row labels in string. e.g[\"square\", \"circle\"]\n\n        this._colLabel = []; // Contains the column labels in string. e.g[\"square\", \"circle\"]\n\n        this._svg = d3.select(this._divID)\n            .append('svg')\n            .attr(\"class\", \"weightedAdjMat\")\n            .attr('width', this.config.transform.width)\n            .attr('height', this.config.transform.height)\n            .append('g')\n            .attr(\"transform\", \"translate(\" + this.config.transform.x + \",\" + this.config.transform.y + \")\");\n\n        // Create the background wrapper for color theme\n        this._svg.append(\"rect\")\n            .attr(\"class\", \"background\")\n            .attr(\"width\", this.config.transform.width)\n            .attr(\"height\", this.config.transform.height)\n            .style(\"fill\", this.config.background.color);\n    }\n\n\n    /**\n     * Darkens or lightens hex color value\n     * @function _shadeColor\n     * @param {String} colorHex - a hex color string. ie. \"#63c59b\"\n     * @param {Number} percentage - shading ranges form -100(dark) to +100(light)\n     */\n    _shadeColor(colorHex, percent) {\n\n        let R = parseInt(colorHex.substring(1, 3), 16);\n        let G = parseInt(colorHex.substring(3, 5), 16);\n        let B = parseInt(colorHex.substring(5, 7), 16);\n\n        R = parseInt(R * (100 + percent) / 100);\n        G = parseInt(G * (100 + percent) / 100);\n        B = parseInt(B * (100 + percent) / 100);\n\n        R = (R < 255) ? R : 255;\n        G = (G < 255) ? G : 255;\n        B = (B < 255) ? B : 255;\n\n        let RR = ((R.toString(16).length === 1) ? \"0\" + R.toString(16) : R.toString(16));\n        let GG = ((G.toString(16).length === 1) ? \"0\" + G.toString(16) : G.toString(16));\n        let BB = ((B.toString(16).length === 1) ? \"0\" + B.toString(16) : B.toString(16));\n\n        return \"#\" + RR + GG + BB;\n    }\n\n\n    /** \n     * Draws the adjancy matrix based on the property of each cell\n     * @function redrawMatrix\n     */\n    redrawMatrix() {\n        /* Draw the adjancy matrix */\n\n        d3.selectAll(this._divID + \" g .cell\").remove();\n        d3.selectAll(this._divID + \" g .label\").remove();\n\n        // Each cell group holds \n        let cell = this._svg.selectAll('g')\n            .data(this._adjMatData).enter()\n            .append(\"g\")\n            .attr(\"class\", \"cell\")\n            .attr(\"transform\", d => \"translate(\" + d.x + \",\" + d.y + \")\");\n\n        // Each rect is a matrix cell\n        cell.append(\"rect\")\n            .attr(\"transform\", \"translate(\" + -this.config.matrix.cellDim / 2 + \",\" + -this.config.matrix.cellDim / 2 + \")\")\n            .attr('width', this.config.matrix.cellDim)\n            .attr('height', this.config.matrix.cellDim)\n            .attr('fill', d => {\n                // Add color to the cell matrix\n                if (d.type === \"cellData\") {\n                    return this._shadeColor(this.config.matrix.color, -d.colorWeight * 5);\n                }\n                if (d.type === \"cellLabel\") {\n                    return this.config.background.color;\n                }\n            });\n\n\n        // Add cell weight text\n        cell.append(\"text\")\n            .attr(\"font-size\", this.config.matrix.cellDim * this.config.weight.size)\n            .attr(\"text-anchor\", this.config.weight.anchor)\n            .attr(\"alignment-baseline\", this.config.weight.alignment)\n            .attr(\"fill\", this.config.weight.color)\n            .text(d => {\n                if (d.type === \"cellData\") {\n                    return d.weight;\n                }\n            });\n\n        // Add cell label text\n        cell.append(\"text\")\n            .attr(\"font-size\", this.config.matrix.cellDim * this.config.label.size)\n            .attr(\"text-anchor\", this.config.label.anchor)\n            .attr(\"alignment-baseline\", this.config.label.alignment)\n            .attr(\"fill\", this.config.label.color)\n            .text(d => {\n                if (d.type === \"cellLabel\") {\n                    return d.label;\n                }\n            });\n    }\n\n    /** \n     * Creates an adjacency matrix based on the row and column labels\n     * @function WeightedAdjMat.createMatrix\n     * @param {Array} rowLab - labels that represent the row of the matrix\n     * @param {Array} colLab - labels that represent the column of the matrix\n     */\n    createMatrix(rowLab, colLab) {\n\n        this._rowLabel = rowLab; // Update the labels\n        this._colLabel = colLab; // Update the labels\n\n        // Calculate the dimension of each block and other matrix config properties\n        this.config.matrix.cellDim = this.config.matrix.cellDim * Array.min([this.config.transform.width, this.config.transform.height]) / Array.max([this._rowLabel.length, this._colLabel.length]);\n        this.config.matrix.cellSpacing *= this.config.matrix.cellDim / 10;\n        this.config.matrix.x *= this.config.transform.width;\n        this.config.matrix.y *= this.config.transform.height;\n\n        // Populate adjacency matrix data\n        let id = 0;\n        let x;\n        let y;\n        for (let i = 0; i < this._rowLabel.length; i++) {\n            for (let j = 0; j < this._colLabel.length; j++) {\n                x = (this.config.matrix.cellDim + this.config.matrix.cellSpacing) * (j + 1 / 2) + this.config.matrix.x;\n                y = (this.config.matrix.cellDim + this.config.matrix.cellSpacing) * (i + 1 / 2) + this.config.matrix.y;\n                this._adjMatData.push({\n                    type: \"cellData\",\n                    id: id,\n                    x: x,\n                    y: y,\n                    weight: 0,\n                    colorWeight: 0\n                });\n                id++;\n            }\n        }\n\n        // Add column labels to the adjacent matrix.\n        for (let i = 0; i < this._colLabel.length; i++) {\n            // Add column labels\n            x = (this.config.matrix.cellDim + this.config.matrix.cellSpacing) * (i + 1 / 2) + this.config.matrix.x;\n            y = (this.config.matrix.cellDim + this.config.matrix.cellSpacing) * (-1 / 2) + this.config.matrix.y;\n            this._adjMatData.push({\n                type: \"cellLabel\",\n                label: this._colLabel[i],\n                x: x,\n                y: y,\n            });\n        }\n\n        // Add row labels to the adjacent matrix.\n        for (let i = 0; i < this._rowLabel.length; i++) {\n            // Add row labels\n            x = (this.config.matrix.cellDim + this.config.matrix.cellSpacing) * (-1 / 2) + this.config.matrix.x;\n            y = (this.config.matrix.cellDim + this.config.matrix.cellSpacing) * (i + 1 / 2) + this.config.matrix.y;\n            this._adjMatData.push({\n                type: \"cellLabel\",\n                label: this._rowLabel[i],\n                x: x,\n                y: y,\n            });\n        }\n\n        this.redrawMatrix();\n    }\n\n\n    /** \n     * Increases the matix cell weight by label pair.\n     * @function WeightedAdjMat.increaseCellWeight\n     * @param {Array} cell - the cell to increase weight is represented by a coordinate pair using labels, ie. cell = (rowLabel, colLabel)\n     * @param {Integer} weight - used to increase the weight of the cell\n     */\n    increaseCellWeight(cell, weight) {\n        let row = this._rowLabel.indexOf(cell[0]);\n        let col = this._colLabel.indexOf(cell[1]);\n\n        if (row < 0 || col < 0) throw new Error(\"updateMatrix(cell): the element updated does not exist in the adjacency matrix.\");\n\n        let elementIndex = row * this._colLabel.length + col;\n        this._adjMatData[elementIndex].weight += weight;\n    }\n\n\n    /** \n     * Increases the matix cell color weight and darkens the color by label pair.\n     * @function WeightedAdjMat.increaseCellColor\n     * @param {Array} cell - the cell to increase weight is represented by a coordinate pair using labels, ie. cell = (rowLabel, colLabel)\n     * @param {Integer} weight - used to increase the color weight of the cell\n     */\n    increaseCellColor(cell, colorWeight) {\n        let row = this._rowLabel.indexOf(cell[0]);\n        let col = this._colLabel.indexOf(cell[1]);\n\n        if (row < 0 || col < 0) throw new Error(\"updateMatrix(cell): the element updated does not exist in the adjacency matrix.\");\n\n        let elementIndex = row * this._colLabel.length + col;\n        this._adjMatData[elementIndex].colorWeight += colorWeight;\n    }\n\n\n    /** \n     * Increases the matix column color weight and darkens the color\n     * @function WeightedAdjMat.increaseColumnColor\n     * @param {Array} colLabel - the label of the column to increase weight is represented by a label in string\n     * @param {Integer} weight - used to increase the color weight of the cell\n     */\n    increaseColumnColor(colLabel, colorWeight) {\n        let col = this._colLabel.indexOf(colLabel);\n\n        if (col < 0) throw new Error(\"increaseColumnColor: the column updated does not exist in the adjacency matrix.\");\n\n        for (let row = 0; row < this._rowLabel.length; row++) {\n            let elementIndex = row * this._colLabel.length + col;\n            this._adjMatData[elementIndex].colorWeight += colorWeight;\n        }\n    }\n\n\n    /** \n     * Reset the matix cell weight\n     * @function WeightedAdjMat.resetMatrixWeight\n     */\n    resetMatrixWeight() {\n        /* Reset each matrix cell weight to 0 */\n        for (let i = 0; i < this._adjMatData.length; i++) {\n            if (this._adjMatData[i].type === \"cellData\") {\n                this._adjMatData[i].weight = 0;\n            }\n        }\n    }\n\n    /** \n     * Reset the matix cell color weight and updates color based on the weight\n     * @function WeightedAdjMat.resetMatrixColorWeight\n     */\n    resetMatrixColorWeight() {\n        /* Reset each matrix cell weight to 0 */\n        for (let i = 0; i < this._adjMatData.length; i++) {\n            if (this._adjMatData[i].type === \"cellData\") {\n                this._adjMatData[i].colorWeight = 0;\n            }\n        }\n    }\n\n    /** \n     * Get the matix cell weight by cell pair = (i, j)\n     * @function WeightedAdjMat.getCellWeight\n     * @param {Array} cell - the cell to increase weight is represented by a coordinate pair, ie. cell = (i, j)\n     * @return {Integer} cell weight\n     */\n    getCellWeight(cell) {\n        let i = cell[0];\n        let j = cell[1];\n\n        if (i > this._colLabel.length || j > this._rowLabel.length || i < 0 || j < 0) throw new Error(\"getCellWeight(cell): the element to get does not exist in the adjacency matrix.\");\n\n        let elementIndex = i + j * this._colLabel.length;\n        return this._adjMatData[elementIndex].weight;\n    }\n\n\n    getMatrix1D() {\n        // Returns the adjacency matrix as a 1D array\n        let matrix1D = [];\n        for (let i = 0; i < this._adjMatData.length; i++) {\n            if (this._adjMatData[i].type == \"cellData\") {\n                matrix1D.push(this._adjMatData[i].weight);\n            }\n        }\n        return matrix1D;\n    }\n\n    getMatrix2D() {\n        // Returns the adjacency matrix as a 2D array,\n        // matrix = [col1, col2, col3];\n        let matrix1D = this.getMatrix1D();\n    }\n\n\n    //    resetRowLabel(row) {\n    //        this._rowLabel = row;\n    //    }\n    //\n    //    resetColLabel(col) {\n    //        this._colLabel = col;\n    //    }\n}"
+  },
+  {
+    "__docId__": 109,
+    "kind": "class",
+    "static": true,
+    "variation": null,
+    "name": "WeightedAdjacencyMatrix",
+    "memberof": "src/weightedAdjacencyMatrix.js",
+    "longname": "src/weightedAdjacencyMatrix.js~WeightedAdjacencyMatrix",
+    "access": null,
+    "export": false,
+    "importPath": "./src/weightedAdjacencyMatrix.js",
+    "importStyle": null,
+    "description": null,
+    "lineNumber": 6,
+    "undocument": true,
+    "interface": false
+  },
+  {
+    "__docId__": 110,
+    "kind": "constructor",
+    "static": false,
+    "variation": null,
+    "name": "constructor",
+    "memberof": "src/weightedAdjacencyMatrix.js~WeightedAdjacencyMatrix",
+    "longname": "src/weightedAdjacencyMatrix.js~WeightedAdjacencyMatrix#constructor",
+    "access": null,
+    "description": "Creates a color coded adjacency matrix contained in a WeightedAdjMat object",
+    "lineNumber": 15,
+    "unknown": [
+      {
+        "tagName": "@class",
+        "tagValue": ""
+      },
+      {
+        "tagName": "@constructor",
+        "tagValue": ""
+      }
+    ],
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "String"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "divID",
+        "description": "the id of the div that contains the graph, e.g \"#id\""
+      },
+      {
+        "nullable": null,
+        "types": [
+          "Object"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "matrixConfiguration",
+        "description": "The configurations of the adjacency matrix"
+      }
+    ],
+    "generator": false
+  },
+  {
+    "__docId__": 111,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "config",
+    "memberof": "src/weightedAdjacencyMatrix.js~WeightedAdjacencyMatrix",
+    "longname": "src/weightedAdjacencyMatrix.js~WeightedAdjacencyMatrix#config",
+    "access": null,
+    "description": null,
+    "lineNumber": 56,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 112,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_divID",
+    "memberof": "src/weightedAdjacencyMatrix.js~WeightedAdjacencyMatrix",
+    "longname": "src/weightedAdjacencyMatrix.js~WeightedAdjacencyMatrix#_divID",
+    "access": null,
+    "description": null,
+    "lineNumber": 58,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 113,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_adjMatData",
+    "memberof": "src/weightedAdjacencyMatrix.js~WeightedAdjacencyMatrix",
+    "longname": "src/weightedAdjacencyMatrix.js~WeightedAdjacencyMatrix#_adjMatData",
+    "access": null,
+    "description": null,
+    "lineNumber": 60,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 114,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_rowLabel",
+    "memberof": "src/weightedAdjacencyMatrix.js~WeightedAdjacencyMatrix",
+    "longname": "src/weightedAdjacencyMatrix.js~WeightedAdjacencyMatrix#_rowLabel",
+    "access": null,
+    "description": null,
+    "lineNumber": 62,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 115,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_colLabel",
+    "memberof": "src/weightedAdjacencyMatrix.js~WeightedAdjacencyMatrix",
+    "longname": "src/weightedAdjacencyMatrix.js~WeightedAdjacencyMatrix#_colLabel",
+    "access": null,
+    "description": null,
+    "lineNumber": 64,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 116,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_svg",
+    "memberof": "src/weightedAdjacencyMatrix.js~WeightedAdjacencyMatrix",
+    "longname": "src/weightedAdjacencyMatrix.js~WeightedAdjacencyMatrix#_svg",
+    "access": null,
+    "description": null,
+    "lineNumber": 66,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 117,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "_shadeColor",
+    "memberof": "src/weightedAdjacencyMatrix.js~WeightedAdjacencyMatrix",
+    "longname": "src/weightedAdjacencyMatrix.js~WeightedAdjacencyMatrix#_shadeColor",
+    "access": null,
+    "description": "Darkens or lightens hex color value",
+    "lineNumber": 89,
+    "unknown": [
+      {
+        "tagName": "@function",
+        "tagValue": "_shadeColor"
+      }
+    ],
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "String"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "colorHex",
+        "description": "a hex color string. ie. \"#63c59b\""
+      },
+      {
+        "nullable": null,
+        "types": [
+          "Number"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "percentage",
+        "description": "shading ranges form -100(dark) to +100(light)"
+      }
+    ],
+    "return": {
+      "types": [
+        "*"
+      ]
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 118,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "redrawMatrix",
+    "memberof": "src/weightedAdjacencyMatrix.js~WeightedAdjacencyMatrix",
+    "longname": "src/weightedAdjacencyMatrix.js~WeightedAdjacencyMatrix#redrawMatrix",
+    "access": null,
+    "description": "Draws the adjancy matrix based on the property of each cell",
+    "lineNumber": 115,
+    "unknown": [
+      {
+        "tagName": "@function",
+        "tagValue": "redrawMatrix"
+      }
+    ],
+    "params": [],
+    "generator": false
+  },
+  {
+    "__docId__": 119,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "createMatrix",
+    "memberof": "src/weightedAdjacencyMatrix.js~WeightedAdjacencyMatrix",
+    "longname": "src/weightedAdjacencyMatrix.js~WeightedAdjacencyMatrix#createMatrix",
+    "access": null,
+    "description": "Creates an adjacency matrix based on the row and column labels",
+    "lineNumber": 175,
+    "unknown": [
+      {
+        "tagName": "@function",
+        "tagValue": "WeightedAdjMat.createMatrix"
+      }
+    ],
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "Array"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "rowLab",
+        "description": "labels that represent the row of the matrix"
+      },
+      {
+        "nullable": null,
+        "types": [
+          "Array"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "colLab",
+        "description": "labels that represent the column of the matrix"
+      }
+    ],
+    "generator": false
+  },
+  {
+    "__docId__": 120,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_rowLabel",
+    "memberof": "src/weightedAdjacencyMatrix.js~WeightedAdjacencyMatrix",
+    "longname": "src/weightedAdjacencyMatrix.js~WeightedAdjacencyMatrix#_rowLabel",
+    "access": null,
+    "description": null,
+    "lineNumber": 177,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 121,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_colLabel",
+    "memberof": "src/weightedAdjacencyMatrix.js~WeightedAdjacencyMatrix",
+    "longname": "src/weightedAdjacencyMatrix.js~WeightedAdjacencyMatrix#_colLabel",
+    "access": null,
+    "description": null,
+    "lineNumber": 178,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 122,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "increaseCellWeight",
+    "memberof": "src/weightedAdjacencyMatrix.js~WeightedAdjacencyMatrix",
+    "longname": "src/weightedAdjacencyMatrix.js~WeightedAdjacencyMatrix#increaseCellWeight",
+    "access": null,
+    "description": "Increases the matix cell weight by label pair.",
+    "lineNumber": 242,
+    "unknown": [
+      {
+        "tagName": "@function",
+        "tagValue": "WeightedAdjMat.increaseCellWeight"
+      }
+    ],
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "Array"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "cell",
+        "description": "the cell to increase weight is represented by a coordinate pair using labels, ie. cell = (rowLabel, colLabel)"
+      },
+      {
+        "nullable": null,
+        "types": [
+          "Integer"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "weight",
+        "description": "used to increase the weight of the cell"
+      }
+    ],
+    "generator": false
+  },
+  {
+    "__docId__": 123,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "increaseCellColor",
+    "memberof": "src/weightedAdjacencyMatrix.js~WeightedAdjacencyMatrix",
+    "longname": "src/weightedAdjacencyMatrix.js~WeightedAdjacencyMatrix#increaseCellColor",
+    "access": null,
+    "description": "Increases the matix cell color weight and darkens the color by label pair.",
+    "lineNumber": 259,
+    "unknown": [
+      {
+        "tagName": "@function",
+        "tagValue": "WeightedAdjMat.increaseCellColor"
+      }
+    ],
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "Array"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "cell",
+        "description": "the cell to increase weight is represented by a coordinate pair using labels, ie. cell = (rowLabel, colLabel)"
+      },
+      {
+        "nullable": null,
+        "types": [
+          "Integer"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "weight",
+        "description": "used to increase the color weight of the cell"
+      }
+    ],
+    "generator": false
+  },
+  {
+    "__docId__": 124,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "increaseColumnColor",
+    "memberof": "src/weightedAdjacencyMatrix.js~WeightedAdjacencyMatrix",
+    "longname": "src/weightedAdjacencyMatrix.js~WeightedAdjacencyMatrix#increaseColumnColor",
+    "access": null,
+    "description": "Increases the matix column color weight and darkens the color",
+    "lineNumber": 276,
+    "unknown": [
+      {
+        "tagName": "@function",
+        "tagValue": "WeightedAdjMat.increaseColumnColor"
+      }
+    ],
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "Array"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "colLabel",
+        "description": "the label of the column to increase weight is represented by a label in string"
+      },
+      {
+        "nullable": null,
+        "types": [
+          "Integer"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "weight",
+        "description": "used to increase the color weight of the cell"
+      }
+    ],
+    "generator": false
+  },
+  {
+    "__docId__": 125,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "resetMatrixWeight",
+    "memberof": "src/weightedAdjacencyMatrix.js~WeightedAdjacencyMatrix",
+    "longname": "src/weightedAdjacencyMatrix.js~WeightedAdjacencyMatrix#resetMatrixWeight",
+    "access": null,
+    "description": "Reset the matix cell weight",
+    "lineNumber": 292,
+    "unknown": [
+      {
+        "tagName": "@function",
+        "tagValue": "WeightedAdjMat.resetMatrixWeight"
+      }
+    ],
+    "params": [],
+    "generator": false
+  },
+  {
+    "__docId__": 126,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "resetMatrixColorWeight",
+    "memberof": "src/weightedAdjacencyMatrix.js~WeightedAdjacencyMatrix",
+    "longname": "src/weightedAdjacencyMatrix.js~WeightedAdjacencyMatrix#resetMatrixColorWeight",
+    "access": null,
+    "description": "Reset the matix cell color weight and updates color based on the weight",
+    "lineNumber": 305,
+    "unknown": [
+      {
+        "tagName": "@function",
+        "tagValue": "WeightedAdjMat.resetMatrixColorWeight"
+      }
+    ],
+    "params": [],
+    "generator": false
+  },
+  {
+    "__docId__": 127,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "getCellWeight",
+    "memberof": "src/weightedAdjacencyMatrix.js~WeightedAdjacencyMatrix",
+    "longname": "src/weightedAdjacencyMatrix.js~WeightedAdjacencyMatrix#getCellWeight",
+    "access": null,
+    "description": "Get the matix cell weight by cell pair = (i, j)",
+    "lineNumber": 320,
+    "unknown": [
+      {
+        "tagName": "@function",
+        "tagValue": "WeightedAdjMat.getCellWeight"
+      }
+    ],
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "Array"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "cell",
+        "description": "the cell to increase weight is represented by a coordinate pair, ie. cell = (i, j)"
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Integer"
+      ],
+      "spread": false,
+      "description": "cell weight"
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 128,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "getMatrix1D",
+    "memberof": "src/weightedAdjacencyMatrix.js~WeightedAdjacencyMatrix",
+    "longname": "src/weightedAdjacencyMatrix.js~WeightedAdjacencyMatrix#getMatrix1D",
+    "access": null,
+    "description": null,
+    "lineNumber": 331,
+    "undocument": true,
+    "params": [],
+    "return": {
+      "types": [
+        "*"
+      ]
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 129,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "getMatrix2D",
+    "memberof": "src/weightedAdjacencyMatrix.js~WeightedAdjacencyMatrix",
+    "longname": "src/weightedAdjacencyMatrix.js~WeightedAdjacencyMatrix#getMatrix2D",
+    "access": null,
+    "description": null,
+    "lineNumber": 342,
+    "undocument": true,
+    "params": [],
+    "generator": false
+  },
+  {
+    "__docId__": 131,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Infinity",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Infinity",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Infinity",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 132,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "NaN",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/NaN",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~NaN",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 133,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "undefined",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/undefined",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~undefined",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 134,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "null",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~null",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 135,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Object",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Object",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 136,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "object",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~object",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 137,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Function",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Function",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 138,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "function",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~function",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 139,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Boolean",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Boolean",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 140,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "boolean",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~boolean",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 141,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Symbol",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Symbol",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 142,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Error",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Error",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 143,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "EvalError",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/EvalError",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~EvalError",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 144,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "InternalError",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/InternalError",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~InternalError",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 145,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "RangeError",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RangeError",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~RangeError",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 146,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "ReferenceError",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ReferenceError",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~ReferenceError",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 147,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "SyntaxError",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SyntaxError",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~SyntaxError",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 148,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "TypeError",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypeError",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~TypeError",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 149,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "URIError",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/URIError",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~URIError",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 150,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Number",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Number",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 151,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "number",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~number",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 152,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Date",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Date",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 153,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "String",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~String",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 154,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "string",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~string",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 155,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "RegExp",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~RegExp",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 156,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Array",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 157,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Int8Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Int8Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Int8Array",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 158,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Uint8Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Uint8Array",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 159,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Uint8ClampedArray",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8ClampedArray",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Uint8ClampedArray",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 160,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Int16Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Int16Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Int16Array",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 161,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Uint16Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint16Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Uint16Array",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 162,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Int32Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Int32Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Int32Array",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 163,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Uint32Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint32Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Uint32Array",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 164,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Float32Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Float32Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Float32Array",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 165,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Float64Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Float64Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Float64Array",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 166,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Map",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Map",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 167,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Set",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Set",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 168,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "WeakMap",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WeakMap",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~WeakMap",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 169,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "WeakSet",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WeakSet",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~WeakSet",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 170,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "ArrayBuffer",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~ArrayBuffer",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 171,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "DataView",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/DataView",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~DataView",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 172,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "JSON",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~JSON",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 173,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Promise",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Promise",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 174,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Generator",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Generator",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Generator",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 175,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "GeneratorFunction",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/GeneratorFunction",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~GeneratorFunction",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 176,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Reflect",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Reflect",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Reflect",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 177,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Proxy",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Proxy",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 179,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "CanvasRenderingContext2D",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "longname": "BuiltinExternal/WebAPIExternal.js~CanvasRenderingContext2D",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 180,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "DocumentFragment",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/API/DocumentFragment",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "longname": "BuiltinExternal/WebAPIExternal.js~DocumentFragment",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 181,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Element",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/API/Element",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "longname": "BuiltinExternal/WebAPIExternal.js~Element",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 182,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Event",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/API/Event",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "longname": "BuiltinExternal/WebAPIExternal.js~Event",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 183,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Node",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/API/Node",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "longname": "BuiltinExternal/WebAPIExternal.js~Node",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 184,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "NodeList",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/API/NodeList",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "longname": "BuiltinExternal/WebAPIExternal.js~NodeList",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 185,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "XMLHttpRequest",
+    "externalLink": "https://developer.mozilla.org/en/docs/Web/API/XMLHttpRequest",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "longname": "BuiltinExternal/WebAPIExternal.js~XMLHttpRequest",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 186,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "AudioContext",
+    "externalLink": "https://developer.mozilla.org/en/docs/Web/API/AudioContext",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "longname": "BuiltinExternal/WebAPIExternal.js~AudioContext",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  }
+]

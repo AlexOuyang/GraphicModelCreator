@@ -63,9 +63,9 @@ class ListenerObserverPGM {
             data: [] // data binds to the graph
         };
 
-        this.directedPath = []; // directedPath is a list of visited nodes' ID
+        this._directedPath = []; // _directedPath is a list of visited nodes' ID
 
-        this.canClick = true; // Used to keep user from clicking when the graph is traversing
+        this._canClick = true; // Used to keep user from clicking when the graph is traversing
 
         this.speakerLayerProbabilityDistribution = []; //  an array of probability given to each node in the speaker layer, probabilityDistribution=[] if uniform distribution
 
@@ -82,7 +82,7 @@ class ListenerObserverPGM {
                 // Check if the clicked node is in the first layer
                 // which are the num of nodes in first layer of clusterMat
                 // Only allow user to click the node if autoplay is off
-                if (pgm.canClick && !pgm.config.autoPlayable) {
+                if (pgm._canClick && !pgm.config.autoPlayable) {
                     d3.event.sourceEvent.stopPropagation();
                     d3.select(this).classed("dragging", true);
                     pgm._triggerSpeakerNode(this.id);
@@ -139,11 +139,11 @@ class ListenerObserverPGM {
     }
 
     _backgroundOnClick() {
-        if (this.canClick) {
+        if (this._canClick) {
             this._clearVisitedPath();
             // Do not allow user to click until visited path highlighting is finished
-            this.canClick = false;
-            setTimeout(() => this.canClick = true, this.config.edge.timeInterval * (this.directedPath.length - 1));
+            this._canClick = false;
+            setTimeout(() => this._canClick = true, this.config.edge.timeInterval * (this._directedPath.length - 1));
         }
     }
     _dataScreening(data) {
@@ -259,7 +259,7 @@ class ListenerObserverPGM {
             visitedNodes.push(vertexId);
         }
 
-        this.directedPath = visitedNodes;
+        this._directedPath = visitedNodes;
     }
 
 
@@ -355,15 +355,15 @@ class ListenerObserverPGM {
     _drawVisitedPath(data) {
         /* Draw visited edges based on weight in highlighted color */
 
-        for (let vertexIdx = 0; vertexIdx < this.directedPath.length; vertexIdx++) {
-            // Iterate through the list of ID in directedPath 
-            let currentVertex = data[this.directedPath[vertexIdx]];
+        for (let vertexIdx = 0; vertexIdx < this._directedPath.length; vertexIdx++) {
+            // Iterate through the list of ID in _directedPath 
+            let currentVertex = data[this._directedPath[vertexIdx]];
             if (currentVertex.edges) {
                 for (let edgeIdx = 0; edgeIdx < currentVertex.edges.length; edgeIdx++) {
                     let edgeNodes = currentVertex.edges[edgeIdx].edgeNodes;
                     let edgeWeight = currentVertex.edges[edgeIdx].edgeWeight * this.config.edge.width;
-                    // If the edge is in the directedPath then draw different color
-                    if (this.directedPath.indexOf(edgeNodes[0].id) > -1 && this.directedPath.indexOf(edgeNodes[1].id) > -1) {
+                    // If the edge is in the _directedPath then draw different color
+                    if (this._directedPath.indexOf(edgeNodes[0].id) > -1 && this._directedPath.indexOf(edgeNodes[1].id) > -1) {
 
                         // Create two new points to draw a shorter edge so the new 
                         // edge will not cover the id in the node
@@ -417,8 +417,8 @@ class ListenerObserverPGM {
                             //                                .attr("class", "node")
                             .attr("class", d => {
                                 // if the node is in the path then draw it in a different color
-                                if (this.directedPath.indexOf(d.id) <= (vertexIdx + 1) &&
-                                    this.directedPath.indexOf(d.id) > -1) {
+                                if (this._directedPath.indexOf(d.id) <= (vertexIdx + 1) &&
+                                    this._directedPath.indexOf(d.id) > -1) {
                                     return "visitedVertex";
                                 }
                             })
@@ -428,7 +428,7 @@ class ListenerObserverPGM {
                             this._drawText();
 
                             // Visited path ending condition
-                            let endingVertexIdx = this.directedPath.length - 2;
+                            let endingVertexIdx = this._directedPath.length - 2;
                             if (vertexIdx === endingVertexIdx) {
 
                                 // If _weightedAdjMat exists, update the _weightedAdjMat adjacency matrix after the visited path finish highlighting within [timeIntervalBetweenCycle/2] milliseconds
@@ -454,7 +454,7 @@ class ListenerObserverPGM {
                         this.vertices.append("circle")
                             .attr("class", d => {
                                 // if the node is in the path then draw it in a different color
-                                if (this.directedPath[0] === d.id) {
+                                if (this._directedPath[0] === d.id) {
                                     return "visitedVertex";
                                 }
                             })
@@ -486,12 +486,12 @@ class ListenerObserverPGM {
     }
 
     _clearVisitedPath() {
-        /* empty the directedPath array and redraw the graph */
+        /* empty the _directedPath array and redraw the graph */
 
         this._killAllSetTimeOut();
 
         // Then clear the path storage
-        this.directedPath = [];
+        this._directedPath = [];
         this._drawGraph(this.graphData.data);
     }
 
@@ -604,15 +604,15 @@ class ListenerObserverPGM {
             this._drawVisitedPath(this.graphData.data);
 
             // testing 
-            $(this.divID + ' .path strong').text(this.directedPath);
+            $(this.divID + ' .path strong').text(this._directedPath);
         } else {
             // Else clear the path
             this._clearVisitedPath();
         }
 
         // Do not allow user to click
-        this.canClick = false;
-        setTimeout(() => this.canClick = true, this.config.edge.timeInterval * (this.directedPath.length - 1));
+        this._canClick = false;
+        setTimeout(() => this._canClick = true, this.config.edge.timeInterval * (this._directedPath.length - 1));
 
     }
 
@@ -811,7 +811,7 @@ class ListenerObserverPGM {
 
     startAutoPlay() {
         /* called by the play button to start autoplay */
-        this.canClick = false;
+        this._canClick = false;
         if (this._weightedAdjMat) this.resetChart();
         this.config.autoPlay.on = true;
         let random_id = Math.floor(Math.random() * this.graphData.clusterMat[0].length);
@@ -820,7 +820,7 @@ class ListenerObserverPGM {
 
     stopAutoPlay() {
         /* called by the stop button to stop autoplay */
-        this.canClick = true;
+        this._canClick = true;
         this.config.autoPlay.on = false;
 
         this._clearVisitedPath();
@@ -832,8 +832,8 @@ class ListenerObserverPGM {
     _updateChart() {
         /* Used in _drawVisitedPath() to update the adjacency matrix _weightedAdjMat */
 
-        let _rowLabel = this.graphData.data[this.directedPath[0]].label;
-        let _colLabel = this.graphData.data[this.directedPath[this.directedPath.length - 1]].label;
+        let _rowLabel = this.graphData.data[this._directedPath[0]].label;
+        let _colLabel = this.graphData.data[this._directedPath[this._directedPath.length - 1]].label;
         let cellToUpdate = [_rowLabel, _colLabel];
         log("Update Cell: [" + cellToUpdate + "]");
         this._weightedAdjMat.increaseCellWeight(cellToUpdate, 1);
@@ -895,7 +895,7 @@ class ObservedPGM extends ListenerObserverPGM {
 
     /* @Override */
     _backgroundOnClick() {
-        if (this.canClick) {
+        if (this._canClick) {
 
             this._clearVisitedPath();
             this._weightedAdjMat.resetMatrixWeight();
@@ -904,8 +904,8 @@ class ObservedPGM extends ListenerObserverPGM {
 
             this.listenerPGM.stopAutoPlay();
             // Do not allow user to click until visited path highlighting is finished
-            this.canClick = false;
-            setTimeout(() => this.canClick = true, this.config.edge.timeInterval * (this.directedPath.length - 1));
+            this._canClick = false;
+            setTimeout(() => this._canClick = true, this.config.edge.timeInterval * (this._directedPath.length - 1));
         }
     }
 
@@ -929,7 +929,7 @@ class ObservedPGM extends ListenerObserverPGM {
             this._drawVisitedPath(this.graphData.data, clickedVertexId);
 
             // testing 
-            $(this.divID + ' .path strong').text(this.directedPath);
+            $(this.divID + ' .path strong').text(this._directedPath);
         } else {
             // Else clear the path
             this._clearVisitedPath();
@@ -941,8 +941,8 @@ class ObservedPGM extends ListenerObserverPGM {
         }
 
         // Do not allow user to click
-        this.canClick = false;
-        setTimeout(() => this.canClick = true, this.config.edge.timeInterval * (this.directedPath.length - 1));
+        this._canClick = false;
+        setTimeout(() => this._canClick = true, this.config.edge.timeInterval * (this._directedPath.length - 1));
 
     }
 
@@ -951,21 +951,21 @@ class ObservedPGM extends ListenerObserverPGM {
     _drawVisitedPath(data, clickedVertexId) {
         /* Draw visited edges based on weight in highlighted color */
 
-        for (let vertexIdx = 0; vertexIdx < this.directedPath.length; vertexIdx++) {
-            // Iterate through the list of ID in directedPath 
-            let currentVertex = data[this.directedPath[vertexIdx]];
+        for (let vertexIdx = 0; vertexIdx < this._directedPath.length; vertexIdx++) {
+            // Iterate through the list of ID in _directedPath 
+            let currentVertex = data[this._directedPath[vertexIdx]];
             if (currentVertex.edges) {
                 for (let edgeIdx = 0; edgeIdx < currentVertex.edges.length; edgeIdx++) {
                     let edgeNodes = currentVertex.edges[edgeIdx].edgeNodes;
                     let edgeWeight = currentVertex.edges[edgeIdx].edgeWeight * this.config.edge.width;
-                    // If the edge is in the directedPath then draw different color
-                    if (this.directedPath.indexOf(edgeNodes[0].id) > -1 && this.directedPath.indexOf(edgeNodes[1].id) > -1) {
+                    // If the edge is in the _directedPath then draw different color
+                    if (this._directedPath.indexOf(edgeNodes[0].id) > -1 && this._directedPath.indexOf(edgeNodes[1].id) > -1) {
 
                         // Draw the first vertex when the path start highlighting
                         this.vertices.append("circle")
                             .attr("class", d => {
                                 // if the node is in the path then draw it in a different color
-                                if (this.directedPath[0] === d.id) {
+                                if (this._directedPath[0] === d.id) {
                                     return "visitedVertex";
                                 }
                             })

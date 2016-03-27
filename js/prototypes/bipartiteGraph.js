@@ -3,7 +3,7 @@ var graph = function (config) {
 
     this.graphData = null; // data binds to the graph
 
-    this.directedPath = []; // directedPath is a list of visited nodes
+    this._directedPath = []; // _directedPath is a list of visited nodes
 
     this.config = config || {
         dim: {
@@ -157,7 +157,7 @@ var graph = function (config) {
             visitedNodes.push(vertexId);
         }
 
-        self.directedPath = visitedNodes;
+        self._directedPath = visitedNodes;
     }
 
 
@@ -213,7 +213,7 @@ var graph = function (config) {
             .attr("class", "node")
             .attr("class", function (d) {
                 // if the node is in the path then draw it in a different color
-                if (self.directedPath.indexOf(d.id) > -1) {
+                if (self._directedPath.indexOf(d.id) > -1) {
                     return "visitedVertex";
                 }
             })
@@ -246,8 +246,8 @@ var graph = function (config) {
         var drawLine = function (edgeNodes, edgeWeight) {
             // Takes in two nodes and draw a line between them based on the edge weight
 
-            // If the edge is in the directedPath then draw different color
-            if (self.directedPath.indexOf(edgeNodes[0].id) > -1 && self.directedPath.indexOf(edgeNodes[1].id) > -1) {
+            // If the edge is in the _directedPath then draw different color
+            if (self._directedPath.indexOf(edgeNodes[0].id) > -1 && self._directedPath.indexOf(edgeNodes[1].id) > -1) {
                 container.append("svg:path")
                     .attr("d", line(edgeNodes))
                     .style("stroke-width", self.config.edge.baseWidth + edgeWeight)
@@ -294,7 +294,7 @@ var graph = function (config) {
         self.draw();
 
         // testing 
-        $('.path strong').text(self.directedPath);
+        $('.path strong').text(self._directedPath);
     }
 
     function drag(d) {
@@ -310,7 +310,7 @@ var graph = function (config) {
 
 
     function clearVisitedPath() {
-        self.directedPath = [];
+        self._directedPath = [];
         self.draw();
     }
 

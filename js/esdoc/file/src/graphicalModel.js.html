@@ -1,92 +1,180 @@
-/*=============== Probability Graphic Model ====================*/
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <base data-ice="baseUrl" href="../../">
+  <title data-ice="title">src/graphicalModel.js | API Document</title>
+  <link type="text/css" rel="stylesheet" href="css/style.css">
+  <link type="text/css" rel="stylesheet" href="css/prettify-tomorrow.css">
+  <script src="script/prettify/prettify.js"></script>
+  
+  
+  <script src="script/manual.js"></script>
+</head>
+<body class="layout-container" data-ice="rootContainer">
 
-"use strict";
+<header>
+  <a href="./">Home</a>
+  
+  <a href="identifiers.html">Reference</a>
+  <a href="source.html">Source</a>
+  
+  
+  <div class="search-box">
+  <span>
+    <img src="./image/search.png">
+    <span class="search-input-edge"></span><input class="search-input"><span class="search-input-edge"></span>
+  </span>
+    <ul class="search-result"></ul>
+  </div>
+</header>
+
+<nav class="navigation" data-ice="nav"><div>
+  <ul>
+    
+  </ul>
+</div>
+</nav>
+
+<div class="content" data-ice="content"><h1 data-ice="title">src/graphicalModel.js</h1>
+<pre class="source-code line-number raw-source-code"><code class="prettyprint linenums" data-ice="content">/*=============== Probability Graphic Model ====================*/
+
+&quot;use strict&quot;;
 
 /**
- * This is the regulra probability Graphical Model that supports auto play loops and zoom in ability. It is the basis of ListenerObserver_pgm.
+ * This is the regulra probability Graphical Model that supports auto play loops and zoom in ability. It is the basis of ListenerObserverPGM.
  */
 
 class GraphicalModel {
 
     /**
      * This is GraphicalModel constructor description.
-     * @param {object} - graphConfiguration is a configuration object for configuring the properties of this _pgm, it can be obtained via Config.getPGMConfig().
-     * @param {string} - divID is the id of the html tag that contains this pgm, it is of the form '#id_name'.
+     * @param {object} - graphConfiguration is a configuration object for configuring the properties of this pgm, it can be obtained via Config.getPgmConfig().
+     * @param {string} - divID is the id of the html tag that contains this pgm, it is of the form &apos;#id_name&apos;.
      */
     constructor(graphConfiguration, divID) {
 
-        this.config = graphConfiguration;
+        this._weightedAdjMat = null; // holds the adjacency matrix chart 
+
+        let defaultConfig = {
+            transform: {
+                x: 0,
+                y: 0,
+                width: window.innerWidth,
+                height: window.innerHeight - 80
+            },
+            vertex: {
+                radius: 0.35,
+                defaultStyle: {
+                    backgroundColor: &quot;#52bf90&quot;,
+                    outlineColor: &quot;#317256&quot;
+                },
+                visited: {
+                    visitedColor: &quot;#1d4433&quot;,
+                    outlineColor: &quot;#1d4433&quot;
+                }
+            },
+            edge: {
+                baseWidth: 0, // base width offset = baseWidth * circle radius
+                width: 0.5, // edge width = width * circle radius
+                defaultColor: &quot;#b6ddcc&quot;,
+                visitedColor: &quot;#1d4433&quot;,
+                timeInterval: 600 // timeInterval to complete highlighting on edge is in millisecond
+            },
+            text: {
+                color: &quot;white&quot;,
+                size: 0.5, // text size = size * circle radius
+                anchor: &quot;middle&quot;,
+                alignment: &quot;middle&quot;
+
+            },
+            background: {
+                grid: true,
+                color: &quot;#ecf6f2&quot;
+            },
+            autoPlay: {
+                on: false, // true when user clicks on the play button and the graph cycles, else false
+                button: {
+                    dim: 1, // size of the play button
+                    color: &quot;#74cba6&quot;
+                },
+                timeIntervalBetweenCycle: 800
+            },
+            autoPlayable: true, // If autoPlayable, creates the autoplay button    
+            cyclingSpeedControllable: true, // if cyclingSpeedControllable, create speed button
+            zoomable: true,
+        };
+
+        this.config = graphConfiguration || defaultConfig;
 
         this.graphData = {
             clusterMat: [], // data specifies the nodes in each layer
             data: [] // data binds to the graph
         };
 
-        this._weightedAdjMat = null; // Holds the adjacency matrix chart 
-
-        this._directedPath = []; // _directedPath is a list of visited nodes' ID
+        this._directedPath = []; // _directedPath is a list of visited nodes&apos; ID
 
         this._canClick = true; // Used to keep user from clicking when the graph is traversing
 
-        this._speakerLayerProbabilityDistribution = []; //  an array of probability given to each node in the speaker layer, probabilityDistribution=[] if uniform distribution
+        this.speakerLayerProbabilityDistribution = []; //  an array of probability given to each node in the speaker layer, probabilityDistribution=[] if uniform distribution
 
 
-        let _pgm = this;
+        let pgm = this;
 
-        this._divID = divID;
+        this.divID = divID;
 
         // Click on the node in the speaker layer to draw visited path
         this.onClick = d3.behavior.drag()
-            .origin(d => d)
-            .on("dragstart", function(d) {
+            .origin(d =&gt; d)
+            .on(&quot;dragstart&quot;, function(d) {
                 // Check if the clicked node is in the first layer
                 // which are the num of nodes in first layer of clusterMat
                 // Only allow user to click the node if autoplay is off
-                if (_pgm._canClick && !_pgm.config.autoPlayable) {
+                if (pgm._canClick &amp;&amp; !pgm.config.autoPlayable) {
                     d3.event.sourceEvent.stopPropagation();
-                    d3.select(this).classed("dragging", true);
-                    _pgm._triggerSpeakerNode(this.id);
+                    d3.select(this).classed(&quot;dragging&quot;, true);
+                    pgm._triggerSpeakerNode(this.id);
                 }
             });
 
-        this.svg = d3.select(divID).append("svg")
-            .attr("class", "graph")
-            .attr("width", this.config.transform.width)
-            .attr("height", this.config.transform.height)
-            .append("g")
-            .attr("transform", "translate(" + this.config.transform.x + "," + this.config.transform.y + ")");
+        this.svg = d3.select(divID).append(&quot;svg&quot;)
+            .attr(&quot;class&quot;, &quot;graph&quot;)
+            .attr(&quot;width&quot;, this.config.transform.width)
+            .attr(&quot;height&quot;, this.config.transform.height)
+            .append(&quot;g&quot;)
+            .attr(&quot;transform&quot;, &quot;translate(&quot; + this.config.transform.x + &quot;,&quot; + this.config.transform.y + &quot;)&quot;);
 
         // Set up the background rect wrapper
-        this.rect = this.svg.append("rect")
-            .attr("class", "background")
-            .attr("width", this.config.transform.width)
-            .attr("height", this.config.transform.height)
-            .style("fill", this.config.background.color)
-            .style("pointer-events", "all")
-            .on("click", d => {
-                _pgm._backgroundOnClick();
+        this.rect = this.svg.append(&quot;rect&quot;)
+            .attr(&quot;class&quot;, &quot;background&quot;)
+            .attr(&quot;width&quot;, this.config.transform.width)
+            .attr(&quot;height&quot;, this.config.transform.height)
+            .style(&quot;fill&quot;, this.config.background.color)
+            .style(&quot;pointer-events&quot;, &quot;all&quot;)
+            .on(&quot;click&quot;, d =&gt; {
+                pgm._backgroundOnClick();
             });
 
-        this.container = this.svg.append("g");
+        this.container = this.svg.append(&quot;g&quot;);
 
         // Specify the function for generating path data   
-        // "linear" for piecewise linear segments
+        // &quot;linear&quot; for piecewise linear segments
         // Creating path using data in pathinfo and path data generator
         // Used in _drawEdges() and _drawVisitedPath();
         this.line = d3.svg.line()
-            .x(d => d.x)
-            .y(d => d.y)
-            .interpolate("linear");
+            .x(d =&gt; d.x)
+            .y(d =&gt; d.y)
+            .interpolate(&quot;linear&quot;);
 
         this.vertices = null; // D3 object, initiated in drawVertices()
 
 
         // Zoom behavior
         this.zoom = d3.behavior.zoom().scaleExtent([1, 10])
-            .on("zoom", () => {
+            .on(&quot;zoom&quot;, () =&gt; {
                 this.container.attr(
-                    "transform",
-                    "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")"
+                    &quot;transform&quot;,
+                    &quot;translate(&quot; + d3.event.translate + &quot;)scale(&quot; + d3.event.scale + &quot;)&quot;
                 );
             });
 
@@ -107,11 +195,11 @@ class GraphicalModel {
 
     _backgroundOnClick() {
         if (!this.config.autoPlayable) {
-            if (this._canClick && !this.config.autoPlay.on) {
+            if (this._canClick &amp;&amp; !this.config.autoPlay.on) {
                 this._clearVisitedPath();
                 // Do not allow user to click until visited path highlighting is finished
                 this._canClick = false;
-                setTimeout(() => this._canClick = true, this.config.edge.timeInterval * (this._directedPath.length - 1));
+                setTimeout(() =&gt; this._canClick = true, this.config.edge.timeInterval * (this._directedPath.length - 1));
 
                 // click on background to reset adjacency matrix
                 this._backgroundOnClickToResetAdjMatrix();
@@ -120,30 +208,30 @@ class GraphicalModel {
     }
 
     _dataScreening(data) {
-        /* Verifies if each vertex's id matches its position in the array 
+        /* Verifies if each vertex&apos;s id matches its position in the array 
         and the weights of all adjacent vertices sum to 1; */
 
-        if (data.length <= 1) {
-            throw new Error("input graph data is empty");
+        if (data.length &lt;= 1) {
+            throw new Error(&quot;input graph data is empty&quot;);
         }
 
         let weightSum = 0;
-        for (let vertexIdx = 0; vertexIdx < data.length; vertexIdx++) {
+        for (let vertexIdx = 0; vertexIdx &lt; data.length; vertexIdx++) {
             if (data[vertexIdx].id !== vertexIdx) {
-                throw new Error("Vertex's id must match its position index in the list of vertices. The " + vertexIdx + " th element in the list does not match its position index");
+                throw new Error(&quot;Vertex&apos;s id must match its position index in the list of vertices. The &quot; + vertexIdx + &quot; th element in the list does not match its position index&quot;);
             }
             let allEdgeZero = true;
             let adjVertices = data[vertexIdx].edgeWeights;
             if (adjVertices) {
                 // Check if all edges have weight 0
 
-                for (let i = 0; i < adjVertices.length; i++) {
+                for (let i = 0; i &lt; adjVertices.length; i++) {
                     weightSum += adjVertices[i].weight;
                     if (adjVertices[i].weight !== 0) allEdgeZero = false;
                 }
 
-                if (weightSum !== 1.0 && allEdgeZero === false) {
-                    throw new Error("The sum of a vertex's adjacent edge's weight must be 1 or all edges have a weight of 0. " + "The " + vertexIdx + "th vertex is invalid.");
+                if (weightSum !== 1.0 &amp;&amp; allEdgeZero === false) {
+                    throw new Error(&quot;The sum of a vertex&apos;s adjacent edge&apos;s weight must be 1 or all edges have a weight of 0. &quot; + &quot;The &quot; + vertexIdx + &quot;th vertex is invalid.&quot;);
                 }
             }
             weightSum = 0;
@@ -153,18 +241,18 @@ class GraphicalModel {
 
     _createEdgesInGraphData(data) {
         // Takes in the graph data, modifies the data by adding a list of edges into the data and add to self   
-        if (data.length <= 1) {
-            throw new Error("input graph data is empty");
+        if (data.length &lt;= 1) {
+            throw new Error(&quot;input graph data is empty&quot;);
         }
 
-        // Go through each vertex in data and add 'edges' attribute to each vertex
-        for (let vertexIdx = 0; vertexIdx < data.length; vertexIdx++) {
+        // Go through each vertex in data and add &apos;edges&apos; attribute to each vertex
+        for (let vertexIdx = 0; vertexIdx &lt; data.length; vertexIdx++) {
             let currentVertex = data[vertexIdx];
             if (!currentVertex.edgeWeights) {
                 currentVertex.edges = null;
             } else {
                 currentVertex.edges = [];
-                for (let adjVertexIdx = 0; adjVertexIdx < currentVertex.edgeWeights.length; adjVertexIdx++) {
+                for (let adjVertexIdx = 0; adjVertexIdx &lt; currentVertex.edgeWeights.length; adjVertexIdx++) {
                     let targetVertexId = currentVertex.edgeWeights[adjVertexIdx].id;
                     let targetVertexWeight = currentVertex.edgeWeights[adjVertexIdx].weight;
 
@@ -185,15 +273,15 @@ class GraphicalModel {
         */
         let weightDistribution = [0]; // weightDistribution is a distribution from 0 to 1, ex: [0, 0.4, 1]
         let weight = 0;
-        for (let i = 0; i < this._speakerLayerProbabilityDistribution.length; i++) {
-            weight += this._speakerLayerProbabilityDistribution[i];
+        for (let i = 0; i &lt; this.speakerLayerProbabilityDistribution.length; i++) {
+            weight += this.speakerLayerProbabilityDistribution[i];
             weightDistribution.push(weight);
         }
 
         let randomPick = Math.random();
-        console.log("weight distribution corresponding to the speaker layer: (" + weightDistribution + ") random pick: " + randomPick);
-        for (let i = 0; i < weightDistribution.length - 1; i++) {
-            if (randomPick >= weightDistribution[i] && randomPick <= weightDistribution[i + 1]) {
+        console.log(&quot;weight distribution corresponding to the speaker layer: (&quot; + weightDistribution + &quot;) random pick: &quot; + randomPick);
+        for (let i = 0; i &lt; weightDistribution.length - 1; i++) {
+            if (randomPick &gt;= weightDistribution[i] &amp;&amp; randomPick &lt;= weightDistribution[i + 1]) {
                 return this.graphData.data[i].id;
             }
         }
@@ -205,13 +293,13 @@ class GraphicalModel {
         */
         let weightDistribution = [0]; // weightDistribution is a distribution from 0 to 1, ex: [0, 0.4, 1]
         let weight = 0;
-        for (let i = 0; i < vertex.edgeWeights.length; i++) {
+        for (let i = 0; i &lt; vertex.edgeWeights.length; i++) {
             weight += vertex.edgeWeights[i].weight;
             weightDistribution.push(weight);
         }
 
         let randomPick = Math.random();
-        console.log("weight distribution corresponding to adjacent vertices in the next layer: (" + weightDistribution + ") random pick: " + randomPick);
+        console.log(&quot;weight distribution corresponding to adjacent vertices in the next layer: (&quot; + weightDistribution + &quot;) random pick: &quot; + randomPick);
 
         // if the sum of distribution is 0 then return -1
         let distributionSum = weightDistribution.reduce(function(a, b) {
@@ -221,8 +309,8 @@ class GraphicalModel {
             return -1;
         }
 
-        for (let i = 0; i < weightDistribution.length - 1; i++) {
-            if (randomPick >= weightDistribution[i] && randomPick <= weightDistribution[i + 1]) {
+        for (let i = 0; i &lt; weightDistribution.length - 1; i++) {
+            if (randomPick &gt;= weightDistribution[i] &amp;&amp; randomPick &lt;= weightDistribution[i + 1]) {
                 return vertex.edgeWeights[i].id;
             }
         }
@@ -237,12 +325,12 @@ class GraphicalModel {
         let visitedNodes = [vertexId];
         let node = data[vertexId];
 
-        while (node !== undefined && node.edgeWeights !== undefined) {
-            console.log("Current Vertex: " + vertexId);
+        while (node !== undefined &amp;&amp; node.edgeWeights !== undefined) {
+            console.log(&quot;Current Vertex: &quot; + vertexId);
             vertexId = this._chooseRandomAdjVertex(node);
-            // if (vertexId < 0) break;
-            console.log("Vextex chosen: " + vertexId);
-            console.log("--------");
+            // if (vertexId &lt; 0) break;
+            console.log(&quot;Vextex chosen: &quot; + vertexId);
+            console.log(&quot;--------&quot;);
             node = data[vertexId];
             visitedNodes.push(vertexId);
         }
@@ -255,36 +343,36 @@ class GraphicalModel {
     _drawGrid() {
         /* Draws the axis in the background */
 
-        this.container.append("g")
-            .attr("class", "x axis")
-            .selectAll("line")
+        this.container.append(&quot;g&quot;)
+            .attr(&quot;class&quot;, &quot;x axis&quot;)
+            .selectAll(&quot;line&quot;)
             .data(d3.range(0, this.config.transform.width, 10))
-            .enter().append("line")
-            .attr("x1", d => d)
-            .attr("y1", 0)
-            .attr("x2", d => d)
-            .attr("y2", this.config.transform.height);
+            .enter().append(&quot;line&quot;)
+            .attr(&quot;x1&quot;, d =&gt; d)
+            .attr(&quot;y1&quot;, 0)
+            .attr(&quot;x2&quot;, d =&gt; d)
+            .attr(&quot;y2&quot;, this.config.transform.height);
 
-        this.container.append("g")
-            .attr("class", "y axis")
-            .selectAll("line")
+        this.container.append(&quot;g&quot;)
+            .attr(&quot;class&quot;, &quot;y axis&quot;)
+            .selectAll(&quot;line&quot;)
             .data(d3.range(0, this.config.transform.height, 10))
-            .enter().append("line")
-            .attr("x1", 0)
-            .attr("y1", d => d)
-            .attr("x2", this.config.transform.width)
-            .attr("y2", d => d);
+            .enter().append(&quot;line&quot;)
+            .attr(&quot;x1&quot;, 0)
+            .attr(&quot;y1&quot;, d =&gt; d)
+            .attr(&quot;x2&quot;, this.config.transform.width)
+            .attr(&quot;y2&quot;, d =&gt; d);
     }
 
 
     _drawText() {
         /* Add a text element to the previously added g element. */
-        this.vertices.append("text")
-            .attr("font-size", d => d.r * this.config.text.size)
-            .attr("text-anchor", this.config.text.anchor)
-            .attr("alignment-baseline", this.config.text.alignment)
-            .attr("fill", this.config.text.color)
-            .text(d => {
+        this.vertices.append(&quot;text&quot;)
+            .attr(&quot;font-size&quot;, d =&gt; d.r * this.config.text.size)
+            .attr(&quot;text-anchor&quot;, this.config.text.anchor)
+            .attr(&quot;alignment-baseline&quot;, this.config.text.alignment)
+            .attr(&quot;fill&quot;, this.config.text.color)
+            .text(d =&gt; {
                 if (d.label) {
                     return d.label;
                 } else {
@@ -296,20 +384,20 @@ class GraphicalModel {
     _drawVertices(data) {
         /* clear vertices then redraw all the vertices in the grpah */
 
-        d3.selectAll(this._divID + " g .vertex").remove();
+        d3.selectAll(this.divID + &quot; g .vertex&quot;).remove();
 
         // Create vertex groups, each group contains a cicle and a text
-        this.vertices = this.container.append("g")
-            .attr("class", "vertex")
-            .selectAll("circle")
+        this.vertices = this.container.append(&quot;g&quot;)
+            .attr(&quot;class&quot;, &quot;vertex&quot;)
+            .selectAll(&quot;circle&quot;)
             .data(data).enter()
-            .append("g")
-            .attr("id", d => d.id)
-            .attr("transform", d => "translate(" + d.x + "," + d.y + ")")
+            .append(&quot;g&quot;)
+            .attr(&quot;id&quot;, d =&gt; d.id)
+            .attr(&quot;transform&quot;, d =&gt; &quot;translate(&quot; + d.x + &quot;,&quot; + d.y + &quot;)&quot;)
             .call(this.onClick);
 
-        this.vertices.append("circle")
-            .attr("r", d => d.r);
+        this.vertices.append(&quot;circle&quot;)
+            .attr(&quot;r&quot;, d =&gt; d.r);
 
         this._drawText();
     }
@@ -318,22 +406,22 @@ class GraphicalModel {
         /* Draw all edges and high light visited color */
 
         // clear edges then redraw all the edges in the graph 
-        d3.selectAll(this._divID + " path").remove();
+        d3.selectAll(this.divID + &quot; path&quot;).remove();
 
         // Draw all edges based on weight in default color
-        for (let vertexIdx = 0; vertexIdx < data.length; vertexIdx++) {
+        for (let vertexIdx = 0; vertexIdx &lt; data.length; vertexIdx++) {
             // Iterate through each nodes in data
             let currentVertex = data[vertexIdx];
             if (currentVertex.edges) {
-                for (let edgeIdx = 0; edgeIdx < currentVertex.edges.length; edgeIdx++) {
+                for (let edgeIdx = 0; edgeIdx &lt; currentVertex.edges.length; edgeIdx++) {
                     // Iterate through each edge in the current node
                     let edgeNodes = currentVertex.edges[edgeIdx].edgeNodes;
                     let edgeWeight = currentVertex.edges[edgeIdx].edgeWeight * this.config.edge.width;
-                    this.container.append("svg:path")
-                        .attr("d", this.line(edgeNodes))
-                        .attr("stroke-width", edgeWeight + this.config.edge.baseWidth)
-                        .style("stroke", this.config.edge.defaultColor)
-                        .style("fill", "none");
+                    this.container.append(&quot;svg:path&quot;)
+                        .attr(&quot;d&quot;, this.line(edgeNodes))
+                        .attr(&quot;stroke-width&quot;, edgeWeight + this.config.edge.baseWidth)
+                        .style(&quot;stroke&quot;, this.config.edge.defaultColor)
+                        .style(&quot;fill&quot;, &quot;none&quot;);
                 }
             }
         }
@@ -378,30 +466,30 @@ class GraphicalModel {
     _drawVisitedPath(data) {
         /* Draw visited edges based on weight in highlighted color */
 
-        for (let vertexIdx = 0; vertexIdx < this._directedPath.length; vertexIdx++) {
+        for (let vertexIdx = 0; vertexIdx &lt; this._directedPath.length; vertexIdx++) {
 
-            // check if there's -1 in _directedPath, if yes, do not draw the path and trigger a new speaker
-            if (this._directedPath[vertexIdx] < 0) {
+            // check if there&apos;s -1 in _directedPath, if yes, do not draw the path and trigger a new speaker
+            if (this._directedPath[vertexIdx] &lt; 0) {
 
                 // Draw the first vertex when the path start highlighting
-                this.vertices.append("circle")
-                    .attr("class", d => {
+                this.vertices.append(&quot;circle&quot;)
+                    .attr(&quot;class&quot;, d =&gt; {
                         // if the node is in the path then draw it in a different color
                         if (this._directedPath[0] === d.id) {
-                            return "visitedVertex";
+                            return &quot;visitedVertex&quot;;
                         }
                     })
-                    .attr("r", d => d.r);
+                    .attr(&quot;r&quot;, d =&gt; d.r);
 
                 // Add a text element to the previously added g element.
                 this._drawText();
 
-                setTimeout(() => {
+                setTimeout(() =&gt; {
 
                     // If autoplay is on, then restart the cycle after [timeIntervalBetweenCycle] milliseconds
                     if (this.config.autoPlay.on) {
-                        console.log("Auto play is on!");
-                        setTimeout(() => {
+                        console.log(&quot;Auto play is on!&quot;);
+                        setTimeout(() =&gt; {
                             this._triggerSpeakerNodeAutoPlay();
                         }, this.config.autoPlay.timeIntervalBetweenCycle);
                     }
@@ -409,15 +497,15 @@ class GraphicalModel {
                 }, this.config.edge.timeInterval);
             } else {
 
-                // If there's no -1 in directed path
+                // If there&apos;s no -1 in directed path
                 // Iterate through the list of ID in _directedPath 
                 let currentVertex = data[this._directedPath[vertexIdx]];
                 if (currentVertex.edges) {
-                    for (let edgeIdx = 0; edgeIdx < currentVertex.edges.length; edgeIdx++) {
+                    for (let edgeIdx = 0; edgeIdx &lt; currentVertex.edges.length; edgeIdx++) {
                         let edgeNodes = currentVertex.edges[edgeIdx].edgeNodes;
                         let edgeWeight = currentVertex.edges[edgeIdx].edgeWeight * this.config.edge.width;
                         // If the edge is in the _directedPath then draw different color
-                        if (this._directedPath.indexOf(edgeNodes[0].id) > -1 && this._directedPath.indexOf(edgeNodes[1].id) > -1) {
+                        if (this._directedPath.indexOf(edgeNodes[0].id) &gt; -1 &amp;&amp; this._directedPath.indexOf(edgeNodes[1].id) &gt; -1) {
 
                             // Create two new points to draw a shorter edge so the new 
                             // edge will not cover the id in the node
@@ -428,37 +516,37 @@ class GraphicalModel {
 
                             // Wait for 0.8 second until the next node is highlighted
                             // Draw the next visited path after time Interval
-                            setTimeout(() => {
+                            setTimeout(() =&gt; {
 
                                 // Append a path that completes drawing wthin a time duration
-                                this.container.append("svg:path")
-                                    .style("stroke-width", this.config.edge.baseWidth + edgeWeight)
-                                    .style("stroke", this.config.edge.visitedColor)
-                                    .style("fill", "none")
+                                this.container.append(&quot;svg:path&quot;)
+                                    .style(&quot;stroke-width&quot;, this.config.edge.baseWidth + edgeWeight)
+                                    .style(&quot;stroke&quot;, this.config.edge.visitedColor)
+                                    .style(&quot;fill&quot;, &quot;none&quot;)
                                     .attr({
-                                        'd': this.line(tempEdges),
-                                        'stroke-dasharray': lineLength + " " + lineLength,
-                                        'stroke-dashoffset': lineLength
+                                        &apos;d&apos;: this.line(tempEdges),
+                                        &apos;stroke-dasharray&apos;: lineLength + &quot; &quot; + lineLength,
+                                        &apos;stroke-dashoffset&apos;: lineLength
                                     })
                                     .transition()
                                     .duration(this.config.edge.timeInterval)
-                                    .attr('stroke-dashoffset', 0);
+                                    .attr(&apos;stroke-dashoffset&apos;, 0);
 
                             }, this.config.edge.timeInterval * vertexIdx);
 
                             // Draw the next visited vertex after time Interval
-                            setTimeout(() => {
+                            setTimeout(() =&gt; {
                                 /* clear vertices then redraw all the vertices in the grpah */
                                 this.vertices
-                                    .append("circle")
-                                    .attr("class", d => {
+                                    .append(&quot;circle&quot;)
+                                    .attr(&quot;class&quot;, d =&gt; {
                                         // if the node is in the path then draw it in a different color
-                                        if (this._directedPath.indexOf(d.id) <= (vertexIdx + 1) &&
-                                            this._directedPath.indexOf(d.id) > -1) {
-                                            return "visitedVertex";
+                                        if (this._directedPath.indexOf(d.id) &lt;= (vertexIdx + 1) &amp;&amp;
+                                            this._directedPath.indexOf(d.id) &gt; -1) {
+                                            return &quot;visitedVertex&quot;;
                                         }
                                     })
-                                    .attr("r", d => d.r);
+                                    .attr(&quot;r&quot;, d =&gt; d.r);
 
                                 // Add a text element to the previously added g element.
                                 this._drawText();
@@ -469,14 +557,14 @@ class GraphicalModel {
 
                                     // If _weightedAdjMat exists, update the _weightedAdjMat adjacency matrix after the visited path finish highlighting within [timeIntervalBetweenCycle/2] milliseconds
                                     if (this._weightedAdjMat) {
-                                        setTimeout(() => {
+                                        setTimeout(() =&gt; {
                                             this._updateChart();
                                         }, this.config.autoPlay.timeIntervalBetweenCycle / 2.0);
                                     }
                                     // If autoplay is on, then restart the cycle after [timeIntervalBetweenCycle] milliseconds
                                     if (this.config.autoPlay.on) {
-                                        console.log("Auto play is on!");
-                                        setTimeout(() => {
+                                        console.log(&quot;Auto play is on!&quot;);
+                                        setTimeout(() =&gt; {
                                             this._triggerSpeakerNodeAutoPlay();
                                         }, this.config.autoPlay.timeIntervalBetweenCycle);
                                     }
@@ -487,14 +575,14 @@ class GraphicalModel {
                             }, this.config.edge.timeInterval * (vertexIdx + 1));
 
                             // Draw the first vertex when the path start highlighting
-                            this.vertices.append("circle")
-                                .attr("class", d => {
+                            this.vertices.append(&quot;circle&quot;)
+                                .attr(&quot;class&quot;, d =&gt; {
                                     // if the node is in the path then draw it in a different color
                                     if (this._directedPath[0] === d.id) {
-                                        return "visitedVertex";
+                                        return &quot;visitedVertex&quot;;
                                     }
                                 })
-                                .attr("r", d => d.r);
+                                .attr(&quot;r&quot;, d =&gt; d.r);
 
                             // Add a text element to the previously added g element.
                             this._drawText();
@@ -515,7 +603,7 @@ class GraphicalModel {
 
     _killAllSetTimeOut() {
         // Kill all setTimeOut used to draw the visited path
-        for (var i = 1; i < 99999; i++) {
+        for (var i = 1; i &lt; 99999; i++) {
             window.clearInterval(i);
             window.clearTimeout(i);
             if (window.mozCancelAnimationFrame) window.mozCancelAnimationFrame(i); // Firefox
@@ -534,30 +622,30 @@ class GraphicalModel {
 
 
     _createCyclingSpeedControlButton() {
-        let _pgm = this;
+        let pgm = this;
 
-        let sliderID = this._divID.substring(1) + "-slider-range";
-        let $DivSlider = $("<div>", {
+        let sliderID = this.divID.substring(1) + &quot;-slider-range&quot;;
+        let $DivSlider = $(&quot;&lt;div&gt;&quot;, {
             id: sliderID
         });
-        $(this._divID).prepend($DivSlider);
-        $("#" + sliderID).slider({
+        $(this.divID).prepend($DivSlider);
+        $(&quot;#&quot; + sliderID).slider({
             range: false, // two buttons caps a range
             min: 2,
             max: 1000,
-            value: _pgm.config.edge.timeInterval,
+            value: pgm.config.edge.timeInterval,
             slide: function(event, ui) {
-                _pgm._cyclingSpeedControlButtonOnClick(ui);
+                pgm._cyclingSpeedControlButtonOnClick(ui);
             }
         });
 
         let sliderWidth = (this._weightedAdjMat === null) ? this.config.transform.width : this._weightedAdjMat.config.transform.width + this.config.transform.width;
-        $("#" + sliderID).css("width", sliderWidth + "px");
+        $(&quot;#&quot; + sliderID).css(&quot;width&quot;, sliderWidth + &quot;px&quot;);
     }
 
     // This function is called by jQuery slider function defined in _createCyclingSpeedControlButton
     _cyclingSpeedControlButtonOnClick(ui) {
-        console.log("Slider Speed: " + ui.value);
+        console.log(&quot;Slider Speed: &quot; + ui.value);
         let sphereRad = ui.value;
         this.config.edge.timeInterval = ui.value;
         this.config.autoPlay.timeIntervalBetweenCycle = ui.value;
@@ -566,23 +654,23 @@ class GraphicalModel {
     _createPlayButton() {
         /* Used to create a play button, it modifies the default button property in button.css */
 
-        var $Button = $("<div>", {
-            class: "play-button paused"
+        var $Button = $(&quot;&lt;div&gt;&quot;, {
+            class: &quot;play-button paused&quot;
         });
-        var $left = $("<div>", {
-            class: "left"
+        var $left = $(&quot;&lt;div&gt;&quot;, {
+            class: &quot;left&quot;
         });
-        var $right = $("<div>", {
-            class: "right"
+        var $right = $(&quot;&lt;div&gt;&quot;, {
+            class: &quot;right&quot;
         });
-        var $triangle1 = $("<div>", {
-            class: "triangle-1"
+        var $triangle1 = $(&quot;&lt;div&gt;&quot;, {
+            class: &quot;triangle-1&quot;
         });
-        var $triangle2 = $("<div>", {
-            class: "triangle-2"
+        var $triangle2 = $(&quot;&lt;div&gt;&quot;, {
+            class: &quot;triangle-2&quot;
         });
 
-        $(this._divID).prepend($Button);
+        $(this.divID).prepend($Button);
 
         $Button.append($left);
         $Button.append($right);
@@ -591,30 +679,30 @@ class GraphicalModel {
 
         // Update button dimension first
         let resizedButton = Array.min([this.config.transform.height, this.config.transform.width]) / 10.0 * this.config.autoPlay.button.dim;
-        let maxButtonSize = 35.0; // The max button size is 40px so that buttons won't get too big
-        this.config.autoPlay.button.dim = (resizedButton > maxButtonSize) ? maxButtonSize : resizedButton;
+        let maxButtonSize = 35.0; // The max button size is 40px so that buttons won&apos;t get too big
+        this.config.autoPlay.button.dim = (resizedButton &gt; maxButtonSize) ? maxButtonSize : resizedButton;
 
-        $(this._divID + " .play-button").css("height", this.config.autoPlay.button.dim + "px")
-            .css("width", this.config.autoPlay.button.dim + "px");
+        $(this.divID + &quot; .play-button&quot;).css(&quot;height&quot;, this.config.autoPlay.button.dim + &quot;px&quot;)
+            .css(&quot;width&quot;, this.config.autoPlay.button.dim + &quot;px&quot;);
 
-        $(this._divID + " .triangle-1").css("border-right-width", this.config.autoPlay.button.dim + "px")
-            .css("border-top-width", this.config.autoPlay.button.dim / 2.0 + "px")
-            .css("border-bottom-width", this.config.autoPlay.button.dim / 2.0 + "px");
+        $(this.divID + &quot; .triangle-1&quot;).css(&quot;border-right-width&quot;, this.config.autoPlay.button.dim + &quot;px&quot;)
+            .css(&quot;border-top-width&quot;, this.config.autoPlay.button.dim / 2.0 + &quot;px&quot;)
+            .css(&quot;border-bottom-width&quot;, this.config.autoPlay.button.dim / 2.0 + &quot;px&quot;);
 
-        $(this._divID + " .triangle-2").css("border-right-width", this.config.autoPlay.button.dim + "px")
-            .css("border-top-width", this.config.autoPlay.button.dim / 1.9 + "px")
-            .css("border-bottom-width", this.config.autoPlay.button.dim / 2.0 + "px");
+        $(this.divID + &quot; .triangle-2&quot;).css(&quot;border-right-width&quot;, this.config.autoPlay.button.dim + &quot;px&quot;)
+            .css(&quot;border-top-width&quot;, this.config.autoPlay.button.dim / 1.9 + &quot;px&quot;)
+            .css(&quot;border-bottom-width&quot;, this.config.autoPlay.button.dim / 2.0 + &quot;px&quot;);
 
-        $(this._divID + " .left").css("background-color", this.config.autoPlay.button.color);
-        $(this._divID + " .right").css("background-color", this.config.autoPlay.button.color);
+        $(this.divID + &quot; .left&quot;).css(&quot;background-color&quot;, this.config.autoPlay.button.color);
+        $(this.divID + &quot; .right&quot;).css(&quot;background-color&quot;, this.config.autoPlay.button.color);
 
-        let _pgm = this;
-        $(this._divID + " .play-button").click(function() {
-            $(this).toggleClass("paused");
-            if (_pgm.config.autoPlay.on) {
-                _pgm._stopAutoPlay();
+        let pgm = this;
+        $(this.divID + &quot; .play-button&quot;).click(function() {
+            $(this).toggleClass(&quot;paused&quot;);
+            if (pgm.config.autoPlay.on) {
+                pgm._stopAutoPlay();
             } else {
-                _pgm._startAutoPlay();
+                pgm._startAutoPlay();
             }
         });
     }
@@ -626,7 +714,7 @@ class GraphicalModel {
 
         let chosen_id;
         // If speaker node is of uniform distribution
-        if (this._speakerLayerProbabilityDistribution.length == 0) {
+        if (this.speakerLayerProbabilityDistribution.length == 0) {
             chosen_id = Math.floor(Math.random() * this.graphData.clusterMat[0].length);
         } else {
             chosen_id = this._chooseRandomAdjVertexFromSpeakerLayer();
@@ -640,15 +728,15 @@ class GraphicalModel {
         let speakerLayerLength = this.graphData.clusterMat[0].length;
 
         // Only allow the node to be clicked if it is in the speaker layer
-        if (id < speakerLayerLength) {
+        if (id &lt; speakerLayerLength) {
             let clickedVertexId = parseInt(id, 10);
             this._traverseGraph(clickedVertexId, this.graphData.data);
-            log("visited path = [" + this._directedPath + "]");
+            log(&quot;visited path = [&quot; + this._directedPath + &quot;]&quot;);
             this._drawGraph(this.graphData.data);
             this._drawVisitedPath(this.graphData.data);
 
             // testing 
-            $(this._divID + ' .path strong').text(this._directedPath);
+            $(this.divID + &apos; .path strong&apos;).text(this._directedPath);
         } else {
             // Else clear the path
             this._clearVisitedPath();
@@ -656,9 +744,38 @@ class GraphicalModel {
 
         // Do not allow user to click
         this._canClick = false;
-        setTimeout(() => this._canClick = true, this.config.edge.timeInterval * (this._directedPath.length - 1));
+        setTimeout(() =&gt; this._canClick = true, this.config.edge.timeInterval * (this._directedPath.length - 1));
 
     }
+
+
+    //    bindData(gd) {
+    //        /* 
+    //        Used to bind an existing JSON object or an object literal to 
+    //        the graph and render the graph.
+    //        */
+    //        if (!Utils.isObjLiteral(gd)) {
+    //            // If not an object literal must be a JSON, we parse it
+    //            gd = JSON.parse(gd);
+    //        }
+    //
+    //        if (!gd || !gd.data) {
+    //            throw new Error(&quot;pgm.bindData(gd): Input graph data is invalid input graph data is empty&quot;);
+    //        }
+    //
+    //        if (gd.data.length &lt;= 1) {
+    //            throw new Error(&quot;pgm.bindData(gd): Input graph data is empty&quot;);
+    //        }
+    //
+    //        // Add the this.graphData as a class attribute
+    //        this.graphData = gd;
+    //        this._dataScreening(this.graphData.data);
+    //        this._createEdgesInGraphData(this.graphData.data);
+    //        if (this.config.background.grid) {
+    //            this_drawGrid();
+    //        }
+    //        this._drawGraph(this.graphData.data);
+    //    }
 
 
     redraw() {
@@ -700,7 +817,7 @@ class GraphicalModel {
         */
 
         if (id === undefined || weights === undefined) {
-            throw new Error("graphicalModel.setEdgeWeights(id, adjVtx) params are not defined.");
+            throw new Error(&quot;pgm.setEdgeWeights(id, adjVtx) params are not defined.&quot;);
         }
 
         this.graphData.data[id].edgeWeights = weights;
@@ -721,7 +838,7 @@ class GraphicalModel {
     //        console.log(jsonGraphData);
     //
     //        // Delete all the edge circular structures in the object
-    //        for (let i = 0; i < jsonGraphData.data.length; i++) {
+    //        for (let i = 0; i &lt; jsonGraphData.data.length; i++) {
     //            delete(jsonGraphData.data[i].edges);
     //        }
     //
@@ -740,10 +857,10 @@ class GraphicalModel {
         let normalizeBaseRadiusMultiplier = 0.4; // increase base radius size
         let normalizeExtraRadiusBasedOnDistributionMultiplier = 0.7; // increase extra radius size
 
-        for (let i = 0; i < this._speakerLayerProbabilityDistribution.length; i++) {
+        for (let i = 0; i &lt; this.speakerLayerProbabilityDistribution.length; i++) {
             // Normalize the radius
-            let normalizationFactor = 1.0 / this._speakerLayerProbabilityDistribution.length / normalizeExtraRadiusBasedOnDistributionMultiplier;
-            this.graphData.data[i].r = (baseRadius * normalizeBaseRadiusMultiplier) + this.graphData.data[i].r * (this._speakerLayerProbabilityDistribution[i] * 1.0) / normalizationFactor;
+            let normalizationFactor = 1.0 / this.speakerLayerProbabilityDistribution.length / normalizeExtraRadiusBasedOnDistributionMultiplier;
+            this.graphData.data[i].r = (baseRadius * normalizeBaseRadiusMultiplier) + this.graphData.data[i].r * (this.speakerLayerProbabilityDistribution[i] * 1.0) / normalizationFactor;
         }
     }
 
@@ -762,23 +879,23 @@ class GraphicalModel {
         // Error checking
         if (probabilityDistribution.length != 0) {
             if (cMat[0].length != probabilityDistribution.length) {
-                throw new Error("graphicalModel.createCluster(): the number of the nodes in the first layer in cMat does not match the length of the probabilityDistribution array");
+                throw new Error(&quot;pgm.createCluster(): the number of the nodes in the first layer in cMat does not match the length of the probabilityDistribution array&quot;);
             }
             let tempDistTotal = 0;
-            for (let i = 0; i < probabilityDistribution.length; i++) {
+            for (let i = 0; i &lt; probabilityDistribution.length; i++) {
                 tempDistTotal += probabilityDistribution[i];
             }
             if (tempDistTotal != 1.0) {
-                throw new Error("graphicalModel.createCluster(): the probability of each node in the speaker layer does not add up to 1.0 in probabilityDistribution array");
+                throw new Error(&quot;pgm.createCluster(): the probability of each node in the speaker layer does not add up to 1.0 in probabilityDistribution array&quot;);
             }
         }
 
-        this._speakerLayerProbabilityDistribution = probabilityDistribution;
+        this.speakerLayerProbabilityDistribution = probabilityDistribution;
 
         this.cMatDim = []; //cMatDim is the dimension of the matrix, ex: [3,3,3]
 
         // Populate cMatDim
-        for (let i = 0; i < cMat.length; i++) {
+        for (let i = 0; i &lt; cMat.length; i++) {
             this.cMatDim[i] = cMat[i].length;
         }
 
@@ -794,10 +911,10 @@ class GraphicalModel {
 
         this.config.vertex.radius = r;
 
-        for (let i = 0; i < this.cMatDim.length; i++) {
+        for (let i = 0; i &lt; this.cMatDim.length; i++) {
             // Reset offset Y coordinate for each layer
             let offSetPosY = this.config.transform.height / (this.cMatDim[i] + 1);
-            for (let j = 0; j < this.cMatDim[i]; j++) {
+            for (let j = 0; j &lt; this.cMatDim[i]; j++) {
                 x = offsetPosX * (i + 1);
                 y = offSetPosY * (j + 1);
                 data.push({
@@ -814,8 +931,8 @@ class GraphicalModel {
 
         // Label each vertex based on cMat labels
         let id_temp = 0;
-        for (let i = 0; i < cMat.length; i++)
-            for (let j = 0; j < cMat[i].length; j++)
+        for (let i = 0; i &lt; cMat.length; i++)
+            for (let j = 0; j &lt; cMat[i].length; j++)
                 data[id_temp++].label = cMat[i][j];
 
 
@@ -824,14 +941,14 @@ class GraphicalModel {
         this.config.edge.baseWidth = r * this.config.edge.baseWidth;
 
 
-        // Create the graphData member variable in _pgm
+        // Create the graphData member variable in pgm
         this.graphData = {
             clusterMat: cMat,
             data: data
         };
 
         // Change speaker node radius based on distribution
-        if (changeNodeRadiusBasedOnDistribution && probabilityDistribution.length > 0) this._changeNodeRadius(r);
+        if (changeNodeRadiusBasedOnDistribution &amp;&amp; probabilityDistribution.length &gt; 0) this._changeNodeRadius(r);
 
         return this;
     }
@@ -849,11 +966,11 @@ class GraphicalModel {
         let layerIdx = vertexCoordinate[0];
         let vertexIdx = vertexCoordinate[1];
 
-        if (layerIdx >= this.cMatDim.length || vertexIdx >= this.cMatDim[layerIdx])
-            throw new Error("graphicalModel.getVertexId(): invalid vertex coordinate input, the vertex being accessed does not exist in the graph. Your input vertex coordinate is [" + vertexCoordinate + "], but the dimention of the cluster matrix is [" + this.cMatDim + "].");
+        if (layerIdx &gt;= this.cMatDim.length || vertexIdx &gt;= this.cMatDim[layerIdx])
+            throw new Error(&quot;pgm.getVertexId(): invalid vertex coordinate input, the vertex being accessed does not exist in the graph. Your input vertex coordinate is [&quot; + vertexCoordinate + &quot;], but the dimention of the cluster matrix is [&quot; + this.cMatDim + &quot;].&quot;);
 
         let id_temp = 0;
-        for (let i = 0; i < layerIdx; i++) id_temp += this.cMatDim[i];
+        for (let i = 0; i &lt; layerIdx; i++) id_temp += this.cMatDim[i];
         id_temp += vertexIdx;
 
         return id_temp;
@@ -862,12 +979,12 @@ class GraphicalModel {
 
     // Set the graph edge weights to be uniform
     setUniformEdgeWeights() {
-        for (let layerIdx = 0; layerIdx < this.cMatDim.length - 1; layerIdx++) {
-            for (let vertexIdx = 0; vertexIdx < this.cMatDim[layerIdx]; vertexIdx++) {
+        for (let layerIdx = 0; layerIdx &lt; this.cMatDim.length - 1; layerIdx++) {
+            for (let vertexIdx = 0; vertexIdx &lt; this.cMatDim[layerIdx]; vertexIdx++) {
                 let vertexID = this.getVertexId([layerIdx, vertexIdx]);
                 let numOfNodesNextLayer = this.cMatDim[layerIdx + 1];
                 let edgeWeights = [];
-                for (let i = 0; i < numOfNodesNextLayer; i++) {
+                for (let i = 0; i &lt; numOfNodesNextLayer; i++) {
                     edgeWeights[i] = {
                         id: this.getVertexId([layerIdx + 1, i]),
                         weight: 1.0 / numOfNodesNextLayer
@@ -916,33 +1033,56 @@ class GraphicalModel {
         /* Used in _drawVisitedPath() to update the adjacency matrix _weightedAdjMat */
         let _rowIdx = this._directedPath[0];
         let _colIdx = this._directedPath[this._directedPath.length - 1];
-        if (_rowIdx < 0 || _colIdx < 0) return;
+        if (_rowIdx &lt; 0 || _colIdx &lt; 0) return;
 
         let _rowLabel = this.graphData.data[_rowIdx].label;
         let _colLabel = this.graphData.data[_colIdx].label;
         let cellToUpdate = [_rowLabel, _colLabel];
-        log("Update Cell: [" + cellToUpdate + "]");
+        log(&quot;Update Cell: [&quot; + cellToUpdate + &quot;]&quot;);
         this._weightedAdjMat.increaseCellWeight(cellToUpdate, 1);
         this._weightedAdjMat.increaseCellColor(cellToUpdate, 1);
         this._weightedAdjMat.redrawMatrix();
     }
 
+    //    bindChart (_weightedAdjMat) {
+    //        /* Used to bind to an existing adjacency matrix _weightedAdjMatf to the graphical model */
+    //        if (this._weightedAdjMat != null) {
+    //            this._weightedAdjMat = _weightedAdjMat;
+    //        } else {
+    //            throw new Error(&quot;pgm.bindChart(): Graph already has a _weightedAdjMat object.&quot;)
+    //        }
+    //    }
 
     createAdjacencyMatrix(chartConfig) {
         /* Create a _weightedAdjMat and bind to the graphic model */
 
         this.chartConfig = chartConfig;
 
-        if (this.graphData.clusterMat.length < 2) {
-            throw new Error("graphicalModel.createAdjacencyMatrix(): Can not create adjacency matrix for graphical model with layer number less than 2");
+        if (this.graphData.clusterMat.length &lt; 2) {
+            throw new Error(&quot;pgm.createAdjacencyMatrix(): Can not create adjacency matrix for graphical model with layer number less than 2&quot;);
             return;
         }
-
-        let _rowLabel = this.graphData.clusterMat[0];
-        let _colLabel = this.graphData.clusterMat[this.graphData.clusterMat.length - 1];
-        this._weightedAdjMat = new WeightedAdjacencyMatrix(this._divID, chartConfig);
+        var _rowLabel = this.graphData.clusterMat[0];
+        var _colLabel = this.graphData.clusterMat[this.graphData.clusterMat.length - 1];
+        this._weightedAdjMat = new WeightedAdjacencyMatrix(this.divID, chartConfig);
         this._weightedAdjMat.createMatrix(_rowLabel, _colLabel);
 
         return this;
     }
-}
+}</code></pre>
+
+</div>
+
+<footer class="footer">
+  Generated by <a href="https://esdoc.org">ESDoc<span data-ice="esdocVersion">(0.4.6)</span></a>
+</footer>
+
+<script src="script/search_index.js"></script>
+<script src="script/search.js"></script>
+<script src="script/pretty-print.js"></script>
+<script src="script/inherited-summary.js"></script>
+<script src="script/test-summary.js"></script>
+<script src="script/inner-link.js"></script>
+<script src="script/patch-for-local.js"></script>
+</body>
+</html>

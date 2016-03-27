@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <base data-ice="baseUrl" href="../../">
+  <title data-ice="title">src/configs.js | API Document</title>
+  <link type="text/css" rel="stylesheet" href="css/style.css">
+  <link type="text/css" rel="stylesheet" href="css/prettify-tomorrow.css">
+  <script src="script/prettify/prettify.js"></script>
+  
+  
+  <script src="script/manual.js"></script>
+</head>
+<body class="layout-container" data-ice="rootContainer">
+
+<header>
+  <a href="./">Home</a>
+  
+  <a href="identifiers.html">Reference</a>
+  <a href="source.html">Source</a>
+  
+  
+  <div class="search-box">
+  <span>
+    <img src="./image/search.png">
+    <span class="search-input-edge"></span><input class="search-input"><span class="search-input-edge"></span>
+  </span>
+    <ul class="search-result"></ul>
+  </div>
+</header>
+
+<nav class="navigation" data-ice="nav"><div>
+  <ul>
+    
+  </ul>
+</div>
+</nav>
+
+<div class="content" data-ice="content"><h1 data-ice="title">src/configs.js</h1>
+<pre class="source-code line-number raw-source-code"><code class="prettyprint linenums" data-ice="content">&apos;use strict&apos;;
+
+
+/**
+ * Created by Alex Chenxing Ouyang
+ * This is used to obtain the default configurations for PGMs
+ */
+
+class Configuration {
+
+    constructor() {
+        // Handles the configuration of listener&apos;s belief
+        this.listenerBeliefConfig = {
+            transform: {
+                x: 0,
+                y: 0,
+                width: window.innerWidth * 2 / 3 - 20,
+                height: window.innerWidth / 2.5
+            },
+            vertex: {
+                radius: .35,
+                defaultStyle: {
+                    backgroundColor: &quot;#52bf90&quot;,
+                    outlineColor: &quot;#317256&quot;
+                },
+                visited: {
+                    visitedColor: &quot;#1d4433&quot;,
+                    outlineColor: &quot;#1d4433&quot;
+                }
+            },
+            edge: {
+                baseWidth: 0, // base width offset = baseWidth * circle radius
+                width: 1, // edge width = width * circle radius
+                defaultColor: &quot;#74cba6&quot;,
+                visitedColor: &quot;#1d4433&quot;,
+                timeInterval: 400 // timeInterval is in millisecond
+            },
+            text: {
+                color: &quot;white&quot;,
+                size: 0.5, // text size = size * circle radius
+                anchor: &quot;middle&quot;,
+                alignment: &quot;middle&quot;
+
+            },
+            background: {
+                grid: false,
+                color: &quot;#ccecde&quot;
+            },
+            autoPlay: {
+                on: false,
+                button: {
+                    dim: 1,
+                    color: &quot;#52bf90&quot;
+                },
+                timeIntervalBetweenCycle: 400
+            },
+            autoPlayable: true, // If autoPlayable, creates the autoplay button
+            cyclingSpeedControllable: true, // if cyclingSpeedControllable, create speed button
+            zoomable: false,
+        };
+
+
+        // Handles the configuration of listener
+        this.listenerConfig = {
+            transform: {
+                x: 0,
+                y: 0,
+                width: window.innerWidth * 2 / 3 - 20,
+                height: window.innerWidth / 3
+            },
+            vertex: {
+                radius: 0.35,
+                defaultColor: &quot;#52bf90&quot;,
+                visitedColor: &quot;#1d4433&quot;,
+                outlineColor: &quot;#317256&quot;
+            },
+            edge: {
+                baseWidth: 0, // base width offset = baseWidth * circle radius
+                width: 1, // edge width = width * circle radius
+                defaultColor: &quot;#b6ddcc&quot;,
+                visitedColor: &quot;#1d4433&quot;,
+                timeInterval: 400 // timeInterval is in millisecond
+            },
+            text: {
+                color: &quot;white&quot;,
+                size: 0.5, // text size = size * circle radius
+                anchor: &quot;middle&quot;,
+                alignment: &quot;middle&quot;
+
+            },
+            background: {
+                grid: false,
+                color: &quot;rgba(255, 255, 255, 0)&quot;
+            },
+            autoPlay: {
+                on: false,
+                button: {
+                    dim: 1,
+                    color: &quot;#74cba6&quot;
+                },
+                timeIntervalBetweenCycle: 400
+            },
+            autoPlayable: false, // If autoPlayable, creates the autoplay button
+            cyclingSpeedControllable: false, // if cyclingSpeedControllable, create speed button
+            zoomable: false,
+        };
+
+
+        // Adjacency matrix configuration
+        this.adjacencyMatrixConfig = {
+            transform: {
+                x: 0,
+                y: 0,
+                width: window.innerWidth / 3,
+                height: window.innerWidth / 3
+            },
+            matrix: {
+                x: 0.3,
+                y: 0.3,
+                cellDim: 0.5,
+                cellSpacing: 1,
+                color: &quot;#63c59b&quot;
+            },
+            label: {
+                color: &quot;#52bf90&quot;,
+                size: 0.5, // text size = size * circle radius
+                anchor: &quot;middle&quot;,
+                alignment: &quot;middle&quot;
+            },
+            weight: {
+                color: &quot;white&quot;,
+                size: 0.6, // weight text size = size * circle radius
+                anchor: &quot;middle&quot;,
+                alignment: &quot;middle&quot;
+            },
+            background: {
+                color: &quot;rgba(255, 255, 255, 0)&quot;
+            }
+        };
+
+
+        // This is the config for regular pgm
+        this.pgmConfig = {
+            transform: {
+                x: 0,
+                y: 0,
+                width: window.innerWidth * 2 / 3 - 20,
+                height: window.innerWidth / 3
+            },
+            vertex: {
+                radius: 0.35,
+                defaultStyle: {
+                    backgroundColor: &quot;#52bf90&quot;,
+                    outlineColor: &quot;#317256&quot;
+                },
+                visited: {
+                    visitedColor: &quot;#1d4433&quot;,
+                    outlineColor: &quot;#1d4433&quot;
+                }
+            },
+            edge: {
+                baseWidth: 0, // base width offset = baseWidth * circle radius
+                width: 1, // edge width = width * circle radius
+                defaultColor: &quot;#b6ddcc&quot;,
+                visitedColor: &quot;#1d4433&quot;,
+                timeInterval: 400 // timeInterval is in millisecond
+            },
+            text: {
+                color: &quot;white&quot;,
+                size: 0.5, // text size = size * circle radius
+                anchor: &quot;middle&quot;,
+                alignment: &quot;middle&quot;
+
+            },
+            background: {
+                grid: true,
+                color: &quot;#ecf6f2&quot;
+            },
+            autoPlay: {
+                on: false,
+                button: {
+                    dim: 1,
+                    color: &quot;#52bf90&quot;
+                },
+                timeIntervalBetweenCycle: 400
+            },
+            autoPlayable: true, // If autoPlayable, creates the autoplay button
+            cyclingSpeedControllable: true, // if cyclingSpeedControllable, create speed button
+            zoomable: false,
+        };
+    }
+
+    getListenerBeliefConfig() {
+        return Utils.cloneDR(this.listenerBeliefConfig);
+    }
+
+    getListenerConfig() {
+        return Utils.cloneDR(this.listenerConfig);
+    }
+
+    getAdjacencyMatrixConfig() {
+        return Utils.cloneDR(this.adjacencyMatrixConfig);
+    }
+
+    getPgmConfig() {
+        return Utils.cloneDR(this.pgmConfig);
+    }
+}
+
+let Config = new Configuration();</code></pre>
+
+</div>
+
+<footer class="footer">
+  Generated by <a href="https://esdoc.org">ESDoc<span data-ice="esdocVersion">(0.4.6)</span></a>
+</footer>
+
+<script src="script/search_index.js"></script>
+<script src="script/search.js"></script>
+<script src="script/pretty-print.js"></script>
+<script src="script/inherited-summary.js"></script>
+<script src="script/test-summary.js"></script>
+<script src="script/inner-link.js"></script>
+<script src="script/patch-for-local.js"></script>
+</body>
+</html>

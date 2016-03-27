@@ -9,8 +9,18 @@
 class Configuration {
 
     constructor() {
+        /**
+         * @memberof WeightedAdjMat
+         * @type {Object}
+         * @property {Object} transform - The transform property can be used to position and scale the WeightedAdjMat object
+         * @property {Object} matrix - The matix property can be used to position, scale and color the matrix
+         * @property {Object} label - The label property can be used to color and scale the matrix labels
+         * @property {Object} text - The text property can be used to color and scale the matrix cell weight
+         * @property {Object} background - The background property can be used to change the color of the background
+         */
+
         // Handles the configuration of listener's belief
-        this.listenerBeliefConfig = {
+        this._listenerBeliefConfig = {
             transform: {
                 x: 0,
                 y: 0,
@@ -61,7 +71,7 @@ class Configuration {
 
 
         // Handles the configuration of listener
-        this.listenerConfig = {
+        this._listenerConfig = {
             transform: {
                 x: 0,
                 y: 0,
@@ -107,7 +117,7 @@ class Configuration {
 
 
         // Adjacency matrix configuration
-        this.adjacencyMatrixConfig = {
+        this._adjacencyMatrixConfig = {
             transform: {
                 x: 0,
                 y: 0,
@@ -140,7 +150,7 @@ class Configuration {
 
 
         // This is the config for regular pgm
-        this.pgmConfig = {
+        this._pgmConfig = {
             transform: {
                 x: 0,
                 y: 0,
@@ -191,19 +201,19 @@ class Configuration {
     }
 
     getListenerBeliefConfig() {
-        return Utils.cloneDR(this.listenerBeliefConfig);
+        return Utils.cloneDR(this._listenerBeliefConfig);
     }
 
     getListenerConfig() {
-        return Utils.cloneDR(this.listenerConfig);
+        return Utils.cloneDR(this._listenerConfig);
     }
 
     getAdjacencyMatrixConfig() {
-        return Utils.cloneDR(this.adjacencyMatrixConfig);
+        return Utils.cloneDR(this._adjacencyMatrixConfig);
     }
 
     getPgmConfig() {
-        return Utils.cloneDR(this.pgmConfig);
+        return Utils.cloneDR(this._pgmConfig);
     }
 }
 

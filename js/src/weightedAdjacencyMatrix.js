@@ -13,47 +13,8 @@ class WeightedAdjacencyMatrix {
      * @param {Object} matrixConfiguration - The configurations of the adjacency matrix
      */
     constructor(divID, matrixConfiguration) {
-        /**
-         * @memberof WeightedAdjMat
-         * @type {Object}
-         * @property {Object} transform - The transform property can be used to position and scale the WeightedAdjMat object
-         * @property {Object} matrix - The matix property can be used to position, scale and color the matrix
-         * @property {Object} label - The label property can be used to color and scale the matrix labels
-         * @property {Object} text - The text property can be used to color and scale the matrix cell weight
-         * @property {Object} background - The background property can be used to change the color of the background
-         */
-        let defaultConfig = {
-            transform: {
-                x: 0,
-                y: 0,
-                width: window.innerWidth,
-                height: window.innerHeight
-            },
-            matrix: {
-                x: 0.2,
-                y: 0.2,
-                dim: 0.6, // dimenion relative to the WeightedAdjMat that contains the matrix
-                spacing: 1, // spacing between each cell
-                color: "#63c59b"
-            },
-            label: {
-                color: "#52bf90",
-                size: 0.3, // text size = size * circle radius
-                anchor: "middle",
-                alignment: "middle"
-            },
-            weight: {
-                color: "white",
-                size: 0.6, // text size = size * circle radius
-                anchor: "middle",
-                alignment: "middle"
-            },
-            background: {
-                color: "#ecf6f2"
-            }
-        };
 
-        this.config = matrixConfiguration || defaultConfig;
+        this.config = matrixConfiguration;
 
         this._divID = divID;
 
