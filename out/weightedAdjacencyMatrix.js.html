@@ -28,20 +28,25 @@
         <article>
             <pre class="prettyprint source linenums"><code>/*=============== Weighted Adjacency Matrix Graph ====================*/
 
-
 "use strict";
 
+/**
+ * The color coded weighted adjacency matrix attached to the graphicalModel.
+ */
 class WeightedAdjacencyMatrix {
 
     /**
-     * Creates a color coded adjacency matrix contained in a WeightedAdjMat object
-     * @class
-     * @constructor
-     * @param {String} divID - the id of the div that contains the graph, e.g "#id"
-     * @param {Object} matrixConfiguration - The configurations of the adjacency matrix
+     * Creates a color coded adjacency matrix contained in a WeightedAdjMat object.
+     * @param {string} divID - the id of the div that contains the graph, e.g "#id".
+     * @param {object} matrixConfiguration - The configurations of the adjacency matrix. It can be obtained via Config.getAdjacencyMatrixConfig().
      */
     constructor(divID, matrixConfiguration) {
 
+        /**
+         * This matrix's configuration.
+         * @memberof WeightedAdjacencyMatrix.
+         * @type {object}
+         */
         this.config = matrixConfiguration;
 
         this._divID = divID;
@@ -70,10 +75,10 @@ class WeightedAdjacencyMatrix {
 
 
     /**
-     * Darkens or lightens hex color value
-     * @function _shadeColor
-     * @param {String} colorHex - a hex color string. ie. "#63c59b"
-     * @param {Number} percentage - shading ranges form -100(dark) to +100(light)
+     * Darkens or lightens hex color value.
+     * @private
+     * @param {string} colorHex - a hex color string. ie. "#63c59b".
+     * @param {number} percentage - shading ranges form -100(dark) to +100(light).
      */
     _shadeColor(colorHex, percent) {
 
@@ -98,11 +103,9 @@ class WeightedAdjacencyMatrix {
 
 
     /** 
-     * Draws the adjancy matrix based on the property of each cell
-     * @function redrawMatrix
+     * Draws the adjancy matrix based on the property of each cell.
      */
     redrawMatrix() {
-        /* Draw the adjancy matrix */
 
         d3.selectAll(this._divID + " g .cell").remove();
         d3.selectAll(this._divID + " g .label").remove();
@@ -156,10 +159,9 @@ class WeightedAdjacencyMatrix {
     }
 
     /** 
-     * Creates an adjacency matrix based on the row and column labels
-     * @function WeightedAdjMat.createMatrix
-     * @param {Array} rowLab - labels that represent the row of the matrix
-     * @param {Array} colLab - labels that represent the column of the matrix
+     * Creates an adjacency matrix based on the row and column labels.
+     * @param {array} rowLab - An array of labels that represent the row of the matrix.
+     * @param {array} colLab - An array of labels that represent the column of the matrix.
      */
     createMatrix(rowLab, colLab) {
 
@@ -224,9 +226,8 @@ class WeightedAdjacencyMatrix {
 
     /** 
      * Increases the matix cell weight by label pair.
-     * @function WeightedAdjMat.increaseCellWeight
-     * @param {Array} cell - the cell to increase weight is represented by a coordinate pair using labels, ie. cell = (rowLabel, colLabel)
-     * @param {Integer} weight - used to increase the weight of the cell
+     * @param {Array} cell - The cell to increase weight is represented by a coordinate pair using labels, ie. cell = (rowLabel, colLabel).
+     * @param {Integer} weight - Used to increase the weight of the cell.
      */
     increaseCellWeight(cell, weight) {
         let row = this._rowLabel.indexOf(cell[0]);
@@ -241,9 +242,8 @@ class WeightedAdjacencyMatrix {
 
     /** 
      * Increases the matix cell color weight and darkens the color by label pair.
-     * @function WeightedAdjMat.increaseCellColor
-     * @param {Array} cell - the cell to increase weight is represented by a coordinate pair using labels, ie. cell = (rowLabel, colLabel)
-     * @param {Integer} weight - used to increase the color weight of the cell
+     * @param {Array} cell - The cell to increase weight is represented by a coordinate pair using labels, ie. cell = (rowLabel, colLabel).
+     * @param {Integer} weight - Used to increase the color weight of the cell.
      */
     increaseCellColor(cell, colorWeight) {
         let row = this._rowLabel.indexOf(cell[0]);
@@ -257,10 +257,9 @@ class WeightedAdjacencyMatrix {
 
 
     /** 
-     * Increases the matix column color weight and darkens the color
-     * @function WeightedAdjMat.increaseColumnColor
-     * @param {Array} colLabel - the label of the column to increase weight is represented by a label in string
-     * @param {Integer} weight - used to increase the color weight of the cell
+     * Increases the matix column color weight and darkens the color.
+     * @param {Array} colLabel - The label of the column to increase weight is represented by a label in string.
+     * @param {Integer} weight - Used to increase the color weight of the cell.
      */
     increaseColumnColor(colLabel, colorWeight) {
         let col = this._colLabel.indexOf(colLabel);
@@ -275,8 +274,8 @@ class WeightedAdjacencyMatrix {
 
 
     /** 
-     * Reset the matix cell weight
-     * @function WeightedAdjMat.resetMatrixWeight
+     * Reset the matix cell weight.
+     * @function WeightedAdjMat.resetMatrixWeight.
      */
     resetMatrixWeight() {
         /* Reset each matrix cell weight to 0 */
@@ -288,8 +287,8 @@ class WeightedAdjacencyMatrix {
     }
 
     /** 
-     * Reset the matix cell color weight and updates color based on the weight
-     * @function WeightedAdjMat.resetMatrixColorWeight
+     * Reset the matix cell color weight and updates color based on the weight.
+     * @function WeightedAdjMat.resetMatrixColorWeight.
      */
     resetMatrixColorWeight() {
         /* Reset each matrix cell weight to 0 */
@@ -301,10 +300,9 @@ class WeightedAdjacencyMatrix {
     }
 
     /** 
-     * Get the matix cell weight by cell pair = (i, j)
-     * @function WeightedAdjMat.getCellWeight
-     * @param {Array} cell - the cell to increase weight is represented by a coordinate pair, ie. cell = (i, j)
-     * @return {Integer} cell weight
+     * Get the matix cell weight by cell pair, e.g. (i, j).
+     * @param {Array} cell - the cell to increase weight is represented by a coordinate pair, ie. cell = (i, j).
+     * @return {Integer} The cell weight.
      */
     getCellWeight(cell) {
         let i = cell[0];
@@ -316,9 +314,11 @@ class WeightedAdjacencyMatrix {
         return this._adjMatData[elementIndex].weight;
     }
 
-
+    /** 
+     * Get the matrix cell data as a 1D array.
+     * @return {Integer} The matrix data as a 1D array.
+     */
     getMatrix1D() {
-        // Returns the adjacency matrix as a 1D array
         let matrix1D = [];
         for (let i = 0; i &lt; this._adjMatData.length; i++) {
             if (this._adjMatData[i].type == "cellData") {
@@ -328,11 +328,6 @@ class WeightedAdjacencyMatrix {
         return matrix1D;
     }
 
-    getMatrix2D() {
-        // Returns the adjacency matrix as a 2D array,
-        // matrix = [col1, col2, col3];
-        let matrix1D = this.getMatrix1D();
-    }
 
 
     //    resetRowLabel(row) {
@@ -352,13 +347,13 @@ class WeightedAdjacencyMatrix {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Configuration.html">Configuration</a></li><li><a href="GraphicalModel.html">GraphicalModel</a></li><li><a href="WeightedAdjacencyMatrix.html">WeightedAdjacencyMatrix</a></li></ul><h3>Global</h3><ul><li><a href="global.html#_shadeColor">_shadeColor</a></li><li><a href="global.html#log">log</a></li><li><a href="global.html#redrawMatrix">redrawMatrix</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Configuration.html">Configuration</a></li><li><a href="GraphicalModel.html">GraphicalModel</a></li><li><a href="WeightedAdjacencyMatrix.html">WeightedAdjacencyMatrix</a></li></ul><h3>Global</h3><ul><li><a href="global.html#log">log</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sun Mar 27 2016 14:17:57 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sun Mar 27 2016 14:40:09 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

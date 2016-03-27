@@ -3,9 +3,8 @@
 "use strict";
 
 /**
- * This is the regular probability Graphical that supports auto play loops and zoom in capability.
+ * The regular probability Graphical that supports auto play loops and zoom in capability.
  */
-
 class GraphicalModel {
 
     /**
