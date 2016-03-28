@@ -1,18 +1,12 @@
 /*======================= Examples =======================*/
 
 
-/**
- * Class containing tutorials.
- *
- * @class
- * @tutorial example
- */
 (function() {
     "use strict";
 
     let dimMultiplier = 2;
 
-    /*======================= Example 1 =======================*/
+    /*======================= Create a regular PGM =======================*/
 
     let regularWithOutAdjMat = (function() {
 
@@ -42,7 +36,7 @@
 
 
 
-    /*======================= Example 2 =======================*/
+/*======= Regular PGM with Adjacency Matrix and Zoom Capability =========*/
 
     let regularWithAdjMatWithoutAutoPlayWithZoom = (function() {
 
@@ -79,7 +73,7 @@
 
 
 
-    /*======================= Example 3 =======================*/
+    /*======= Regular PGM with Adjacency Matrix and AutoPlay Capability =======*/
 
     let regularWithAdjMat = (function() {
 
@@ -163,7 +157,7 @@
     })();
 
 
-    /*======================= Example 4 =======================*/
+    /*======================= Listener Observer PGM Example 1 =======================*/
 
     let listenerObserver1 = (function() {
         "use strict";
@@ -223,7 +217,7 @@
 
 
 
-    /*======================= Example 5 =======================*/
+    /*======================= Listener Observer PGM Example 2 =======================*/
 
     let listenerObserver2 = (function() {
         "use strict";

@@ -3,12 +3,17 @@
 ### Source Code (<a href="https://github.com/AlexOuyang/GraphicModelCreator">Github</a>)
 A library API for creating interactive probabilistic graphical models for visualizing the theory of communication using D3.js and ES6. (A project done in Interactive Cognition lab at UCSD)
 
-#### Author: Alex Chenxing Ouyang (c2ouyang@ucsd.edu)
-
 ### Resources
 
 * __Documentation__ - Can be found in GraphicModelCreator/Documentation/out.
 * __Examples and Tutorial__ - Can be found in GraphicModelCreator/Tutorial.
+
+### Dependencies
+
+* __JQuery__
+* __JQuery UI__
+* __D3.js__
+* __normalize.css__
 
 ### Comptability
 
@@ -33,4 +38,8 @@ To regenerate documentation with a readme in home page and tutorials:
 <img src="https://raw.githubusercontent.com/AlexOuyang/GraphicModelCreator/master/img/pgm_4.png" width="40%">
 <img src="https://raw.githubusercontent.com/AlexOuyang/GraphicModelCreator/master/img/pgm_5.png" width="40%">
 <img src="https://raw.githubusercontent.com/AlexOuyang/GraphicModelCreator/master/img/1.png" width="40%">
+
+### Author
+
+Alex Chenxing Ouyang (c2ouyang@ucsd.edu)
 
