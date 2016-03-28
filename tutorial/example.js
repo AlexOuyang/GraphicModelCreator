@@ -1,8 +1,16 @@
 /*======================= Examples =======================*/
 
 
+/**
+ * Class containing tutorials.
+ *
+ * @class
+ * @tutorial example
+ */
 (function() {
     "use strict";
+
+    let dimMultiplier = 2;
 
     /*======================= Example 1 =======================*/
 
@@ -12,8 +20,8 @@
         let pgmConfig = Config.getPgmConfig();
         pgmConfig.background.grid = false; // disable background grid
         pgmConfig.background.color = "white"; // change the background color
-        pgmConfig.transform.width = window.innerWidth - 10; // reset pgm width
-        pgmConfig.transform.height = window.innerWidth * 2 / 3; // reset pgm height
+        pgmConfig.transform.width = (window.innerWidth - 10) / dimMultiplier; // reset pgm width
+        pgmConfig.transform.height = (window.innerWidth * 2 / 3) / dimMultiplier; // reset pgm height
         pgmConfig.text.size = 0.7; // change text label size
 
         // ClusterMat is the cluster matrix that defines every node in each layer, where each row represents one layer.
@@ -40,6 +48,9 @@
 
         // Still create the pgm configuration first.
         let pgmConfig = Config.getPgmConfig();
+        pgmConfig.transform.width /= dimMultiplier;
+        pgmConfig.transform.height /= dimMultiplier;
+
         // AutoPlay capability is enabled by default. Disable autoPlay ability so the speaker layer nodes become clicable.
         pgmConfig.autoPlayable = false;
         // Allow zoom, this gives zoom ability
@@ -47,6 +58,8 @@
 
         // Now let's get the matrix configuration file 
         let matConfig = Config.getAdjacencyMatrixConfig();
+        matConfig.transform.width /= dimMultiplier;
+        matConfig.transform.height /= dimMultiplier;
         matConfig.background.color = "#ecf6f2"; // reset background color
 
         let clusterMat = [
@@ -71,8 +84,12 @@
     let regularWithAdjMat = (function() {
 
         let pgmConfig = Config.getPgmConfig();
+        pgmConfig.transform.width /= dimMultiplier;
+        pgmConfig.transform.height /= dimMultiplier;
 
         let matConfig = Config.getAdjacencyMatrixConfig();
+        matConfig.transform.width /= dimMultiplier;
+        matConfig.transform.height /= dimMultiplier;
         matConfig.background.color = "#ecf6f2";
 
         let clusterMat = [
@@ -152,10 +169,16 @@
         "use strict";
 
         let listenerBeliefConfig = Config.getListenerBeliefConfig();
+        listenerBeliefConfig.transform.width /= dimMultiplier;
+        listenerBeliefConfig.transform.height /= dimMultiplier;
 
         let listenerConfig = Config.getListenerConfig();
+        listenerConfig.transform.width /= dimMultiplier;
+        listenerConfig.transform.height /= dimMultiplier;
 
         let adjacencyMatrixConfig = Config.getAdjacencyMatrixConfig();
+        adjacencyMatrixConfig.transform.width /= dimMultiplier;
+        adjacencyMatrixConfig.transform.height /= dimMultiplier;
         adjacencyMatrixConfig.label.size = 0.35; // Reset the matrix label text size
 
         let clusterMat = [
@@ -206,10 +229,16 @@
         "use strict";
 
         let listenerBeliefConfig = Config.getListenerBeliefConfig();
+        listenerBeliefConfig.transform.width /= dimMultiplier;
+        listenerBeliefConfig.transform.height /= dimMultiplier;
 
         let listenerConfig = Config.getListenerConfig();
+        listenerConfig.transform.width /= dimMultiplier;
+        listenerConfig.transform.height /= dimMultiplier;
 
         let adjacencyMatrixConfig = Config.getAdjacencyMatrixConfig();
+        adjacencyMatrixConfig.transform.width /= dimMultiplier;
+        adjacencyMatrixConfig.transform.height /= dimMultiplier;
 
         let clusterMat = [
             ["▢", "◯", "△"],
