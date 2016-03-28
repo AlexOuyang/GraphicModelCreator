@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: pgmConfig.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: pgmConfig.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>'use strict';
+
+
+/**
+ * This is used to obtain the default configurations for PGMs
+ */
+class Configuration {
+
+    /**
+     * Create a new object for obtaining configuration objects.
+     */
+    constructor() {
+
+        // Handles the configuration of listener's belief
+        this._listenerBeliefConfig = {
+            transform: {
+                x: 0,
+                y: 0,
+                width: window.innerWidth * 2 / 3 - 20,
+                height: window.innerWidth / 2.5
+            },
+            vertex: {
+                radius: .35,
+                defaultStyle: {
+                    backgroundColor: "#52bf90",
+                    outlineColor: "#317256"
+                },
+                visited: {
+                    visitedColor: "#1d4433",
+                    outlineColor: "#1d4433"
+                }
+            },
+            edge: {
+                baseWidth: 0, // base width offset = baseWidth * circle radius
+                width: 1, // edge width = width * circle radius
+                defaultColor: "#74cba6",
+                visitedColor: "#1d4433",
+                timeInterval: 400 // timeInterval is in millisecond
+            },
+            text: {
+                color: "white",
+                size: 0.5, // text size = size * circle radius
+                anchor: "middle",
+                alignment: "middle"
+
+            },
+            background: {
+                grid: false,
+                color: "#ccecde"
+            },
+            autoPlay: {
+                on: false,
+                button: {
+                    dim: 1,
+                    color: "#52bf90"
+                },
+                timeIntervalBetweenCycle: 400
+            },
+            autoPlayable: true, // If autoPlayable, creates the autoplay button
+            cyclingSpeedControllable: true, // if cyclingSpeedControllable, create speed button
+            zoomable: false,
+        };
+
+
+        // Handles the configuration of listener
+        this._listenerConfig = {
+            transform: {
+                x: 0,
+                y: 0,
+                width: window.innerWidth * 2 / 3 - 20,
+                height: window.innerWidth / 3
+            },
+            vertex: {
+                radius: 0.35,
+                defaultColor: "#52bf90",
+                visitedColor: "#1d4433",
+                outlineColor: "#317256"
+            },
+            edge: {
+                baseWidth: 0, // base width offset = baseWidth * circle radius
+                width: 1, // edge width = width * circle radius
+                defaultColor: "#b6ddcc",
+                visitedColor: "#1d4433",
+                timeInterval: 400 // timeInterval is in millisecond
+            },
+            text: {
+                color: "white",
+                size: 0.5, // text size = size * circle radius
+                anchor: "middle",
+                alignment: "middle"
+
+            },
+            background: {
+                grid: false,
+                color: "rgba(255, 255, 255, 0)"
+            },
+            autoPlay: {
+                on: false,
+                button: {
+                    dim: 1,
+                    color: "#74cba6"
+                },
+                timeIntervalBetweenCycle: 400
+            },
+            autoPlayable: false, // If autoPlayable, creates the autoplay button
+            cyclingSpeedControllable: false, // if cyclingSpeedControllable, create speed button
+            zoomable: false,
+        };
+
+
+        // Adjacency matrix configuration
+        this._adjacencyMatrixConfig = {
+            transform: {
+                x: 0,
+                y: 0,
+                width: window.innerWidth / 3,
+                height: window.innerWidth / 3
+            },
+            matrix: {
+                x: 0.3,
+                y: 0.3,
+                cellDim: 0.5,
+                cellSpacing: 1,
+                color: "#63c59b"
+            },
+            label: {
+                color: "#52bf90",
+                size: 0.5, // text size = size * circle radius
+                anchor: "middle",
+                alignment: "middle"
+            },
+            weight: {
+                color: "white",
+                size: 0.6, // weight text size = size * circle radius
+                anchor: "middle",
+                alignment: "middle"
+            },
+            background: {
+                color: "rgba(255, 255, 255, 0)"
+            }
+        };
+
+
+        // This is the config for regular pgm
+        this._pgmConfig = {
+            transform: {
+                x: 0,
+                y: 0,
+                width: window.innerWidth * 2 / 3 - 20,
+                height: window.innerWidth / 3
+            },
+            vertex: {
+                radius: 0.35,
+                defaultStyle: {
+                    backgroundColor: "#52bf90",
+                    outlineColor: "#317256"
+                },
+                visited: {
+                    visitedColor: "#1d4433",
+                    outlineColor: "#1d4433"
+                }
+            },
+            edge: {
+                baseWidth: 0, // base width offset = baseWidth * circle radius
+                width: 1, // edge width = width * circle radius
+                defaultColor: "#b6ddcc",
+                visitedColor: "#1d4433",
+                timeInterval: 400 // timeInterval is in millisecond
+            },
+            text: {
+                color: "white",
+                size: 0.5, // text size = size * circle radius
+                anchor: "middle",
+                alignment: "middle"
+
+            },
+            background: {
+                grid: true,
+                color: "#ecf6f2"
+            },
+            autoPlay: {
+                on: false,
+                button: {
+                    dim: 1,
+                    color: "#52bf90"
+                },
+                timeIntervalBetweenCycle: 400
+            },
+            autoPlayable: true, // If autoPlayable, creates the autoplay button
+            cyclingSpeedControllable: true, // if cyclingSpeedControllable, create speed button
+            zoomable: false,
+        };
+    }
+
+    /**
+     * Used to obtain the listenerBeliefConfig.
+     * @return {object} listenerBeliefConfig - The configuration for the listener's belief graphical model.
+     */
+    getListenerBeliefConfig() {
+        return Utils.cloneDR(this._listenerBeliefConfig);
+    }
+
+    /**
+     * Used to obtain the listenerBeliefConfig.
+     * @return {object} listenerBeliefConfig - The configuration for the listener graphical model.
+     */
+    getListenerConfig() {
+        return Utils.cloneDR(this._listenerConfig);
+    }
+
+    /**
+     * Used to obtain the adjacencyMatrixConfig.
+     * @return {object} adjacencyMatrixConfig - The configuration for the adjacency matrix attached to the specified graphical model.
+     */
+    getAdjacencyMatrixConfig() {
+        return Utils.cloneDR(this._adjacencyMatrixConfig);
+    }
+
+    /**
+     * Used to obtain the pgmConfig.
+     * @return {object} pgmConfig - The regular graphical model config.
+     */
+    getPgmConfig() {
+        return Utils.cloneDR(this._pgmConfig);
+    }
+}
+
+/**
+ * Create a singleton for obtaining configuration objects.
+ * See {@link Configuration} to obtain configuration objects for graphical models.
+ */
+let Config = new Configuration();</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Configuration.html">Configuration</a></li><li><a href="GraphicalModel.html">GraphicalModel</a></li><li><a href="ListenerBeliefPGM.html">ListenerBeliefPGM</a></li><li><a href="ListenerObserverPGM.html">ListenerObserverPGM</a></li><li><a href="ListenerPGM.html">ListenerPGM</a></li><li><a href="Utilities.html">Utilities</a></li><li><a href="WeightedAdjacencyMatrix.html">WeightedAdjacencyMatrix</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-interactiveExamples.html">interactiveExamples</a></li></ul><h3>Global</h3><ul><li><a href="global.html#Config">Config</a></li><li><a href="global.html#log">log</a></li><li><a href="global.html#Utils">Utils</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sun Mar 27 2016 20:28:41 GMT-0700 (PDT)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
