@@ -1,6 +1,11 @@
 # GraphicalModelCreator
-A frame work for creating probabilistic graphical models using D3.js and ES6
+A frame work for creating interactive probabilistic graphical models for visualizing the theory of communication using D3.js and ES6
 
+--------------
+* __Documentation__ - Can be found in GraphicModelCreator/Documentation/out.
+* __Examples and Tutorial__ - Can be found in GraphicModelCreator/Tutorial.
+
+--------------
 ![alt tag](https://github.com/AlexOuyang/GraphicModelCreator/blob/master/img/pgm_0.png)
 ![alt tag](https://github.com/AlexOuyang/GraphicModelCreator/blob/master/img/pgm_1.png)
 ![alt tag](https://github.com/AlexOuyang/GraphicModelCreator/blob/master/img/pgm_2.png)
