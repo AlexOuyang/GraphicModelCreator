@@ -1,6 +1,8 @@
 # GraphicalModelCreator
 
-### Source Code (<a href="https://github.com/AlexOuyang/GraphicModelCreator">Github</a>)
+#### Source Code (<a href="https://github.com/AlexOuyang/GraphicModelCreator">Github</a>)
+#### Documentations (<a href="http://alexouyang.github.io/GraphicModelCreator/documentation/index.html">API</a>)
+
 A library API for creating interactive probabilistic graphical models for visualizing the theory of communication using D3.js and ES6. (A project done in Interactive Cognition lab at UCSD)
 
 ### Resources
