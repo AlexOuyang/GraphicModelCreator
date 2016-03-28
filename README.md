@@ -4,17 +4,21 @@
 A library API for creating interactive probabilistic graphical models for visualizing the theory of communication using D3.js and ES6. (A project done in Interactive Cognition lab at UCSD)
 
 ### Resources
-
+            
+```javascript
 GraphicModelCreator/ 
 │ 
-├── pgm_lib/                                          This contains the source code
-│   ├── build/                                        This contains the build (minified transpiled file)
-│   ├── prototypes/                                   This contains old files
-│   └── src/                                          This contains the core code in development
-├── tutorial/                                         This contains the tutorial files
+├── img/                         These are the screenshots
+│ 
+├── pgm_lib/                     This contains the source code
+│   ├── build/                   This contains the build (minified transpiled file)
+│   ├── prototypes/              This contains old files
+│   └── src/                     This contains the core code in development
+├── tutorial/                    This contains the tutorial files
 │
 └── documentation/
-    └── out/                                          This contains the documentation
+    └── out/                     This contains the documentation
+```
 
 
 ### Dependencies
