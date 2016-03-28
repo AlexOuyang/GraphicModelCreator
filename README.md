@@ -5,8 +5,17 @@ A library API for creating interactive probabilistic graphical models for visual
 
 ### Resources
 
-* __Documentation__ - Can be found in GraphicModelCreator/Documentation/out
-* __Examples and Tutorials__ - Can be found in GraphicModelCreator/Tutorial
+GraphicModelCreator/ 
+│ 
+├── pgm_lib/                                          This contains the source code
+│   ├── build/                                        This contains the build (minified transpiled file)
+│   ├── prototypes/                                   This contains old files
+│   └── src/                                          This contains the core code in development
+├── tutorial/                                         This contains the tutorial files
+│
+└── documentation/
+    └── out/                                          This contains the documentation
+
 
 ### Dependencies
 
@@ -22,11 +31,11 @@ ES6 is only supported in Chrome at the moment, use <a href="https://babeljs.io/"
 ### Documentation
 
 The documentation is generated using jsDoc.
-To regenerate documentation with a readme in home page and tutorials:
+To regenerate documentation with a readme in home page and tutorials in the GraphicModelCreator/documentation directory:
 
     cd GraphicalModelCreator
 
-    jsdoc -u tutorial/ pgm_lib/src/ pgm_lib/src  README.md
+    jsdoc -u tutorial/ pgm_lib/src/ pgm_lib/src  README.md -d documentation/
 
 
 ### ScreenShots
