@@ -5,8 +5,8 @@ A library API for creating interactive probabilistic graphical models for visual
 
 ### Resources
 
-* __Documentation__ - Can be found in GraphicModelCreator/Documentation/out.
-* __Examples and Tutorial__ - Can be found in GraphicModelCreator/Tutorial.
+* __Documentation__ - Can be found in GraphicModelCreator/Documentation/out
+* __Examples and Tutorials__ - Can be found in GraphicModelCreator/Tutorial
 
 ### Dependencies
 

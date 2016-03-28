@@ -22,9 +22,15 @@
         <!-- <script src="js/build/pgm.min.js"></script> -->
         
         <!--  Example go here  -->
-        <h4>These are just interactive examples, see comments in: graphicalModel/tutorial/example.js</h4>
+        <h4>These are the interactive examples and tutorials, also see specifics in: graphicalModel/tutorial/example.js</h4>
+        <h4> Used <a href="https://github.com/google/code-prettify/blob/master/docs/getting_started.md">Code Prettify</a> for code syntax highlighting.<h4>
         <div>
             <h3>Regular PGM</h3>
+            <h4>How to:</h4>
+            <ul>
+                <li>Click on the play button to start auto click on the speaker node.</li>
+                <li>Slide the button on the top of the graph to adjust the cycling speed.</li>
+            </ul>
             <div id="regular_pgm"></div>
             <?prettify?>
             <pre class="prettyprint">
@@ -55,7 +61,15 @@
     })();
 })();
             </pre>
+
+
             <h3>Regular PGM with Adjacency Matrix and Zoom Capability</h3>
+            <h4>How to:</h4>
+            <ul>
+                <li>Click on one node in the speaker layer (first layer) to trigger an event.</li>
+                <li>Click on the background to reset the graph.</li>
+                <li>Hover on top of the graph, use two fingers scroll to trigger zoom in/out capability.</li>
+            </ul>
             <div id="regular_with_adjMat_without_autoplay"></div>
             <pre class="prettyprint">
 /*======= Regular PGM with Adjacency Matrix and Zoom Capability =========*/
@@ -90,7 +104,15 @@
     })();
 })();
             </pre>
+
+
+
             <h3>Regular PGM with Adjacency Matrix and AutoPlay Capability</h3>
+            <h4>How to:</h4>
+            <ul>
+                <li>Click on the play button to start auto click on the speaker node.</li>
+                <li>Slide the button on the top of the graph to adjust the cycling speed.</li>
+            </ul>
             <div id="regular_with_adjMat_with_autoplay"></div>
             <pre class="prettyprint">
 
@@ -181,7 +203,14 @@
     })();
 })();
             </pre>
+
+
             <h3>Listener Observer PGM Example 1</h3>
+            <h4>How to:</h4>
+            <ul>
+                <li>Click on the play button to start auto click on the speaker node.</li>
+                <li>After click on the stop button to stop the auto play. You can then click on any node in the bottom graph (listener PGM) to trigger bottom graph auto play. Then you can click on any node to stop the buttom graph auto play.</li>
+            </ul>
             <div id="listenerObserverModel_1"></div>
             <pre class="prettyprint">
 
