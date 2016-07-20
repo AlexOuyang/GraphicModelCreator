@@ -329,7 +329,7 @@ class GraphicalModel {
     }
 
     /**
-     * Draws the grpah vertices.
+     * Draws the graph vertices.
      * @private
      */
     _drawVertices(data) {
@@ -346,9 +346,26 @@ class GraphicalModel {
             .attr("id", d => d.id)
             .attr("transform", d => "translate(" + d.x + "," + d.y + ")")
             .call(this.onClick);
-
+        
         this.vertices.append("circle")
-            .attr("r", d => d.r);
+            .attr("r", d => d.r)
+/*            .attr("fill", function(d) {
+                if  (d.x==1) {
+                    return this.config.vertex.jointlyObservableStyle.backgroundColor;
+                } else {
+                    return this.config.vertex.latentStyle.backgroundColor;
+                }
+            })*/
+        ;
+/*        d3.selectAll(this._divID + " g .vertex")
+              .attr("fill", function(d) {
+                if  (d.x==1) {
+                    return this.config.vertex.jointlyObservableStyle.backgroundColor;
+                } else {
+                    return this.config.vertex.latentStyle.backgroundColor;
+                }
+            });*/
+        
 
         this._drawText();
     }
@@ -603,7 +620,7 @@ class GraphicalModel {
             max: 1000,
             value: _pgm.config.edge.timeInterval,
             slide: function(event, ui) {
-                _pgm._cyclingSpeedControlButtonOnClick(ui);
+                _pgm._cyclingSpeedControlButtonOnClick(ui, sliderID);
             }
         });
 
@@ -615,11 +632,16 @@ class GraphicalModel {
      * Called by jQuery slider function defined in _createCyclingSpeedControlButton to update the graph cycling speed based on the position of the UI button.
      * @private
      */
-    _cyclingSpeedControlButtonOnClick(ui) {
+    _cyclingSpeedControlButtonOnClick(ui, sliderID) {
+        var sliderMin = $("#" + sliderID).slider("option", "min");
+        var sliderMax = $("#" + sliderID).slider("option", "max");
+        var invertedValue = (sliderMax - ui.value) + sliderMin;/*Change speed to duration*/
+        
+        /*console.log("InvertedValue: " + invertedValue);*/
         console.log("Slider Speed: " + ui.value);
-        let sphereRad = ui.value;
-        this.config.edge.timeInterval = ui.value;
-        this.config.autoPlay.timeIntervalBetweenCycle = ui.value;
+        let sphereRad = invertedValue;
+        this.config.edge.timeInterval = invertedValue;
+        this.config.autoPlay.timeIntervalBetweenCycle = invertedValue;
     }
 
     /**

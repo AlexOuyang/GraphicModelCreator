@@ -25,6 +25,14 @@ class Configuration {
                     backgroundColor: "#52bf90",
                     outlineColor: "#317256"
                 },
+                latentStyle: {
+                    backgroundColor: "#52bf90",
+                    outlineColor: "#317256"
+                },
+                jointlyObservableStyle:{
+                    backgroundColor: "#5952BF",
+                    outlineColor: "#363172"
+                },
                 visited: {
                     visitedColor: "#1d4433",
                     outlineColor: "#1d4433"
@@ -74,7 +82,15 @@ class Configuration {
                 radius: 0.35,
                 defaultColor: "#52bf90",
                 visitedColor: "#1d4433",
-                outlineColor: "#317256"
+                outlineColor: "#317256",
+                latentStyle: {
+                    backgroundColor: "#52bf90",
+                    outlineColor: "#317256"
+                },
+                jointlyObservableStyle:{
+                    backgroundColor: "#5952BF",
+                    outlineColor: "#363172"
+                },
             },
             edge: {
                 baseWidth: 0, // base width offset = baseWidth * circle radius
@@ -154,6 +170,14 @@ class Configuration {
                 defaultStyle: {
                     backgroundColor: "#52bf90",
                     outlineColor: "#317256"
+                },
+                latentStyle: {
+                    backgroundColor: "#52bf90",
+                    outlineColor: "#317256"
+                },
+                jointlyObservableStyle:{
+                    backgroundColor: "#5952BF",
+                    outlineColor: "#363172"
                 },
                 visited: {
                     visitedColor: "#1d4433",
