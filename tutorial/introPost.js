@@ -104,7 +104,7 @@
         // ClusterMat is the cluster matrix that defines every node in each layer, where each row represents one layer.
         let clusterMat = [
             ["♡", "♬", "☻"],
-            ["Heart", "Music", "Smiley"],
+            ["\"Heart\"", "\"Music\"", "\"Smiley\""],
             ["♡", "♬", "☻"]
         ];
 
@@ -187,7 +187,7 @@
         // ClusterMat is the cluster matrix that defines every node in each layer, where each row represents one layer.
         let clusterMat = [
             ["♡", "♬", "☻"],
-            ["Heart", "Music", "Smiley"],
+            ["\"Heart\"", "\"Music\"", "\"Smiley\""],
             ["♡", "♬", "☻"]
         ];
 
@@ -270,7 +270,7 @@
         // ClusterMat is the cluster matrix that defines every node in each layer, where each row represents one layer.
         let clusterMat = [
             ["♡", "♬", "☻"],
-            ["Heart", "Music", "Smiley"],
+            ["\"Heart\"", "\"Music\"", "\"Smiley\""],
             ["♡", "♬", "☻"]
         ];
 
@@ -354,7 +354,7 @@
         // ClusterMat is the cluster matrix that defines every node in each layer, where each row represents one layer.
         let clusterMat = [
             ["♡", "♬", "☻"],
-            ["Heart", "Music", "Smiley"],
+            ["\"Heart\"", "\"Music\"", "\"Smiley\""],
             ["♡", "♬", "☻"]
         ];
 
@@ -439,7 +439,7 @@
 
         let clusterMat = [
             ["▢", "◯", "△"],
-            ["Square", "Circle", "Triangle"],
+            ["\"Square\"", "\"Circle\"", "\"Triangle\""],
             ["▢", "◯", "△"]
         ];
 
